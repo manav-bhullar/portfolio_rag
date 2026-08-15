@@ -12,10 +12,19 @@ import { retrieve, formatContext } from '@/lib/rag/retriever';
 
 export const maxDuration = 30;
 
-const google = createGoogleGenerativeAI({
-  apiKey: process.env.GEMINI_API_KEY,
-});
-
+function getRandomApiKey() {
+  const keys = Object.keys(process.env)
+    .filter(key => key.startsWith('GEMINI_API_KEY') || key.startsWith('GOOGLE_API_KEY'))
+    .map(key => process.env[key])
+    .filter(Boolean) as string[];
+  
+  if (keys.length === 0) {
+    throw new Error("No Gemini/Google API keys found in environment variables");
+  }
+  
+  const randomIndex = Math.floor(Math.random() * keys.length);
+  return keys[randomIndex];
+}
 function errorHandler(error: unknown) {
   if (error == null) {
     return 'Unknown error';
@@ -32,6 +41,9 @@ function errorHandler(error: unknown) {
 export async function POST(req: Request) {
   try {
     const { messages } = await req.json();
+
+    const apiKey = getRandomApiKey();
+    const google = createGoogleGenerativeAI({ apiKey });
 
     // ── RAG: Retrieve relevant context ───────────────────────
     // Extract the latest user message for retrieval

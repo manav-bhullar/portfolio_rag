@@ -1,12 +1,17 @@
 /**
  * Embeddings module for the Portfolio RAG system.
  *
- * Uses Gemini text-embedding-004 to embed knowledge documents.
+ * Uses @xenova/transformers (Xenova/all-MiniLM-L6-v2) for local embeddings.
  * Embeddings are cached in-memory — computed once on first request,
- * then reused for the server's lifetime.
+ * then reused for the server's lifetime. This avoids any API quotas.
  */
 
 import { KNOWLEDGE_BASE, type KnowledgeDocument } from './knowledge-base';
+import { pipeline, env } from '@xenova/transformers';
+
+// Configure transformers
+// Skip local model check since we are running in a Next.js API route
+env.allowLocalModels = false;
 
 // ── Types ─────────────────────────────────────────────────────
 export interface EmbeddedDocument {
@@ -18,77 +23,41 @@ export interface EmbeddedDocument {
 let cachedEmbeddings: EmbeddedDocument[] | null = null;
 let cachePromise: Promise<EmbeddedDocument[]> | null = null;
 
-// ── Gemini Embedding API ──────────────────────────────────────
-const EMBEDDING_MODEL = 'text-embedding-004';
-const EMBEDDING_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${EMBEDDING_MODEL}:embedContent`;
+// Pipeline cache
+let extractorPipeline: any = null;
 
-/**
- * Embed a single text string using Gemini text-embedding-004.
- */
-export async function getEmbedding(text: string): Promise<number[]> {
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) {
-    throw new Error('GEMINI_API_KEY is not set');
+async function getExtractor() {
+  if (!extractorPipeline) {
+    extractorPipeline = await pipeline('feature-extraction', 'Xenova/all-MiniLM-L6-v2');
   }
-
-  const response = await fetch(`${EMBEDDING_API_URL}?key=${apiKey}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      model: `models/${EMBEDDING_MODEL}`,
-      content: {
-        parts: [{ text }],
-      },
-    }),
-  });
-
-  if (!response.ok) {
-    const errorBody = await response.text();
-    throw new Error(
-      `Embedding API error (${response.status}): ${errorBody}`
-    );
-  }
-
-  const data = await response.json();
-  return data.embedding.values as number[];
+  return extractorPipeline;
 }
 
 /**
- * Batch embed multiple texts using Gemini batchEmbedContents.
- * More efficient than calling getEmbedding() in a loop.
+ * Embed a single text string using local model.
+ */
+export async function getEmbedding(text: string): Promise<number[]> {
+  const extractor = await getExtractor();
+  const output = await extractor(text, { pooling: 'mean', normalize: true });
+  return Array.from(output.data);
+}
+
+/**
+ * Batch embed multiple texts.
  */
 async function batchEmbed(texts: string[]): Promise<number[][]> {
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) {
-    throw new Error('GEMINI_API_KEY is not set');
+  const extractor = await getExtractor();
+  const output = await extractor(texts, { pooling: 'mean', normalize: true });
+  
+  // output is a tensor of shape [batch_size, embedding_dim]
+  const embeddings: number[][] = [];
+  const dim = output.dims[1];
+  for (let i = 0; i < texts.length; i++) {
+    const start = i * dim;
+    const end = start + dim;
+    embeddings.push(Array.from(output.data.slice(start, end)));
   }
-
-  const batchUrl = `https://generativelanguage.googleapis.com/v1beta/models/${EMBEDDING_MODEL}:batchEmbedContents?key=${apiKey}`;
-
-  const requests = texts.map((text) => ({
-    model: `models/${EMBEDDING_MODEL}`,
-    content: {
-      parts: [{ text }],
-    },
-  }));
-
-  const response = await fetch(batchUrl, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ requests }),
-  });
-
-  if (!response.ok) {
-    const errorBody = await response.text();
-    throw new Error(
-      `Batch embedding API error (${response.status}): ${errorBody}`
-    );
-  }
-
-  const data = await response.json();
-  return data.embeddings.map(
-    (e: { values: number[] }) => e.values
-  );
+  return embeddings;
 }
 
 /**
@@ -110,7 +79,7 @@ export async function getEmbeddedDocuments(): Promise<EmbeddedDocument[]> {
   // Compute embeddings
   cachePromise = (async () => {
     console.log(
-      `[RAG] Computing embeddings for ${KNOWLEDGE_BASE.length} documents...`
+      `[RAG] Computing local embeddings for ${KNOWLEDGE_BASE.length} documents...`
     );
     const startTime = Date.now();
 
@@ -129,7 +98,7 @@ export async function getEmbeddedDocuments(): Promise<EmbeddedDocument[]> {
     }));
 
     const elapsed = Date.now() - startTime;
-    console.log(`[RAG] Embeddings computed in ${elapsed}ms`);
+    console.log(`[RAG] Local embeddings computed in ${elapsed}ms`);
 
     cachedEmbeddings = result;
     return result;
