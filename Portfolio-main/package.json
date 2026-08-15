@@ -9,7 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "@ai-sdk/google": "^1.2.22",
+    "@ai-sdk/google": "^4.0.44",
     "@ai-sdk/groq": "^1.2.9",
     "@ai-sdk/openai": "^1.2.7",
     "@ai-sdk/react": "^1.2.0",
@@ -27,7 +27,7 @@
     "@tsparticles/react": "^3.0.0",
     "@tsparticles/slim": "^3.8.1",
     "@vercel/analytics": "^1.5.0",
-    "ai": "^4.1.65",
+    "ai": "^7.0.66",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "framer-motion": "^12.5.0",

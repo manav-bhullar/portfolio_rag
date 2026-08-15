@@ -8,6 +8,7 @@ import { getContact } from './tools/getContact';
 import { getSkills } from './tools/getSkills';
 import { getInterests } from './tools/getInterests';
 import { getCrazy } from './tools/getCrazy';
+import { retrieve, formatContext } from '@/lib/rag/retriever';
 
 export const maxDuration = 30;
 
@@ -32,7 +33,45 @@ export async function POST(req: Request) {
   try {
     const { messages } = await req.json();
 
-    messages.unshift(SYSTEM_PROMPT);
+    // ── RAG: Retrieve relevant context ───────────────────────
+    // Extract the latest user message for retrieval
+    const lastUserMessage = [...messages]
+      .reverse()
+      .find((m: { role: string }) => m.role === 'user');
+
+    let ragContext = '';
+    if (lastUserMessage) {
+      const userQuery =
+        typeof lastUserMessage.content === 'string'
+          ? lastUserMessage.content
+          : Array.isArray(lastUserMessage.content)
+            ? lastUserMessage.content
+                .filter((p: { type: string }) => p.type === 'text')
+                .map((p: { text: string }) => p.text)
+                .join(' ')
+            : '';
+
+      if (userQuery.trim()) {
+        try {
+          const retrievalResults = await retrieve(userQuery);
+          ragContext = formatContext(retrievalResults);
+        } catch (err) {
+          console.error('[RAG] Retrieval error:', err);
+          // Fall through — chatbot will still work, just without RAG context
+        }
+      }
+    }
+
+    // ── Build a single merged system message ─────────────────
+    // Gemini only supports one system message, so merge persona + RAG context
+    const systemContent = ragContext
+      ? `${SYSTEM_PROMPT.content}\n\n## Retrieved Context (use ALL of this information to answer the user's question — do NOT truncate or summarize):\n\n${ragContext}`
+      : SYSTEM_PROMPT.content;
+
+    const augmentedMessages = [
+      { role: 'system', content: systemContent },
+      ...messages,
+    ];
 
     const tools = {
       getProjects,
@@ -46,13 +85,11 @@ export async function POST(req: Request) {
 
     const result = streamText({
       model: google("gemini-flash-latest"),
-      messages,
+      messages: augmentedMessages,
       toolCallStreaming: true,
       tools,
       // maxSteps: 1 avoids a second internal round-trip that requires
-      // replaying the model's own function-call message back to Gemini —
-      // our installed @ai-sdk/google version doesn't preserve the
-      // thought_signature Gemini's newer models require for that replay.
+      // replaying the model's own function-call message back to Gemini.
       maxSteps: 1,
     });
 
