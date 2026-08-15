@@ -1,0 +1,214 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-accent-floq: var(--accent-floq);
+  --color-accent-floq-soft: var(--accent-floq-soft);
+  --color-accent-scales: var(--accent-scales);
+  --color-accent-scales-soft: var(--accent-scales-soft);
+  --color-accent-piprag: var(--accent-piprag);
+  --color-accent-piprag-soft: var(--accent-piprag-soft);
+  --color-accent-olist: var(--accent-olist);
+  --color-accent-olist-soft: var(--accent-olist-soft);
+  --color-accent-nyctaxi: var(--accent-nyctaxi);
+  --color-accent-nyctaxi-soft: var(--accent-nyctaxi-soft);
+  --font-display: var(--font-google-sans-flex), ui-rounded, "SF Pro Rounded", system-ui, var(--font-inter), sans-serif;
+}
+
+:root {
+  --radius: 1.25rem;
+  --background: #EDE6D6;
+  --foreground: #191919;
+  --card: #FAF7EF;
+  --card-foreground: #191919;
+  --popover: #FAF7EF;
+  --popover-foreground: #191919;
+  --primary: #191919;
+  --primary-foreground: #FAF7EF;
+  --secondary: #F1EBDD;
+  --secondary-foreground: #191919;
+  --muted: #F1EBDD;
+  --muted-foreground: #5C5952;
+  --accent: #F1EBDD;
+  --accent-foreground: #191919;
+  --destructive: oklch(0.577 0.245 27.325);
+  --border: #D8D0BE;
+  --input: #D8D0BE;
+  --ring: #3FB37F;
+  --chart-1: oklch(0.646 0.222 41.116);
+  --chart-2: oklch(0.6 0.118 184.704);
+  --chart-3: oklch(0.398 0.07 227.392);
+  --chart-4: oklch(0.828 0.189 84.429);
+  --chart-5: oklch(0.769 0.188 70.08);
+  --sidebar: #FAF7EF;
+  --sidebar-foreground: #191919;
+  --sidebar-primary: #191919;
+  --sidebar-primary-foreground: #FAF7EF;
+  --sidebar-accent: #F1EBDD;
+  --sidebar-accent-foreground: #191919;
+  --sidebar-border: #D8D0BE;
+  --sidebar-ring: #3FB37F;
+
+  /* Per-project/domain accents (DESIGN.md) */
+  --accent-floq: #3FB37F;
+  --accent-floq-soft: #E4F3EB;
+  --accent-scales: #F0954A;
+  --accent-scales-soft: #FCEBDC;
+  --accent-piprag: #E0559C;
+  --accent-piprag-soft: #FBE6F1;
+  --accent-olist: #3E8EDE;
+  --accent-olist-soft: #E4EFFC;
+  --accent-nyctaxi: #8B5FE0;
+  --accent-nyctaxi-soft: #EEE7FC;
+}
+
+.dark {
+  --background: oklch(0.141 0.005 285.823);
+  --foreground: oklch(0.985 0 0);
+  --card: oklch(0.21 0.006 285.885);
+  --card-foreground: oklch(0.985 0 0);
+  --popover: oklch(0.21 0.006 285.885);
+  --popover-foreground: oklch(0.985 0 0);
+  --primary: oklch(0.92 0.004 286.32);
+  --primary-foreground: oklch(0.21 0.006 285.885);
+  --secondary: oklch(0.274 0.006 286.033);
+  --secondary-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.274 0.006 286.033);
+  --muted-foreground: oklch(0.705 0.015 286.067);
+  --accent: oklch(0.274 0.006 286.033);
+  --accent-foreground: oklch(0.985 0 0);
+  --destructive: oklch(0.704 0.191 22.216);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: oklch(0.552 0.016 285.938);
+  --chart-1: oklch(0.488 0.243 264.376);
+  --chart-2: oklch(0.696 0.17 162.48);
+  --chart-3: oklch(0.769 0.188 70.08);
+  --chart-4: oklch(0.627 0.265 303.9);
+  --chart-5: oklch(0.645 0.246 16.439);
+  --sidebar: oklch(0.21 0.006 285.885);
+  --sidebar-foreground: oklch(0.985 0 0);
+  --sidebar-primary: oklch(0.488 0.243 264.376);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.274 0.006 286.033);
+  --sidebar-accent-foreground: oklch(0.985 0 0);
+  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-ring: oklch(0.552 0.016 285.938);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+.custom-scrollbar {
+  /* For Firefox */
+  scrollbar-width: thin;
+  scrollbar-color: rgba(155, 155, 155, 0.5) transparent;
+}
+
+/* For Chrome, Edge, and Safari */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background-color: rgba(155, 155, 155, 0.5);
+  border-radius: 10px;
+  border: transparent;
+}
+
+/* Hide scrollbar when not in use but keep functionality */
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(155, 155, 155, 0.7);
+}
+
+/* Ensure code blocks can scroll horizontally */
+pre {
+  white-space: pre;
+  word-wrap: normal;
+  overflow-x: auto;
+}
+
+/* ---- Organic "cookie" shape system (DESIGN.md) ---- */
+
+/* Squircle-ish blob used for the MB mark */
+.shape-blob {
+  border-radius: 42% 58% 65% 35% / 45% 40% 60% 55%;
+}
+
+/* Larger, wavy-edged blob for hero containers. Uses an SVG clipPath with
+   objectBoundingBox units (defined inline where used) so it scales
+   responsively with the container — a plain border-radius can only bend
+   4 corners, not produce a multi-wave edge. */
+.shape-blob-hero {
+  clip-path: url(#hero-wave-clip);
+}
+
+/* Colored organic accent that bleeds out from behind a card corner */
+.shape-card-accent {
+  position: relative;
+  isolation: isolate;
+}
+.shape-card-accent::before {
+  content: "";
+  position: absolute;
+  inset: -14px -14px auto auto;
+  width: 64px;
+  height: 64px;
+  border-radius: 40% 60% 55% 45% / 50% 45% 55% 50%;
+  background: var(--card-accent-color, var(--accent-floq));
+  z-index: -1;
+}
+
+.rounded-organic {
+  border-radius: 38% 62% 58% 42% / 48% 42% 58% 52%;
+}
