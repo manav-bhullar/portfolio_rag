@@ -97,28 +97,97 @@ Key contributions:
 
   // ── Projects ────────────────────────────────────────────────
   {
-    id: 'project-floq',
+    id: 'project-floq-overview',
     category: 'project',
-    title: 'Floq — Real-Time Ride-Matching Engine (Carpooling System) — LIVE',
-    content: `Floq is Manav's most advanced system — a real-time ride-matching/carpooling engine. Tech stack: Node.js, PostgreSQL, Redis, Socket.io.
+    title: 'Floq — Real-Time Ride-Matching Engine (Overview)',
+    content: `Floq is Manav's flagship system — a real-time ride-matching/carpooling engine built with Node.js, PostgreSQL, Redis, and Socket.io. This document provides the high-level overview.
 
-Technical details:
-- Managed ride lifecycles with a Finite State Machine (FSM)
-- Prevented double-matching race conditions using Redis SET NX PX distributed locks with Lua atomic release, plus PostgreSQL FOR UPDATE SKIP LOCKED row-level locking — two layers of concurrency safety
-- Read-through cache pattern using Redis to cut PostgreSQL read latency
-- Pub/Sub architecture via Socket.io for real-time event-driven dispatching and live location updates
-- JWT-based authentication for riders/drivers
-- Built the actual matching engine with a constrained backtracking algorithm that generates pickup/drop-off permutations — pruned the search space from 40,320 down to 2,520 for 4 riders under a 30% max-detour constraint
-- Optimized multi-rider connectivity validation by replacing higher-order array allocations with single-pass manual loops and Int32Array — benchmarked a 4.8x speedup (34.3ms -> 7.1ms for 10k iterations) using process.hrtime
-- Wrote 108 integration tests covering FSM state transitions, Pub/Sub cascade cancellations, read-through cache invalidation timing, and identical-coordinate reuse attacks — 100% pass rate
-
-This is NOT just a normal carpooling app — it's built like real infrastructure: distributed locking, race-condition handling, and algorithmic route optimization, not a CRUD app with a map on top.`,
+Instead of a standard CRUD app, Floq is built like real infrastructure. It handles live ride requests, computes optimal multi-rider routes using a constrained backtracking algorithm, and dispatch notifications in real-time. It uses a Finite State Machine (FSM) to manage ride lifecycles (PENDING -> MATCHED -> IN_PROGRESS -> COMPLETED) and relies heavily on Redis for distributed locking, rate limiting, and read-through caching.`,
     keywords: [
-      'floq', 'carpooling', 'ride', 'matching', 'real-time', 'redis',
-      'postgresql', 'socket.io', 'node.js', 'fsm', 'finite state machine',
-      'distributed locks', 'race condition', 'backtracking', 'algorithm',
-      'pub/sub', 'jwt', 'cache', 'integration tests', 'benchmark',
-      'concurrency', 'live', 'flagship',
+      'floq', 'carpooling', 'ride', 'matching', 'overview', 'real-time',
+      'node.js', 'postgresql', 'redis', 'socket.io', 'fsm', 'flagship',
+    ],
+  },
+
+  {
+    id: 'project-floq-concurrency',
+    category: 'project',
+    title: 'Floq — Concurrency & Distributed Locks',
+    content: `Floq is a real-time ride-matching engine. This document details its concurrency and distributed locking architecture.
+
+To prevent race conditions during the matching cycle (where two cron instances might try to match the same riders simultaneously), Floq uses two layers of concurrency safety:
+1. Distributed Lock (Redis): The cron scheduler acquires a Redis \`SET NX PX\` lock (\`matching:cron:lock\` with a 5-minute TTL) before running a batch. If another instance holds the lock, it skips the cycle. This ensures only one process runs the heavy matching logic.
+2. Row-Level Lock (PostgreSQL): Inside the matching transaction, it fetches PENDING ride requests using \`FOR UPDATE SKIP LOCKED\`. This guarantees that even if the Redis lock fails, the database will strictly lock the rows being matched and skip any rows already locked by another transaction, completely eliminating double-matching.`,
+    keywords: [
+      'floq', 'concurrency', 'race condition', 'distributed locks', 'redis',
+      'postgresql', 'for update skip locked', 'set nx px', 'cron', 'scheduler',
+      'double-matching', 'transaction',
+    ],
+  },
+
+  {
+    id: 'project-floq-matching-algorithm',
+    category: 'project',
+    title: 'Floq — Backtracking Matching Algorithm & Route Optimization',
+    content: `Floq is a real-time ride-matching engine. This document details its core matching algorithm.
+
+The matching engine groups riders (up to 4 per vehicle) by generating pickup/drop-off permutations. To optimize this, Floq uses a constrained backtracking algorithm. Instead of checking all (2n)! permutations, it prunes the search space by enforcing that a user's pickup must always precede their drop-off. For 4 riders, this reduces the search space from 40,320 down to just 2,520 valid sequences.
+
+The engine also enforces a strict \`MAX_USER_DETOUR\` ratio of 30%. It calculates the haversine distance for each user's segment in the shared route and compares it to their solo direct distance. If any user experiences a detour > 30%, the permutation is rejected.`,
+    keywords: [
+      'floq', 'matching', 'algorithm', 'route', 'optimization', 'backtracking',
+      'permutations', 'pruning', 'search space', 'detour', 'haversine',
+      'distance', 'max detour',
+    ],
+  },
+
+  {
+    id: 'project-floq-realtime-sockets',
+    category: 'project',
+    title: 'Floq — Real-Time WebSockets & Cache-Aside',
+    content: `Floq is a real-time ride-matching engine. This document details its WebSocket architecture.
+
+Floq uses Socket.io for real-time dispatch and driver location tracking. When a driver emits a \`driverLocationUpdate\` (containing lat, lng, bearing), the server broadcasts this to the \`trip_{tripId}\` room so riders see the car moving on the map.
+
+Crucially, it uses a Redis cache-aside pattern: the server caches the driver's latest location in Redis (\`driver:location:{tripId}\`) with a 60-second TTL. When a rider opens the app and joins the trip room, the server immediately fetches the location from Redis and emits it, giving the rider an instant map pin without waiting for the next GPS tick from the driver and without hammering PostgreSQL for location state.`,
+    keywords: [
+      'floq', 'real-time', 'websockets', 'socket.io', 'pub/sub', 'driver',
+      'location', 'gps', 'redis', 'cache-aside', 'ttl', 'broadcast', 'rooms',
+    ],
+  },
+
+  {
+    id: 'project-floq-rate-limiting',
+    category: 'project',
+    title: 'Floq — Redis Rate Limiting Middleware',
+    content: `Floq is a real-time ride-matching engine. This document details its API rate limiting implementation.
+
+Floq implements a custom Redis-backed sliding/fixed window rate limiter to protect its endpoints. It uses an atomic \`INCR\` and \`EXPIRE\` strategy without needing Lua scripts. The key format is \`rl:{windowIndex}:{identifier}\`.
+
+It has two pre-configured limiters:
+1. \`authLimiter\`: Strictly caps unauthenticated IPs to 10 requests per 15 minutes to prevent brute-force attacks on login, registration, and OTP endpoints.
+2. \`apiLimiter\`: Caps authenticated users to 100 requests per 1 minute for general API usage.
+
+If Redis is unreachable (e.g. cold start), the middleware is designed to "fail open" (catch the error and call \`next()\`) to ensure the platform remains available rather than dropping legitimate traffic.`,
+    keywords: [
+      'floq', 'rate limiting', 'middleware', 'redis', 'incr', 'expire',
+      'fixed window', 'brute-force', 'auth', 'api', 'throttle', 'fail open',
+    ],
+  },
+
+  {
+    id: 'project-floq-testing-performance',
+    category: 'project',
+    title: 'Floq — Testing & Performance Benchmarks',
+    content: `Floq is a real-time ride-matching engine. This document details its testing and performance optimizations.
+
+To optimize multi-rider connectivity validation (checking if riders overlap in the sequence), the team replaced higher-order array allocations (map/some/findIndex) with single-pass manual loops and \`Int32Array\`s. Benchmarking with \`process.hrtime\` showed a 4.8x speedup (from 34.3ms down to 7.1ms for 10,000 iterations).
+
+For testing, Floq has a comprehensive suite of 108 integration tests with a 100% pass rate. These tests don't just mock the database; they hit a test PostgreSQL instance to verify complex behaviors like Finite State Machine (FSM) transitions, Pub/Sub cascade cancellations, read-through cache invalidation timing, and identical-coordinate reuse attacks.`,
+    keywords: [
+      'floq', 'testing', 'performance', 'benchmarks', 'optimization',
+      'speedup', 'int32array', 'process.hrtime', 'integration tests', 'fsm',
+      'coverage',
     ],
   },
 
