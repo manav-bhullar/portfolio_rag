@@ -1,7 +1,7 @@
 'use client';
 import { useChat } from '@ai-sdk/react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import React, { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
@@ -31,6 +31,7 @@ const MOTION_CONFIG = {
 
 const Chat = () => {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const initialQuery = searchParams.get('query');
   const [autoSubmitted, setAutoSubmitted] = useState(false);
   const [loadingSubmit, setLoadingSubmit] = useState(false);
@@ -204,7 +205,7 @@ const Chat = () => {
   const handleReset = () => {
     setMessages([]);
     setInput('');
-    window.history.replaceState({}, '', '/');
+    router.push('/');
   };
 
   // Check if this is the initial empty state (no messages)
