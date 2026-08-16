@@ -1,0 +1,2 @@
+◇ injected env (8) from .env.local // tip: ⌘ multiple files { path: ['.env.local', '.env'] }
+embedding-001 failed: Failed after 2 attempts with non-retryable error: 'models/embedding-001 is not found for API version v1beta, or is not supported for embedContent. Call ModelService.ListModels to see the list of available models and their supported methods.'

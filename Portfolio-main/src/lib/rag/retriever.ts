@@ -1,15 +1,12 @@
 /**
- * Retriever for the Portfolio RAG system.
+ * Retriever for the Portfolio RAG system (V3: Enterprise Scale).
  *
- * Combines vector similarity (cosine) with keyword matching
- * for hybrid scoring. Returns relevant knowledge chunks for
- * a given user query.
- *
- * Completeness guarantee: returns ALL documents above a minimum
- * similarity threshold, even if that exceeds the default K.
+ * Uses Pinecone for fast vector retrieval, and then re-ranks the top results
+ * locally using our custom hybrid scoring (Title/Keyword boosting).
  */
 
-import { getEmbedding, getEmbeddedDocuments, type EmbeddedDocument } from './embeddings';
+import { getEmbedding } from './embeddings';
+import { getPineconeIndex } from './pinecone';
 import type { KnowledgeDocument } from './knowledge-base';
 
 // ── Types ─────────────────────────────────────────────────────
@@ -22,23 +19,12 @@ export interface RetrievalResult {
 
 // ── Config ────────────────────────────────────────────────────
 const DEFAULT_TOP_K = 6;
+const PINECONE_FETCH_K = 20;           // Fetch more from Pinecone to re-rank
 const MIN_SIMILARITY_THRESHOLD = 0.3;  // include anything above this
 const VECTOR_WEIGHT = 0.75;            // 75% vector, 25% keyword
 const KEYWORD_WEIGHT = 0.25;
 
 // ── Math helpers ──────────────────────────────────────────────
-function cosineSimilarity(a: number[], b: number[]): number {
-  let dot = 0;
-  let normA = 0;
-  let normB = 0;
-  for (let i = 0; i < a.length; i++) {
-    dot += a[i] * b[i];
-    normA += a[i] * a[i];
-    normB += b[i] * b[i];
-  }
-  const denom = Math.sqrt(normA) * Math.sqrt(normB);
-  return denom === 0 ? 0 : dot / denom;
-}
 
 /**
  * Compute a keyword match score between query and document keywords.
@@ -98,9 +84,8 @@ function tokenize(query: string): string[] {
 /**
  * Retrieve the most relevant knowledge documents for a user query.
  *
- * Uses hybrid scoring: vector similarity (75%) + keyword matching (25%).
- * Returns at least `topK` results, plus any additional results above
- * the minimum similarity threshold.
+ * Uses Pinecone for vector retrieval, then re-ranks using hybrid scoring:
+ * vector similarity (75%) + keyword matching (25%).
  */
 export async function retrieve(
   query: string,
@@ -108,24 +93,45 @@ export async function retrieve(
 ): Promise<RetrievalResult[]> {
   const startTime = Date.now();
 
-  // Get embeddings for all documents (cached after first call)
-  const embeddedDocs = await getEmbeddedDocuments();
-
   // Embed the user query
   const queryEmbedding = await getEmbedding(query);
 
   // Tokenize query for keyword matching
   const queryTokens = tokenize(query);
 
-  // Score all documents
-  const scored: RetrievalResult[] = embeddedDocs.map((ed: EmbeddedDocument) => {
-    const vectorScore = cosineSimilarity(queryEmbedding, ed.embedding);
-    const kwScore = keywordMatchScore(queryTokens, ed.document);
-    const combinedScore =
-      VECTOR_WEIGHT * vectorScore + KEYWORD_WEIGHT * kwScore;
+  // Fetch from Pinecone
+  const index = getPineconeIndex();
+  const queryResponse = await index.query({
+    vector: queryEmbedding,
+    topK: PINECONE_FETCH_K,
+    includeMetadata: true,
+  });
+
+  if (!queryResponse.matches) return [];
+
+  // Score all retrieved documents
+  const scored: RetrievalResult[] = queryResponse.matches.map((match) => {
+    const metadata = match.metadata as any || {};
+    
+    // Pinecone stores arrays natively, but just in case it's a string
+    const keywords = Array.isArray(metadata.keywords) 
+      ? metadata.keywords 
+      : (typeof metadata.keywords === 'string' ? JSON.parse(metadata.keywords) : []);
+
+    const doc: KnowledgeDocument = {
+      id: match.id,
+      title: metadata.title || 'Untitled',
+      content: metadata.content || '',
+      keywords: keywords,
+      category: metadata.category || 'general',
+    };
+
+    const vectorScore = match.score || 0;
+    const kwScore = keywordMatchScore(queryTokens, doc);
+    const combinedScore = VECTOR_WEIGHT * vectorScore + KEYWORD_WEIGHT * kwScore;
 
     return {
-      document: ed.document,
+      document: doc,
       score: combinedScore,
       vectorScore,
       keywordScore: kwScore,
@@ -145,7 +151,7 @@ export async function retrieve(
 
   const elapsed = Date.now() - startTime;
   console.log(
-    `[RAG] Retrieved ${results.length} documents for query "${query.substring(0, 50)}..." in ${elapsed}ms`
+    `[RAG] Retrieved ${results.length} documents from Pinecone for query "${query.substring(0, 50)}..." in ${elapsed}ms`
   );
 
   return results;

@@ -86,7 +86,7 @@ ${userQuery}`;
 
             try {
               const { text: rewrittenQuery } = await generateText({
-                model: google("gemini-2.5-flash"), // fast flash model
+                model: google("gemini-1.5-flash"), // fast flash model
                 prompt: rewritePrompt,
               });
               
