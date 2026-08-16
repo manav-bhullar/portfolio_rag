@@ -50,21 +50,20 @@ function keywordMatchScore(
 ): number {
   if (queryTokens.length === 0) return 0;
 
-  // Build a searchable string from the document
-  const docText = (
-    doc.title.toLowerCase() +
-    ' ' +
-    doc.keywords.join(' ').toLowerCase()
-  );
+  const titleText = doc.title.toLowerCase();
+  const keywordText = doc.keywords.join(' ').toLowerCase();
 
-  let matches = 0;
+  let score = 0;
   for (const token of queryTokens) {
-    if (docText.includes(token)) {
-      matches++;
+    if (titleText.includes(token)) {
+      score += 2.0; // Double weight for explicit title matches
+    } else if (keywordText.includes(token)) {
+      score += 1.0; // Standard weight for keyword matches
     }
   }
 
-  return matches / queryTokens.length;
+  // Cap at 1.0 in case of multiple title matches
+  return Math.min(1.0, score / queryTokens.length);
 }
 
 /**

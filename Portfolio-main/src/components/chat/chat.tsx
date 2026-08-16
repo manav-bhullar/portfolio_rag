@@ -113,12 +113,14 @@ const Chat = () => {
   const submitQuery = (query) => {
     if (!query.trim() || isToolInProgress) return;
 
-    // Pre-process default questions to save API quota
-    const isMe = query === 'Who are you and what do you do?';
-    const isProjects = query === 'What are your projects? What are you working on right now?';
-    const isSkills = query === 'What are your technical skills and tech stack?';
-    const isFun = query === 'What do you do for fun? Any crazy stories?';
-    const isContact = query === 'How can I contact you? Give me your links.';
+    // Pre-process default questions to save API quota with robust matching
+    const normalizedQuery = query.toLowerCase().replace(/\s+/g, ' ').trim();
+    
+    const isMe = normalizedQuery.includes('who are you and what do you do');
+    const isProjects = normalizedQuery.includes('what are your projects');
+    const isSkills = normalizedQuery.includes('technical skills and tech stack');
+    const isFun = normalizedQuery.includes('what do you do for fun');
+    const isContact = normalizedQuery.includes('how can i contact you');
 
     if (isMe || isProjects || isSkills || isFun || isContact) {
       let toolName = '';

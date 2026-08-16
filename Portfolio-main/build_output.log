@@ -1,0 +1,36 @@
+
+> manav-bhullar-portfolio@0.1.0 build
+> next build
+
+   ▲ Next.js 15.2.8
+   - Environments: .env.local
+
+   Creating an optimized production build ...
+ ✓ Compiled successfully
+   Skipping linting
+   Checking validity of types ...
+   Collecting page data ...
+   Generating static pages (0/8) ...
+   Generating static pages (2/8) 
+   Generating static pages (4/8) 
+   Generating static pages (6/8) 
+ ✓ Generating static pages (8/8)
+   Finalizing page optimization ...
+   Collecting build traces ...
+
+Route (app)                                 Size  First Load JS
+┌ ○ /                                    4.12 kB         173 kB
+├ ○ /_not-found                            977 B         101 kB
+├ ƒ /api/chat                              139 B         101 kB
+├ ○ /chat                                 107 kB         285 kB
+├ ○ /test                                10.8 kB         159 kB
+└ ○ /test/title                            139 B         101 kB
++ First Load JS shared by all             101 kB
+  ├ chunks/4bd1b696-0dea213c43ee8779.js  53.3 kB
+  ├ chunks/684-70dc5d26b96635ec.js       45.3 kB
+  └ other shared chunks (total)          1.92 kB
+
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+

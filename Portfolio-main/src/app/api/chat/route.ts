@@ -1,5 +1,5 @@
 import { createGoogleGenerativeAI } from '@ai-sdk/google';
-import { streamText } from "ai";
+import { streamText, generateText } from "ai";
 import { SYSTEM_PROMPT } from './prompt';
 import { getProjects } from './tools/getProjects';
 import { getPresentation } from './tools/getPresentation';
@@ -53,7 +53,7 @@ export async function POST(req: Request) {
 
     let ragContext = '';
     if (lastUserMessage) {
-      const userQuery =
+      let userQuery =
         typeof lastUserMessage.content === 'string'
           ? lastUserMessage.content
           : Array.isArray(lastUserMessage.content)
@@ -65,6 +65,40 @@ export async function POST(req: Request) {
 
       if (userQuery.trim()) {
         try {
+          // If there's conversation history, rewrite the query for better RAG retrieval
+          if (messages.length > 1) {
+            const historyText = messages
+              .slice(-6) // Only take the last few messages to save tokens
+              .map((m: { role: string; content: string | any[] }) => `${m.role === 'user' ? 'User' : 'Assistant'}: ${
+                typeof m.content === 'string' ? m.content : '...'
+              }`)
+              .join('\n');
+
+            const rewritePrompt = `Given the following conversation history, rewrite the user's latest query into a standalone search query. 
+If the user says 'How long did it take?', and the history is about Floq, output 'How long did the Floq project take?'.
+Output ONLY the rewritten query, without any quotes or preamble.
+
+Conversation History:
+${historyText}
+
+Latest Query:
+${userQuery}`;
+
+            try {
+              const { text: rewrittenQuery } = await generateText({
+                model: google("gemini-2.5-flash"), // fast flash model
+                prompt: rewritePrompt,
+              });
+              
+              if (rewrittenQuery && rewrittenQuery.trim()) {
+                console.log(`[RAG] Rewrote query: "${userQuery}" -> "${rewrittenQuery.trim()}"`);
+                userQuery = rewrittenQuery.trim();
+              }
+            } catch (rewriteErr) {
+              console.error('[RAG] Query rewrite failed, falling back to original query:', rewriteErr);
+            }
+          }
+
           const retrievalResults = await retrieve(userQuery);
           ragContext = formatContext(retrievalResults);
         } catch (err) {
