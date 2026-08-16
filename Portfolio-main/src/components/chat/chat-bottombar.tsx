@@ -53,7 +53,7 @@ export default function ChatBottombar({
       className="w-full pb-2 md:pb-8"
     >
       <form onSubmit={handleSubmit} className="relative w-full md:px-4">
-        <div className="mx-auto flex items-center rounded-full border border-border bg-background py-2 pr-2 pl-6 transition-colors focus-within:border-[#3FB37F]">
+        <div className="mx-auto flex items-center rounded-full border border-border/50 bg-card py-2 pr-2 pl-6 shadow-[0_4px_14px_rgba(0,0,0,0.05)] transition-all focus-within:border-[#3FB37F] focus-within:shadow-[0_4px_20px_rgba(63,179,127,0.15)]">
           <input
             ref={inputRef}
             type="text"

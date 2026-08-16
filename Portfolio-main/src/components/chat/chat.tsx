@@ -112,6 +112,65 @@ const Chat = () => {
   //@ts-ignore
   const submitQuery = (query) => {
     if (!query.trim() || isToolInProgress) return;
+
+    // Pre-process default questions to save API quota
+    const isMe = query === 'Who are you and what do you do?';
+    const isProjects = query === 'What are your projects? What are you working on right now?';
+    const isSkills = query === 'What are your technical skills and tech stack?';
+    const isFun = query === 'What do you do for fun? Any crazy stories?';
+    const isContact = query === 'How can I contact you? Give me your links.';
+
+    if (isMe || isProjects || isSkills || isFun || isContact) {
+      let toolName = '';
+      let textContent = '';
+      
+      if (isMe) {
+        toolName = 'getPresentation';
+        textContent = "Hey 👋 I'm Manav Bhullar. I build across three domains - full-stack web dev, data analytics, and AI/ML. Here is my background!";
+      } else if (isProjects) {
+        toolName = 'getProjects';
+        textContent = "Here are some of the projects I've been working on! I love building full-stack distributed systems, data pipelines, and RAG applications.";
+      } else if (isSkills) {
+        toolName = 'getSkills';
+        textContent = "I've worked with a wide range of technologies across web development, data engineering, and AI. Here is my tech stack!";
+      } else if (isFun) {
+        toolName = 'getCrazy';
+        textContent = "Outside of coding, I'm really into fitness and reading! But since you asked for a crazy story, let me tell you about how I rate-limited myself out of my own portfolio...";
+      } else if (isContact) {
+        toolName = 'getContact';
+        textContent = "You can find me on GitHub, LinkedIn, or shoot me an email. Let's build something cool together!";
+      }
+
+      const userMessage = {
+        id: Date.now().toString(),
+        role: 'user',
+        content: query,
+      };
+
+      const assistantMessage = {
+        id: (Date.now() + 1).toString(),
+        role: 'assistant',
+        content: textContent,
+        parts: [
+          { type: 'text', text: textContent },
+          {
+            type: 'tool-invocation',
+            toolInvocation: {
+              toolCallId: 'mock_' + Date.now(),
+              toolName: toolName,
+              args: {},
+              state: 'result',
+              result: { success: true },
+            }
+          }
+        ]
+      };
+
+      // @ts-ignore
+      setMessages([...messages, userMessage, assistantMessage]);
+      return;
+    }
+
     setLoadingSubmit(true);
     append({
       role: 'user',
@@ -140,6 +199,12 @@ const Chat = () => {
     setLoadingSubmit(false);
   };
 
+  const handleReset = () => {
+    setMessages([]);
+    setInput('');
+    window.history.replaceState({}, '', '/');
+  };
+
   // Check if this is the initial empty state (no messages)
   const isEmptyState =
     !currentAIMessage && !latestUserMessage && !loadingSubmit;
@@ -150,6 +215,13 @@ const Chat = () => {
   return (
     <div className="relative h-screen overflow-hidden">
       <div className="absolute top-6 right-8 z-51 flex flex-col-reverse items-center justify-center gap-1 md:flex-row">
+        <div
+          onClick={handleReset}
+          title="Home"
+          className="hover:bg-accent cursor-pointer rounded-2xl px-3 py-1.5"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-accent-foreground h-7 w-7"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        </div>
         <WelcomeModal
           trigger={
             <div className=" hover:bg-accent cursor-pointer rounded-2xl px-3 py-1.5">
@@ -220,7 +292,7 @@ const Chat = () => {
                 <ChatLanding submitQuery={submitQuery} />
               </motion.div>
             ) : currentAIMessage ? (
-              <div className="pb-4">
+              <div className="pb-4 pt-12 md:pt-24">
                 <SimplifiedChatView
                   message={currentAIMessage}
                   isLoading={isLoading}
@@ -245,7 +317,7 @@ const Chat = () => {
         </div>
 
         {/* Fixed Bottom Bar */}
-        <div className="sticky bottom-0 rounded-t-[2rem] bg-card px-2 pt-4 shadow-[0_-8px_24px_-12px_rgba(25,25,25,0.1)] md:px-0 md:pb-4">
+        <div className="sticky bottom-0 border-t border-border/40 bg-background/95 px-2 pt-4 backdrop-blur-sm md:px-0 md:pb-4">
           <div className="relative flex flex-col items-center gap-3">
             <HelperBoost submitQuery={submitQuery} setInput={setInput} />
             <ChatBottombar
