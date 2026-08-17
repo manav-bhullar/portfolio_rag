@@ -88,8 +88,8 @@ export default function Home() {
         animate="visible"
         className="relative z-10 w-full max-w-3xl"
       >
-        {/* Organic colored bleed behind the card */}
-        <div className="absolute -inset-4 z-0 rounded-[40%_60%_55%_45%/50%_45%_55%_50%] bg-gradient-to-tr from-[#3FB37F] via-[#E0559C] to-[#F0954A] opacity-80 blur-2xl filter" />
+        {/* Organic colored bleed behind the card - locked M3 expressive dark/rich palette */}
+        <div className="absolute -inset-4 z-0 rounded-[40%_60%_55%_45%/50%_45%_55%_50%] bg-gradient-to-tr from-[#006874] via-[#5C5C95] to-[#B22A5C] opacity-80 blur-3xl filter" />
 
         <div className="shape-blob-hero relative z-10 flex w-full flex-col items-center gap-6 bg-card px-8 py-16 text-center shadow-[0_20px_60px_-15px_rgba(25,25,25,0.12)] sm:px-16">
         <div>
@@ -97,8 +97,11 @@ export default function Home() {
             Let&apos;s build something impactful.
           </p>
           <h1 className="font-display mt-2 text-6xl leading-[0.95] font-black tracking-tight text-foreground sm:text-7xl md:text-8xl">
-            Ask about my work.
+            Manav Bhullar.
           </h1>
+          <p className="mt-4 text-lg font-medium text-muted-foreground sm:text-xl">
+            Full-Stack Software Engineer & Data Analyst.
+          </p>
         </div>
 
         {/* free-form question */}
@@ -145,14 +148,14 @@ export default function Home() {
           className="flex flex-wrap items-center justify-center gap-2"
         >
           {questionConfig.map(({ key, color, icon: Icon }) => (
-            <motion.button
+              <motion.button
               key={key}
               onClick={() => goToChat(questions[key])}
-              whileHover={{ scale: 1.02 }}
+              whileHover={{ scale: 1.04 }}
               whileTap={{ scale: 0.95 }}
-              className="flex items-center gap-2 cursor-pointer rounded-full border border-border bg-card px-4 py-2 text-sm font-semibold text-foreground hover:bg-secondary transition-colors"
+              className="flex items-center gap-2 cursor-pointer rounded-full bg-secondary/80 px-5 py-2.5 text-sm font-bold text-secondary-foreground hover:bg-secondary transition-all shadow-sm hover:shadow-md"
             >
-              <Icon size={16} strokeWidth={2.25} color={color} />
+              <Icon size={18} strokeWidth={2.5} color={color} />
               <span>{key}</span>
             </motion.button>
           ))}
