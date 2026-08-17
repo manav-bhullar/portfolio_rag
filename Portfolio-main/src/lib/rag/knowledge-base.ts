@@ -12,6 +12,10 @@ export interface KnowledgeDocument {
   title: string;
   content: string;
   keywords: string[];
+  tags?: string[];
+  url?: string;
+  date?: string;
+  metadata?: Record<string, unknown>;
 }
 
 export const KNOWLEDGE_BASE: KnowledgeDocument[] = [
