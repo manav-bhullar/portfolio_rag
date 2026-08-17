@@ -123,8 +123,15 @@ const ChatBubbleMessage = React.forwardRef<
       {...props}
     >
       {isLoading ? (
-        <div className="flex items-center space-x-2">
+        <div
+          role="status"
+          aria-live="polite"
+          className="flex items-center gap-3 py-1 text-muted-foreground"
+        >
           <MessageLoading />
+          <span className="text-sm font-medium animate-pulse text-foreground/80">
+            Thinking...
+          </span>
         </div>
       ) : (
         children
