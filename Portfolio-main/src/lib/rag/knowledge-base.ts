@@ -218,17 +218,17 @@ Technical details:
     id: 'project-pip-rag',
     category: 'project',
     title: 'PIP-RAG — Placement Intelligence RAG System',
-    content: `PIP-RAG is a real conversational RAG system Manav built and shipped. Tech stack: FastAPI, Qdrant, Gemini API.
+    content: `PIP-RAG is a real conversational RAG system Manav built and shipped. Tech stack: FastAPI, Pinecone, Gemini API.
 
 Technical details:
-- Grounds LLM responses in retrieved interview questions and company data using Qdrant vector search + Gemini text-embedding-004 embeddings
+- Grounds LLM responses in retrieved interview questions and company data using Pinecone vector search + Gemini gemini-embedding-2 embeddings
 - Indexed 226 companies with metadata-grounded top-6 chunk retrieval and hard CGPA-eligibility filters applied directly at the vector search layer
 - Exposes conversational Q&A, gap-analysis, and eligibility-shortlisting as separate FastAPI endpoints
 - Designed a custom API key rotation layer across 5-6 Gemini keys to scale free-tier throughput to ~7,500 requests/day, bypassing per-key rate limits — instead of one key choking, rotate across several and load-balance requests
 
-Note: This portfolio's own chat system is NOT vector-based RAG — it uses a lightweight in-memory RAG approach because there's much less data. PIP-RAG uses Qdrant because 226 companies' worth of placement data is actually too much for in-memory search.`,
+Note: This portfolio's own chat system is NOT vector-based RAG — it uses a lightweight in-memory RAG approach because there's much less data. PIP-RAG uses Pinecone because 226 companies' worth of placement data is actually too much for in-memory search.`,
     keywords: [
-      'pip-rag', 'rag', 'placement', 'intelligence', 'qdrant', 'vector',
+      'pip-rag', 'rag', 'placement', 'intelligence', 'pinecone', 'vector',
       'embedding', 'gemini', 'fastapi', 'interview', 'companies',
       'cgpa', 'api key rotation', 'rate limits', 'hack', 'throughput',
       'conversational', 'retrieval',

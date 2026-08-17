@@ -147,7 +147,7 @@ export const projectCards: ProjectCardData[] = [
     title: 'PIP-RAG',
     blurb: 'Real vector RAG over placement/interview data.',
     metric: '~7,500 req/day',
-    tags: ['Qdrant', 'Gemini API', 'FastAPI'],
+    tags: ['Pinecone', 'Gemini API', 'FastAPI'],
     icon: FileSearch,
     accent: 'piprag',
   },
