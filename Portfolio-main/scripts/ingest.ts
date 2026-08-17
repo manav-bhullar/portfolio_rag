@@ -199,10 +199,6 @@ export async function runIngestion(): Promise<void> {
         title: doc.title,
         category: doc.category,
         content: doc.content,
-        tags: doc.tags,
-        ...(doc.url ? { url: doc.url } : {}),
-        ...(doc.date ? { date: doc.date } : {}),
-        ...(doc.metadata || {}),
       };
 
       return {

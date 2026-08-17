@@ -15,7 +15,7 @@ import {
   sanitizeMetadata,
   RagCacheData,
 } from '../scripts/ingest';
-import { KNOWLEDGE_BASE, KnowledgeDocument, KnowledgeCategory } from '../src/lib/rag/knowledge-base';
+import { KNOWLEDGE_BASE, KnowledgeDocument } from '../src/lib/rag/knowledge-base';
 
 const CACHE_FILE = path.resolve(process.cwd(), '.rag-cache.json');
 
@@ -342,7 +342,7 @@ async function main() {
     // Test 10: Knowledge Base Dataset Schema Integrity
     // -------------------------------------------------------------------------
     runTest('Test 10: Knowledge Base Structure & Category Integrity', () => {
-      const validCategories: Set<KnowledgeCategory> = new Set([
+      const validCategories: Set<any> = new Set([
         'bio',
         'project',
         'skills',
