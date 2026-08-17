@@ -7,6 +7,7 @@ import {
   ChatBubble,
   ChatBubbleMessage,
 } from '@/components/ui/chat/chat-bubble';
+import MessageLoading from '@/components/ui/chat/message-loading';
 import ChatMessageContent from './chat-message-content';
 import ToolRenderer from './tool-renderer';
 
@@ -53,8 +54,34 @@ export function SimplifiedChatView({
   // Only display the first tool (if any)
   const currentTool = toolInvocations.length > 0 ? [toolInvocations[0]] : [];
 
+  // Active tool invocation in progress (state !== 'result')
+  const activeToolInvocationPart = message.parts?.find(
+    (part) =>
+      part.type === 'tool-invocation' &&
+      part.toolInvocation?.state !== 'result'
+  );
+
   const hasTextContent = message.content.trim().length > 0;
   const hasTools = currentTool.length > 0;
+  const isToolInProgress = !!activeToolInvocationPart;
+  const showLoading = isToolInProgress || (isLoading && !hasTools && !hasTextContent);
+
+  const activeToolName =
+    activeToolInvocationPart?.type === 'tool-invocation'
+      ? activeToolInvocationPart.toolInvocation?.toolName
+      : undefined;
+
+  const TOOL_LABELS: Record<string, string> = {
+    getProjects: 'Loading projects...',
+    getPresentation: 'Loading presentation...',
+    getResume: 'Loading resume...',
+    getContact: 'Loading contact information...',
+    getSkills: 'Loading skills...',
+    getInterests: 'Loading interests...',
+    getCrazy: 'Loading something crazy...',
+  };
+
+  const loadingText = activeToolName ? (TOOL_LABELS[activeToolName] || `Executing ${activeToolName}...`) : 'Thinking...';
 
   return (
     <motion.div {...MOTION_CONFIG} className="flex h-full w-full flex-col px-4">
@@ -85,6 +112,20 @@ export function SimplifiedChatView({
                 />
               </ChatBubbleMessage>
             </ChatBubble>
+          </div>
+        )}
+
+        {/* Visible "Thinking..." / Tool Action Loading Indicator */}
+        {showLoading && (
+          <div
+            role="status"
+            aria-live="polite"
+            className="flex items-center gap-3 py-3 text-muted-foreground"
+          >
+            <MessageLoading />
+            <span className="text-sm font-medium animate-pulse text-foreground/80">
+              {loadingText}
+            </span>
           </div>
         )}
 

@@ -1,5 +1,6 @@
 import { createGoogleGenerativeAI } from '@ai-sdk/google';
 import { streamText, generateText } from "ai";
+import { checkRateLimit } from '@/lib/ratelimit';
 import { SYSTEM_PROMPT } from './prompt';
 import { getProjects } from './tools/getProjects';
 import { getPresentation } from './tools/getPresentation';
@@ -40,6 +41,32 @@ function errorHandler(error: unknown) {
 
 export async function POST(req: Request) {
   try {
+    // 1. Rate Limit Check (Early Guard)
+    const rateLimit = await checkRateLimit(req);
+    if (!rateLimit.success) {
+      const retryAfter =
+        rateLimit.retryAfter ??
+        Math.max(1, Math.ceil((rateLimit.reset - Date.now()) / 1000));
+
+      return new Response(
+        JSON.stringify({
+          error: "Rate limit exceeded. Please wait before sending another message.",
+          message: `Rate limit exceeded. You can send up to ${rateLimit.limit} messages per minute. Please try again in ${retryAfter} seconds.`,
+          retryAfter,
+        }),
+        {
+          status: 429,
+          headers: {
+            'Content-Type': 'application/json',
+            'Retry-After': String(retryAfter),
+            'X-RateLimit-Limit': String(rateLimit.limit),
+            'X-RateLimit-Remaining': String(rateLimit.remaining),
+            'X-RateLimit-Reset': String(rateLimit.reset),
+          },
+        }
+      );
+    }
+
     const { messages } = await req.json();
 
     const apiKey = getRandomApiKey();
@@ -141,6 +168,11 @@ ${userQuery}`;
 
     return result.toDataStreamResponse({
       getErrorMessage: errorHandler,
+      headers: {
+        'X-RateLimit-Limit': String(rateLimit.limit),
+        'X-RateLimit-Remaining': String(rateLimit.remaining),
+        'X-RateLimit-Reset': String(rateLimit.reset),
+      },
     });
   } catch (err) {
     console.error("Global error:", err);

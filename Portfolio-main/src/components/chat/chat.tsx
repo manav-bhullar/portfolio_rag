@@ -4,6 +4,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { useSearchParams, useRouter } from 'next/navigation';
 import React, { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
+import posthog from 'posthog-js';
 
 // Component imports
 import ChatBottombar from '@/components/chat/chat-bottombar';
@@ -169,12 +170,34 @@ const Chat = () => {
         ]
       };
 
-      // @ts-ignore
-      setMessages([...messages, userMessage, assistantMessage]);
+      setLoadingSubmit(true);
+      
+      // Artificial delay to show "Thinking..." UX
+      setTimeout(() => {
+        // @ts-ignore
+        setMessages([...messages, userMessage, assistantMessage]);
+        setLoadingSubmit(false);
+      }, 500);
+
+      // Track chat message sent event in PostHog
+      if (typeof window !== 'undefined') {
+        posthog.capture('chat_message_sent', {
+          query: query.trim(),
+        });
+      }
+
       return;
     }
 
     setLoadingSubmit(true);
+
+    // Track chat message sent event in PostHog
+    if (typeof window !== 'undefined') {
+      posthog.capture('chat_message_sent', {
+        query: query.trim(),
+      });
+    }
+
     append({
       role: 'user',
       content: query,

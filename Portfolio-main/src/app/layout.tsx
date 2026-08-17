@@ -5,6 +5,7 @@ import localFont from "next/font/local";
 import { cn } from "@/lib/utils";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
+import { PostHogProvider } from '@/components/posthog-provider';
 import "./globals.css";
 
 // Inter for body text
@@ -92,17 +93,19 @@ export default function RootLayout({
           googleSansFlex.variable,
         )}
       >
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="light"
-          enableSystem={false}
-        >
-          <main className="flex min-h-screen flex-col">
-            {children}
-          </main>
-          <Toaster />
-        </ThemeProvider>
-        <Analytics />
+        <PostHogProvider>
+          <ThemeProvider
+            attribute="class"
+            defaultTheme="light"
+            enableSystem={false}
+          >
+            <main className="flex min-h-screen flex-col">
+              {children}
+            </main>
+            <Toaster />
+          </ThemeProvider>
+          <Analytics />
+        </PostHogProvider>
       </body>
     </html>
   );
