@@ -1,7 +1,7 @@
 /**
  * Embeddings module for the Portfolio RAG system (V3: Enterprise Scale).
  *
- * Uses Google's text-embedding-004 model via @ai-sdk/google.
+ * Uses Google's gemini-embedding-2 model via @ai-sdk/google.
  */
 
 import { embed } from 'ai';

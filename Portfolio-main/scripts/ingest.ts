@@ -160,12 +160,12 @@ export async function runIngestion(): Promise<void> {
 
   // 5. Generate embeddings and upsert to Pinecone
   try {
-    console.log('[RAG Ingestion] Generating vector embeddings using Gemini text-embedding-004...');
+    console.log('[RAG Ingestion] Generating vector embeddings using Gemini gemini-embedding-2...');
     const google = createGoogleGenerativeAI({ apiKey: geminiApiKey });
     const textsToEmbed = KNOWLEDGE_BASE.map((doc) => `${doc.title}\n\n${doc.content}`);
 
     const { embeddings } = await embedMany({
-      model: google.textEmbeddingModel('text-embedding-004'),
+      model: google.textEmbeddingModel('gemini-embedding-2'),
       values: textsToEmbed,
     });
 
@@ -178,7 +178,7 @@ export async function runIngestion(): Promise<void> {
       console.log(`[RAG Ingestion] Index '${INDEX_NAME}' does not exist. Creating serverless index...`);
       await pc.createIndex({
         name: INDEX_NAME,
-        dimension: 768,
+        dimension: 3072,
         metric: 'cosine',
         spec: {
           serverless: {
@@ -199,6 +199,10 @@ export async function runIngestion(): Promise<void> {
         title: doc.title,
         category: doc.category,
         content: doc.content,
+        tags: doc.tags,
+        ...(doc.url ? { url: doc.url } : {}),
+        ...(doc.date ? { date: doc.date } : {}),
+        ...(doc.metadata || {}),
       };
 
       return {
