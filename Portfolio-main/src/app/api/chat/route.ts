@@ -11,7 +11,7 @@ import { getInterests } from './tools/getInterests';
 import { getCrazy } from './tools/getCrazy';
 import { retrieve, formatContext } from '@/lib/rag/retriever';
 
-export const maxDuration = 30;
+export const maxDuration = 60;
 
 function getRandomApiKey() {
   const keys = Object.keys(process.env)
