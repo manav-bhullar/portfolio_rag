@@ -24,8 +24,8 @@ const PROJECT_CONTENT = [
   {
     title: 'PIP-RAG',
     description:
-      "A conversational RAG system over Thapar's placement data - real vector-based retrieval, not context-stuffing. Grounds LLM responses in retrieved interview questions and company data using Qdrant vector search and Gemini text-embedding-004 embeddings, with 226 companies indexed and metadata-grounded top-6 chunk retrieval plus hard CGPA-eligibility filters applied directly at the vector search layer. Exposes conversational Q&A, gap-analysis, and eligibility-shortlisting as separate FastAPI endpoints. Also built a custom API key rotation layer across 5-6 Gemini keys to scale free-tier throughput to ~7,500 requests/day, bypassing per-key rate limits.",
-    techStack: ['FastAPI', 'Qdrant', 'Gemini API', 'RAG'],
+      "A conversational RAG system over Thapar's placement data - real vector-based retrieval, not context-stuffing. Grounds LLM responses in retrieved interview questions and company data using Pinecone vector search and Gemini gemini-embedding-2 embeddings, with 226 companies indexed and metadata-grounded top-6 chunk retrieval plus hard CGPA-eligibility filters applied directly at the vector search layer. Exposes conversational Q&A, gap-analysis, and eligibility-shortlisting as separate FastAPI endpoints. Also built a custom API key rotation layer across 5-6 Gemini keys to scale free-tier throughput to ~7,500 requests/day, bypassing per-key rate limits.",
+    techStack: ['FastAPI', 'Pinecone', 'Gemini API', 'RAG'],
     date: '2026',
     links: [] as { name: string; url: string }[],
   },

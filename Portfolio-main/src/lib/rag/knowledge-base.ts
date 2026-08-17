@@ -304,7 +304,7 @@ Languages: JavaScript, Python, C++, SQL, R
 
 Web & Backend: React.js, Node.js, Express.js, Socket.io, FastAPI, HTML, CSS
 
-AI/ML: LiteLLM, HuggingFace Transformers, Gemini API, Qdrant (Vector DB), RAG, NLI/Embeddings, TensorFlow, scikit-learn, GitHub Copilot
+AI/ML: LiteLLM, HuggingFace Transformers, Gemini API, Pinecone (Vector DB), RAG, NLI/Embeddings, TensorFlow, scikit-learn, GitHub Copilot
 
 Databases: PostgreSQL, MongoDB, Redis, Prisma ORM, DuckDB, Google BigQuery
 
