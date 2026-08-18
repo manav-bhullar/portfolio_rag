@@ -9,7 +9,7 @@ import {
 } from '@/components/ui/chat/chat-bubble';
 import MessageLoading from '@/components/ui/chat/message-loading';
 import ChatMessageContent from './chat-message-content';
-import ToolRenderer from './tool-renderer';
+import ToolRenderer, { ToolInvocationItem } from './tool-renderer';
 
 interface SimplifiedChatViewProps {
   message: Message;
@@ -39,17 +39,18 @@ export function SimplifiedChatView({
   if (message.role !== 'assistant') return null;
 
   // Extract tool invocations that are in "result" state
-  const toolInvocations =
-    message.parts
-      ?.filter(
-        (part) =>
-          part.type === 'tool-invocation' &&
-          part.toolInvocation?.state === 'result'
-      )
-      .map((part) =>
-        part.type === 'tool-invocation' ? part.toolInvocation : null
-      )
-      .filter(Boolean) || [];
+  const toolInvocations: ToolInvocationItem[] = [];
+  if (message.parts) {
+    for (const part of message.parts) {
+      if (
+        part.type === 'tool-invocation' &&
+        part.toolInvocation &&
+        part.toolInvocation.state === 'result'
+      ) {
+        toolInvocations.push(part.toolInvocation as ToolInvocationItem);
+      }
+    }
+  }
 
   // Only display the first tool (if any)
   const currentTool = toolInvocations.length > 0 ? [toolInvocations[0]] : [];
