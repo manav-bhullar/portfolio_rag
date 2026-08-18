@@ -96,7 +96,7 @@ export async function POST(req: Request) {
           if (messages.length > 1) {
             const historyText = messages
               .slice(-6) // Only take the last few messages to save tokens
-              .map((m: { role: string; content: string | any[] }) => `${m.role === 'user' ? 'User' : 'Assistant'}: ${
+              .map((m: { role: string; content: unknown }) => `${m.role === 'user' ? 'User' : 'Assistant'}: ${
                 typeof m.content === 'string' ? m.content : '...'
               }`)
               .join('\n');

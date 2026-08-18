@@ -140,7 +140,6 @@ const AnimatedChevron = () => {
 
 export default function HelperBoost({
   submitQuery,
-  setInput,
 }: HelperBoostProps) {
   const [isVisible, setIsVisible] = useState(true);
   const [open, setOpen] = useState(false);

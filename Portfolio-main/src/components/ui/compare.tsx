@@ -1,5 +1,6 @@
 "use client";
 import React, { useState, useEffect, useRef, useCallback } from "react";
+import Image from "next/image";
 import { SparklesCore } from "@/components/ui/sparkles";
 import { AnimatePresence, motion } from "framer-motion";
 import { cn } from "@/lib/utils";
@@ -34,8 +35,6 @@ export const Compare = ({
 
   const sliderRef = useRef<HTMLDivElement>(null);
 
-  const [isMouseOver, setIsMouseOver] = useState(false);
-
   const autoplayRef = useRef<NodeJS.Timeout | null>(null);
 
   const startAutoplay = useCallback(() => {
@@ -68,12 +67,10 @@ export const Compare = ({
   }, [startAutoplay, stopAutoplay]);
 
   function mouseEnterHandler() {
-    setIsMouseOver(true);
     stopAutoplay();
   }
 
   function mouseLeaveHandler() {
-    setIsMouseOver(false);
     if (slideMode === "hover") {
       setSliderXPercent(initialSliderPercentage);
     }
@@ -83,14 +80,11 @@ export const Compare = ({
     startAutoplay();
   }
 
-  const handleStart = useCallback(
-    (clientX: number) => {
-      if (slideMode === "drag") {
-        setIsDragging(true);
-      }
-    },
-    [slideMode]
-  );
+  const handleStart = useCallback(() => {
+    if (slideMode === "drag") {
+      setIsDragging(true);
+    }
+  }, [slideMode]);
 
   const handleEnd = useCallback(() => {
     if (slideMode === "drag") {
@@ -114,7 +108,7 @@ export const Compare = ({
   );
 
   const handleMouseDown = useCallback(
-    (e: React.MouseEvent) => handleStart(e.clientX),
+    () => handleStart(),
     [handleStart]
   );
   const handleMouseUp = useCallback(() => handleEnd(), [handleEnd]);
@@ -124,9 +118,9 @@ export const Compare = ({
   );
 
   const handleTouchStart = useCallback(
-    (e: React.TouchEvent) => {
+    () => {
       if (!autoplay) {
-        handleStart(e.touches[0].clientX);
+        handleStart();
       }
     },
     [handleStart, autoplay]
@@ -206,11 +200,13 @@ export const Compare = ({
               }}
               transition={{ duration: 0 }}
             >
-              <img
+              <Image
                 alt="first image"
                 src={firstImage}
+                fill
+                unoptimized
                 className={cn(
-                  "absolute inset-0  z-20 rounded-2xl shrink-0 w-full h-full select-none",
+                  "absolute inset-0 z-20 rounded-2xl shrink-0 w-full h-full select-none object-cover",
                   firstImageClassName
                 )}
                 draggable={false}

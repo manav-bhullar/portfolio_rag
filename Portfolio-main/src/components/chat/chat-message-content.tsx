@@ -9,7 +9,7 @@ import {
   CollapsibleTrigger,
 } from '@/components/ui/collapsible';
 import { ChevronDown, ChevronUp } from 'lucide-react';
-import { useState } from 'react';
+import React, { useState } from 'react';
 
 export type ChatMessageContentProps = {
   message: Message;
@@ -122,8 +122,12 @@ export default function ChatMessageContent({
                       <ol className="my-4 list-decimal pl-6">{children}</ol>
                     ),
                     li: ({ children }) => <li className="my-1">{children}</li>,
-                    code: ({ node, inline, className, children, ...props }: any) => {
-                      const match = /language-(\w+)/.exec(className || '');
+                    code: ({
+                      inline,
+                      className,
+                      children,
+                      ...props
+                    }: React.ComponentPropsWithoutRef<'code'> & { inline?: boolean }) => {
                       const text = String(children).replace(/\n$/, '');
                       
                       // Check if this is our mock citation

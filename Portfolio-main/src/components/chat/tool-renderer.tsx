@@ -7,14 +7,21 @@ import Skills from '../skills';
 import Interests from '../interests';
 import Crazy from '../crazy';
 
+export interface ToolInvocationItem {
+  toolCallId: string;
+  toolName: string;
+  args?: unknown;
+  result?: unknown;
+  state?: string;
+}
+
 interface ToolRendererProps {
-  toolInvocations: any[];
-  messageId: string;
+  toolInvocations: ToolInvocationItem[];
+  messageId?: string;
 }
 
 export default function ToolRenderer({
   toolInvocations,
-  messageId,
 }: ToolRendererProps) {
   return (
     <div className="w-full transition-all duration-300">

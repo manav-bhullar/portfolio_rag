@@ -1,5 +1,4 @@
 import React, { forwardRef } from "react";
-import { Button } from "./button";
 import {
   Tooltip,
   TooltipContent,
@@ -20,8 +19,10 @@ const ButtonWithTooltip = forwardRef<HTMLButtonElement, ButtonWithTooltipProps>(
         <Tooltip delayDuration={0}>
           <TooltipTrigger asChild>
             {React.isValidElement(children) &&
-            // @ts-ignore 
-              React.cloneElement(children, { ref: ref as React.Ref<HTMLElement> })}
+              React.cloneElement(
+                children as React.ReactElement<{ ref?: React.Ref<HTMLButtonElement> }>,
+                { ref }
+              )}
           </TooltipTrigger>
           <TooltipContent side={side}>
             <div>{toolTipText}</div>

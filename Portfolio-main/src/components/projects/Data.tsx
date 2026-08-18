@@ -1,6 +1,6 @@
 import { ChevronRight, Link } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
-import { Car, MonitorCheck, FileSearch, BarChart3, MapPinned, Bot } from 'lucide-react';
+import { Car, MonitorCheck, BarChart3, MapPinned, Bot } from 'lucide-react';
 import type { ProjectCardData } from './ProjectCard';
 import FloqSandbox from './FloqSandbox';
 import ScalesSandbox from './ScalesSandbox';

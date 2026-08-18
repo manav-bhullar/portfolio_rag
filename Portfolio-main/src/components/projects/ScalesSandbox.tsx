@@ -1,8 +1,9 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { CheckCircle2, Search, XCircle, ArrowRight, ShieldCheck } from 'lucide-react';
+import { CheckCircle2, ShieldCheck } from 'lucide-react';
+
 
 export default function ScalesSandbox() {
   const [step, setStep] = useState(0);
@@ -58,7 +59,7 @@ export default function ScalesSandbox() {
               {/* Step specifics */}
               {i === 0 && step > 0 && (
                 <div className="mt-2 text-xs bg-secondary p-2 rounded text-foreground">
-                  Extracted: <span className="font-mono text-[#F0954A]">"mitochondria produces energy"</span>
+                  Extracted: <span className="font-mono text-[#F0954A]">&quot;mitochondria produces energy&quot;</span>
                 </div>
               )}
               {i === 1 && step > 1 && (
