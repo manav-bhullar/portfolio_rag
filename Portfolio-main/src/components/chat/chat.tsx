@@ -1,3 +1,4 @@
+import { trackChatQuery } from '@/lib/analytics-tracker';
 'use client';
 import { useChat } from '@ai-sdk/react';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -181,9 +182,7 @@ const Chat = () => {
 
       // Track chat message sent event in PostHog
       if (typeof window !== 'undefined') {
-        posthog.capture('chat_message_sent', {
-          query: query.trim(),
-        });
+        trackChatQuery(query);
       }
 
       return;
@@ -193,9 +192,7 @@ const Chat = () => {
 
     // Track chat message sent event in PostHog
     if (typeof window !== 'undefined') {
-      posthog.capture('chat_message_sent', {
-        query: query.trim(),
-      });
+      trackChatQuery(query);
     }
 
     append({
