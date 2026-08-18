@@ -64,15 +64,8 @@ export default function Home() {
         </defs>
       </svg>
 
-      {/* GitHub & Analytics buttons */}
+      {/* Top right GitHub button */}
       <div className="absolute top-6 right-8 z-20 flex items-center gap-4">
-        <button
-          onClick={() => router.push('/analytics')}
-          className="flex items-center gap-2 rounded-full border bg-background/50 backdrop-blur-sm px-4 py-1.5 text-sm font-semibold text-foreground hover:bg-secondary transition-colors"
-        >
-          <BarChart3 className="h-4 w-4 text-[#3E8EDE]" />
-          <span>Analytics</span>
-        </button>
         <div className="pt-1">
           <GitHubButton
             href="https://github.com/manav-bhullar"
