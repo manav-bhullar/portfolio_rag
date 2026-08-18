@@ -115,6 +115,17 @@ const Chat = () => {
   const submitQuery = useCallback((query: string) => {
     if (!query.trim() || isToolInProgress) return;
 
+    // Keep URL in sync with latest active query
+    if (typeof window !== 'undefined') {
+      try {
+        const url = new URL(window.location.href);
+        url.searchParams.set('query', query.trim());
+        window.history.replaceState(null, '', url.pathname + url.search);
+      } catch (e) {
+        console.error('Failed to update URL search params:', e);
+      }
+    }
+
     // Pre-process default questions to save API quota with robust matching
     const normalizedQuery = query.toLowerCase().replace(/\s+/g, ' ').trim();
     
