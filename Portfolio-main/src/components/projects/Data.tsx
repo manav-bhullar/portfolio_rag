@@ -1,7 +1,9 @@
 import { ChevronRight, Link } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
-import { Car, MonitorCheck, FileSearch, BarChart3, MapPinned, Bot } from 'lucide-react';
+import { Car, MonitorCheck, BarChart3, MapPinned, Bot } from 'lucide-react';
 import type { ProjectCardData } from './ProjectCard';
+import FloqSandbox from './FloqSandbox';
+import ScalesSandbox from './ScalesSandbox';
 
 // Full detail content shown when a card is expanded
 const PROJECT_CONTENT = [
@@ -74,6 +76,9 @@ export const ProjectContent = ({ project }: { project: ProjectProps }) => {
           <p className="text-foreground leading-relaxed">
             {projectData.description}
           </p>
+          
+          {projectData.title === 'Floq' && <FloqSandbox />}
+          {projectData.title === 'SCALES v3.0' && <ScalesSandbox />}
 
           <div className="pt-2">
             <h3 className="mb-3 text-xs font-bold tracking-wide text-muted-foreground uppercase">

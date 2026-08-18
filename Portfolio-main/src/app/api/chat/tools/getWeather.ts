@@ -12,8 +12,8 @@ export const getWeather = tool({
     const weatherOptions = ['sunny', 'cloudy', 'rainy', 'snowy', 'windy'];
     // fake wait for weather data
     await new Promise((resolve) => setTimeout(resolve, 3000));
-    return weatherOptions[
-      Math.floor(Math.random() * weatherOptions.length)
-    ];
+    return `The weather in ${city} is ${
+      weatherOptions[Math.floor(Math.random() * weatherOptions.length)]
+    }`;
   },
 });

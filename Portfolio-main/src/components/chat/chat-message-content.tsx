@@ -9,7 +9,7 @@ import {
   CollapsibleTrigger,
 } from '@/components/ui/collapsible';
 import { ChevronDown, ChevronUp } from 'lucide-react';
-import { useState } from 'react';
+import React, { useState } from 'react';
 
 export type ChatMessageContentProps = {
   message: Message;
@@ -79,8 +79,27 @@ export default function ChatMessageContent({
     return message.parts?.map((part, partIndex) => {
       if (part.type !== 'text' || !part.text) return null;
 
+      let processedText = part.text;
+      let followUps: string[] = [];
+      
+      // Extract follow-up questions
+      const followUpMatch = processedText.match(/FOLLOW_UP_QUESTIONS:[\s\S]*/);
+      if (followUpMatch) {
+        const followUpBlock = followUpMatch[0];
+        processedText = processedText.replace(followUpBlock, '').trim();
+        
+        const items = followUpBlock.match(/- (.*)/g);
+        if (items) {
+          followUps = items.map(i => i.replace(/^- \[?/, '').replace(/\]?$/, '').trim());
+        }
+      }
+
+      // Convert citations [citation: source_id] to something we can render
+      // We can just use a span with a specific class for now
+      processedText = processedText.replace(/\[citation:\s*([^\]]+)\]/g, ' `[$1]` ');
+
       // Split content by code block markers
-      const contentParts = part.text.split('```');
+      const contentParts = processedText.split('```');
 
       return (
         <div key={partIndex} className="w-full space-y-4">
@@ -103,6 +122,29 @@ export default function ChatMessageContent({
                       <ol className="my-4 list-decimal pl-6">{children}</ol>
                     ),
                     li: ({ children }) => <li className="my-1">{children}</li>,
+                    code: ({
+                      inline,
+                      className,
+                      children,
+                      ...props
+                    }: React.ComponentPropsWithoutRef<'code'> & { inline?: boolean }) => {
+                      const text = String(children).replace(/\n$/, '');
+                      
+                      // Check if this is our mock citation
+                      if (inline && text.startsWith('[') && text.endsWith(']')) {
+                        const sourceId = text.slice(1, -1);
+                        return (
+                          <span 
+                            className="inline-flex cursor-help items-center rounded-full bg-[#3FB37F]/10 px-2.5 py-0.5 text-xs font-semibold text-[#3FB37F] transition-colors hover:bg-[#3FB37F]/20"
+                            title={`Source: ${sourceId}`}
+                          >
+                            {sourceId}
+                          </span>
+                        );
+                      }
+                      
+                      return <code className={className} {...props}>{children}</code>;
+                    },
                     a: ({ href, children }) => (
                       <a
                         href={href}
@@ -122,6 +164,29 @@ export default function ChatMessageContent({
               // Code block content
               <CodeBlock key={`code-${i}`} content={content} />
             )
+          )}
+          
+          {/* Render follow-up questions at the end of the text part */}
+          {followUps.length > 0 && (
+            <div className="mt-4 flex flex-col gap-2 border-t pt-4">
+              <span className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">Suggested Follow-ups</span>
+              <div className="flex flex-wrap gap-2">
+                {followUps.map((q, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => {
+                      // We need to trigger a chat submission here
+                      // But since submitQuery isn't passed down to ChatMessageContent easily,
+                      // we can dispatch a custom event that chat.tsx can listen for
+                      window.dispatchEvent(new CustomEvent('chat:submit', { detail: q }));
+                    }}
+                    className="rounded-full border bg-secondary/50 px-3 py-1.5 text-left text-sm text-foreground transition-colors hover:bg-secondary"
+                  >
+                    {q}
+                  </button>
+                ))}
+              </div>
+            </div>
           )}
         </div>
       );

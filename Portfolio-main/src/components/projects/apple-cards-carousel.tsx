@@ -10,6 +10,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import Image, { ImageProps } from 'next/image';
 import React, {
   createContext,
+  useCallback,
   useContext,
   useEffect,
   useRef,
@@ -186,6 +187,11 @@ export const Card = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const { onCardClose, currentIndex } = useContext(CarouselContext);
 
+  const handleClose = useCallback(() => {
+    setOpen(false);
+    onCardClose(index);
+  }, [index, onCardClose]);
+
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
       if (event.key === 'Escape') {
@@ -201,25 +207,19 @@ export const Card = ({
 
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [open]);
+  }, [open, handleClose]);
 
-  //@ts-ignore
   useOutsideClick(containerRef, () => handleClose());
 
   const handleOpen = () => {
     setOpen(true);
   };
 
-  const handleClose = () => {
-    setOpen(false);
-    onCardClose(index);
-  };
-
   return (
     <>
       <AnimatePresence>
         {open && (
-          <div className="fixed inset-0 z-52 h-screen overflow-auto">
+          <div className="fixed inset-0 z-52 h-[100dvh] overflow-auto">
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}

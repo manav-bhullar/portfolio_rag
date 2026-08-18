@@ -2,7 +2,7 @@
 
 import WelcomeModal from '@/components/welcome-modal';
 import { motion } from 'framer-motion';
-import { ArrowRight, Search, Laugh, BriefcaseBusiness, Layers, PartyPopper, UserRoundSearch } from 'lucide-react';
+import { ArrowRight, Search, Laugh, BriefcaseBusiness, Layers, PartyPopper, UserRoundSearch, BarChart3 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useRef, useState } from 'react';
 import GitHubButton from 'react-github-btn';
@@ -64,17 +64,19 @@ export default function Home() {
         </defs>
       </svg>
 
-      {/* GitHub button */}
-      <div className="absolute top-6 right-8 z-20">
-        <GitHubButton
-          href="https://github.com/manav-bhullar"
-          data-color-scheme="no-preference: light; light: light; dark: light_high_contrast;"
-          data-size="large"
-          data-show-count="true"
-          aria-label="Visit manav-bhullar on GitHub"
-        >
-          Star
-        </GitHubButton>
+      {/* Top right GitHub button */}
+      <div className="absolute top-6 right-8 z-20 flex items-center gap-4">
+        <div className="pt-1">
+          <GitHubButton
+            href="https://github.com/manav-bhullar"
+            data-color-scheme="no-preference: light; light: light; dark: light_high_contrast;"
+            data-size="large"
+            data-show-count="true"
+            aria-label="Visit manav-bhullar on GitHub"
+          >
+            Star
+          </GitHubButton>
+        </div>
       </div>
 
       <div className="absolute top-6 left-8 z-20">
@@ -124,6 +126,7 @@ export default function Home() {
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
+              aria-label="Ask about my computer engineering work"
               placeholder="Ask me about my computer engineering work..."
               className="w-full border-none bg-transparent py-1 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none"
             />

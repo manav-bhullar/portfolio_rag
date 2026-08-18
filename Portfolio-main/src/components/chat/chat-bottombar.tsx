@@ -60,6 +60,7 @@ export default function ChatBottombar({
             value={input}
             onChange={handleInputChange}
             onKeyDown={handleKeyPress}
+            aria-label="Ask me anything"
             placeholder={
               isToolInProgress ? 'Tool is in progress...' : 'Ask me anything'
             }
@@ -69,6 +70,7 @@ export default function ChatBottombar({
 
           <button
             type="submit"
+            aria-label="Send message"
             disabled={isLoading || !input.trim() || isToolInProgress}
             className="flex items-center justify-center rounded-full bg-foreground p-2 text-primary-foreground disabled:opacity-50"
             onClick={(e) => {

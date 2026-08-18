@@ -140,7 +140,6 @@ const AnimatedChevron = () => {
 
 export default function HelperBoost({
   submitQuery,
-  setInput,
 }: HelperBoostProps) {
   const [isVisible, setIsVisible] = useState(true);
   const [open, setOpen] = useState(false);
@@ -176,6 +175,8 @@ export default function HelperBoost({
           >
             <button
               onClick={toggleVisibility}
+              aria-expanded={isVisible}
+              aria-label={isVisible ? 'Hide quick questions' : 'Show quick questions'}
               className="flex items-center gap-1 px-3 py-1 text-xs text-muted-foreground transition-colors hover:text-foreground"
             >
               {isVisible ? (

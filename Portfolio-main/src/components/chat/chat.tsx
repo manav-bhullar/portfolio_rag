@@ -1,8 +1,9 @@
 'use client';
-import { useChat } from '@ai-sdk/react';
+import { trackChatQuery } from '@/lib/analytics-tracker';
+import { useChat, type Message } from '@ai-sdk/react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useSearchParams, useRouter } from 'next/navigation';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import posthog from 'posthog-js';
 
@@ -111,8 +112,7 @@ const Chat = () => {
       )
   );
 
-  //@ts-ignore
-  const submitQuery = (query) => {
+  const submitQuery = useCallback((query: string) => {
     if (!query.trim() || isToolInProgress) return;
 
     // Pre-process default questions to save API quota with robust matching
@@ -174,16 +174,13 @@ const Chat = () => {
       
       // Artificial delay to show "Thinking..." UX
       setTimeout(() => {
-        // @ts-ignore
-        setMessages([...messages, userMessage, assistantMessage]);
+        setMessages([...messages, userMessage as unknown as Message, assistantMessage as unknown as Message]);
         setLoadingSubmit(false);
       }, 500);
 
       // Track chat message sent event in PostHog
       if (typeof window !== 'undefined') {
-        posthog.capture('chat_message_sent', {
-          query: query.trim(),
-        });
+        trackChatQuery(query);
       }
 
       return;
@@ -193,16 +190,14 @@ const Chat = () => {
 
     // Track chat message sent event in PostHog
     if (typeof window !== 'undefined') {
-      posthog.capture('chat_message_sent', {
-        query: query.trim(),
-      });
+      trackChatQuery(query);
     }
 
     append({
       role: 'user',
       content: query,
     });
-  };
+  }, [isToolInProgress, messages, setMessages, append]);
 
   useEffect(() => {
     if (initialQuery && !autoSubmitted) {
@@ -210,10 +205,20 @@ const Chat = () => {
       setInput('');
       submitQuery(initialQuery);
     }
-  }, [initialQuery, autoSubmitted]);
+  }, [initialQuery, autoSubmitted, submitQuery, setInput]);
 
-  //@ts-ignore
-  const onSubmit = (e) => {
+  useEffect(() => {
+    const handleChatSubmit = (e: Event) => {
+      const customEvent = e as CustomEvent<string>;
+      if (customEvent.detail) {
+        submitQuery(customEvent.detail);
+      }
+    };
+    window.addEventListener('chat:submit', handleChatSubmit);
+    return () => window.removeEventListener('chat:submit', handleChatSubmit);
+  }, [submitQuery]);
+
+  const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!input.trim() || isToolInProgress) return;
     submitQuery(input);

@@ -111,19 +111,24 @@ export async function retrieve(
 
   // Score all retrieved documents
   const scored: RetrievalResult[] = queryResponse.matches.map((match) => {
-    const metadata = match.metadata as any || {};
+    const metadata = (match.metadata ?? {}) as Record<string, unknown>;
     
     // Pinecone stores arrays natively, but just in case it's a string
-    const keywords = Array.isArray(metadata.keywords) 
-      ? metadata.keywords 
-      : (typeof metadata.keywords === 'string' ? JSON.parse(metadata.keywords) : []);
+    const rawKeywords = metadata.keywords;
+    const keywords: string[] = Array.isArray(rawKeywords)
+      ? (rawKeywords as string[])
+      : typeof rawKeywords === 'string'
+        ? (JSON.parse(rawKeywords) as string[])
+        : [];
 
     const doc: KnowledgeDocument = {
       id: match.id,
-      title: metadata.title || 'Untitled',
-      content: metadata.content || '',
+      title: typeof metadata.title === 'string' ? metadata.title : 'Untitled',
+      content: typeof metadata.content === 'string' ? metadata.content : '',
       keywords: keywords,
-      category: metadata.category || 'general',
+      category: (typeof metadata.category === 'string'
+        ? metadata.category
+        : 'background') as KnowledgeDocument['category'],
     };
 
     const vectorScore = match.score || 0;
@@ -167,7 +172,7 @@ export function formatContext(results: RetrievalResult[]): string {
   }
 
   const sections = results.map((r, i) => {
-    return `--- CONTEXT DOCUMENT ${i + 1}: ${r.document.title} (relevance: ${(r.score * 100).toFixed(0)}%) ---
+    return `--- CONTEXT DOCUMENT ${i + 1}: ${r.document.title} (relevance: ${(r.score * 100).toFixed(0)}%, id: ${r.document.id}) ---
 ${r.document.content}
 --- END DOCUMENT ${i + 1} ---`;
   });
