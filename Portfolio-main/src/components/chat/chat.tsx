@@ -212,6 +212,17 @@ const Chat = () => {
     }
   }, [initialQuery, autoSubmitted]);
 
+  useEffect(() => {
+    const handleChatSubmit = (e: Event) => {
+      const customEvent = e as CustomEvent<string>;
+      if (customEvent.detail) {
+        submitQuery(customEvent.detail);
+      }
+    };
+    window.addEventListener('chat:submit', handleChatSubmit);
+    return () => window.removeEventListener('chat:submit', handleChatSubmit);
+  }, [messages, isToolInProgress]);
+
   //@ts-ignore
   const onSubmit = (e) => {
     e.preventDefault();

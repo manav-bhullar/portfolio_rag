@@ -176,6 +176,8 @@ export default function HelperBoost({
           >
             <button
               onClick={toggleVisibility}
+              aria-expanded={isVisible}
+              aria-label={isVisible ? 'Hide quick questions' : 'Show quick questions'}
               className="flex items-center gap-1 px-3 py-1 text-xs text-muted-foreground transition-colors hover:text-foreground"
             >
               {isVisible ? (

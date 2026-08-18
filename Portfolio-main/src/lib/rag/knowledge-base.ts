@@ -215,20 +215,23 @@ Technical details:
   },
 
   {
-    id: 'project-portfolio-rag',
+    id: 'project-pip-rag',
     category: 'project',
-    title: 'AI Portfolio RAG System',
-    content: `This portfolio features a conversational AI assistant grounded in Manav's real data. Tech stack: Next.js 15, Pinecone, Gemini API, Tailwind CSS.
+    title: 'PIP-RAG — Placement Intelligence RAG System',
+    content: `PIP-RAG is a real conversational RAG system Manav built and shipped. Tech stack: FastAPI, Qdrant, Gemini API.
 
 Technical details:
-- Implemented a complete Retrieval-Augmented Generation (RAG) pipeline using Pinecone for vector search and Gemini's gemini-embedding-2 for text embeddings.
-- The AI is restricted from hallucinating outside the injected context, ensuring accurate answers about Manav's skills and experience.
-- Built using the Vercel AI SDK for streaming LLM responses.
-- Includes a custom rate-limiting and API key rotation layer to distribute requests and scale free-tier usage.`,
+- Grounds LLM responses in retrieved interview questions and company data using Qdrant vector search + Gemini text-embedding-004 embeddings
+- Indexed 226 companies with metadata-grounded top-6 chunk retrieval and hard CGPA-eligibility filters applied directly at the vector search layer
+- Exposes conversational Q&A, gap-analysis, and eligibility-shortlisting as separate FastAPI endpoints
+- Designed a custom API key rotation layer across 5-6 Gemini keys to scale free-tier throughput to ~7,500 requests/day, bypassing per-key rate limits — instead of one key choking, rotate across several and load-balance requests
+
+Note: This portfolio's own chat system is NOT vector-based RAG — it uses a lightweight in-memory RAG approach because there's much less data. PIP-RAG uses Qdrant because 226 companies' worth of placement data is actually too much for in-memory search.`,
     keywords: [
-      'portfolio', 'rag', 'ai', 'assistant', 'pinecone', 'vector',
-      'embedding', 'gemini', 'next.js', 'vercel', 'ai sdk',
-      'api key rotation', 'conversational', 'retrieval',
+      'pip-rag', 'rag', 'placement', 'intelligence', 'qdrant', 'vector',
+      'embedding', 'gemini', 'fastapi', 'interview', 'companies',
+      'cgpa', 'api key rotation', 'rate limits', 'hack', 'throughput',
+      'conversational', 'retrieval',
     ],
   },
 
@@ -301,7 +304,7 @@ Languages: JavaScript, Python, C++, SQL, R
 
 Web & Backend: React.js, Node.js, Express.js, Socket.io, FastAPI, HTML, CSS
 
-AI/ML: LiteLLM, HuggingFace Transformers, Gemini API, Pinecone (Vector DB), RAG, NLI/Embeddings, TensorFlow, scikit-learn, GitHub Copilot
+AI/ML: LiteLLM, HuggingFace Transformers, Gemini API, Qdrant (Vector DB), RAG, NLI/Embeddings, TensorFlow, scikit-learn, GitHub Copilot
 
 Databases: PostgreSQL, MongoDB, Redis, Prisma ORM, DuckDB, Google BigQuery
 
@@ -365,7 +368,7 @@ He is happy to connect and discuss potential collaborations, projects, or opport
     id: 'crazy-hack',
     category: 'personal',
     title: 'Craziest Engineering Hack — API Key Rotation',
-    content: `The craziest engineering hack Manav has pulled off: While building his AI Portfolio RAG system, he hit Gemini's free-tier rate limits fast once real usage kicked in. So he built a custom API key rotation layer across 5-6 Gemini keys — load-balancing requests across all of them to scale free-tier throughput to ~7,500 requests/day, completely bypassing the per-key limit. No paid tier, no downtime, just distributing the load. Probably the hackiest-but-most-effective thing he's shipped.`,
+    content: `The craziest engineering hack Manav has pulled off: On PIP-RAG, his placement-intelligence RAG system, he hit Gemini's free-tier rate limits fast once real usage kicked in. So he built a custom API key rotation layer across 5-6 Gemini keys — load-balancing requests across all of them to scale free-tier throughput to ~7,500 requests/day, completely bypassing the per-key limit. No paid tier, no downtime, just distributing the load. Probably the hackiest-but-most-effective thing he's shipped.`,
     keywords: [
       'crazy', 'craziest', 'hack', 'rate limit', 'api key', 'rotation',
       'gemini', 'throughput', 'clever', 'creative', 'fun', 'story',

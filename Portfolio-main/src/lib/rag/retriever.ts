@@ -167,7 +167,7 @@ export function formatContext(results: RetrievalResult[]): string {
   }
 
   const sections = results.map((r, i) => {
-    return `--- CONTEXT DOCUMENT ${i + 1}: ${r.document.title} (relevance: ${(r.score * 100).toFixed(0)}%) ---
+    return `--- CONTEXT DOCUMENT ${i + 1}: ${r.document.title} (relevance: ${(r.score * 100).toFixed(0)}%, id: ${r.document.id}) ---
 ${r.document.content}
 --- END DOCUMENT ${i + 1} ---`;
   });
