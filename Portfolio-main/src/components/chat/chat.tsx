@@ -1,5 +1,5 @@
-import { trackChatQuery } from '@/lib/analytics-tracker';
 'use client';
+import { trackChatQuery } from '@/lib/analytics-tracker';
 import { useChat, type Message } from '@ai-sdk/react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useSearchParams, useRouter } from 'next/navigation';
