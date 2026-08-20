@@ -5,7 +5,6 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { useSearchParams, useRouter } from 'next/navigation';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
-import posthog from 'posthog-js';
 
 // Component imports
 import ChatBottombar from '@/components/chat/chat-bottombar';
@@ -42,7 +41,6 @@ const Chat = () => {
     messages,
     input,
     handleInputChange,
-    handleSubmit,
     isLoading,
     stop,
     setMessages,

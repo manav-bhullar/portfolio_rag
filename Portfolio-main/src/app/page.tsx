@@ -2,7 +2,7 @@
 
 import WelcomeModal from '@/components/welcome-modal';
 import { motion } from 'framer-motion';
-import { ArrowRight, Search, Laugh, BriefcaseBusiness, Layers, PartyPopper, UserRoundSearch, BarChart3 } from 'lucide-react';
+import { ArrowRight, Search, Laugh, BriefcaseBusiness, Layers, PartyPopper, UserRoundSearch } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useRef, useState } from 'react';
 import GitHubButton from 'react-github-btn';

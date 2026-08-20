@@ -10,7 +10,6 @@ import {
 } from '@/components/ui/dialog';
 import { motion } from 'framer-motion';
 import { Info, X } from 'lucide-react';
-import { useRouter } from 'next/navigation'; // Importation correcte pour Next.js 13+
 import { useState } from 'react';
 
 // Added a trigger prop to accept custom triggers
@@ -20,7 +19,6 @@ interface WelcomeModalProps {
 
 export default function WelcomeModal({ trigger }: WelcomeModalProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const router = useRouter(); // Initialisation du router avec useRouter
 
   // Default trigger is the logo
   const defaultTrigger = (
@@ -85,12 +83,12 @@ export default function WelcomeModal({ trigger }: WelcomeModalProps) {
                 {/* What section */}
                 <div className="space-y-3">
                   <h3 className="text-primary flex items-center gap-2 text-xl font-semibold">
-                    What's ????
+                    What&apos;s ????
                   </h3>
                   <p className="text-accent-foreground text-base leading-relaxed">
-                    I'm so excited to present my{' '}
+                    I&apos;m so excited to present my{' '}
                     <strong>brand new AI Portfolio.</strong>
-                    <br /> Whether you're a recruiter, a friend, family member,
+                    <br /> Whether you&apos;re a recruiter, a friend, family member,
                     or just curious, feel free to ask anything you want!
                     <br /> You can inquire about my projects, skills, education,
                     or even my personal interests.
@@ -103,11 +101,11 @@ export default function WelcomeModal({ trigger }: WelcomeModalProps) {
                     Why ???
                   </h3>
                   <p className="text-accent-foreground text-base leading-relaxed">
-                    Traditional portfolios can be limiting. <br /> They can't
-                    adapt to every visitor's specific needs. <br /> With this AI
+                    Traditional portfolios can be limiting. <br /> They can&apos;t
+                    adapt to every visitor&apos;s specific needs. <br /> With this AI
                     approach, my portfolio becomes{' '}
                     <strong>
-                      exactly what you're interested in knowing about me and my
+                      exactly what you&apos;re interested in knowing about me and my
                       work.
                     </strong>
                   </p>

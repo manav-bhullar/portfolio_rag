@@ -71,7 +71,7 @@ const CodeBlock = ({ content }: { content: string }) => {
   );
 };
 
-export default function ChatMessageContent({
+function ChatMessageContentComponent({
   message,
 }: ChatMessageContentProps) {
   // Only handle text parts
@@ -195,3 +195,28 @@ export default function ChatMessageContent({
 
   return <div className="w-full">{renderContent()}</div>;
 }
+
+export default React.memo(ChatMessageContentComponent, (prevProps, nextProps) => {
+  // Use message.id and message.content for text updates
+  if (prevProps.message.id !== nextProps.message.id) return false;
+  if (prevProps.message.content !== nextProps.message.content) return false;
+
+  // Check parts deeply for tool execution status changes
+  const prevParts = prevProps.message.parts || [];
+  const nextParts = nextProps.message.parts || [];
+
+  if (prevParts.length !== nextParts.length) return false;
+
+  for (let i = 0; i < prevParts.length; i++) {
+    const prevPart = prevParts[i];
+    const nextPart = nextParts[i];
+
+    if (prevPart.type !== nextPart.type) return false;
+
+    if (prevPart.type === 'tool-invocation' && nextPart.type === 'tool-invocation') {
+      if (prevPart.toolInvocation.state !== nextPart.toolInvocation.state) return false;
+    }
+  }
+
+  return true;
+});
