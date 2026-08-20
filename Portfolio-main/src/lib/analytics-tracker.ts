@@ -105,13 +105,17 @@ export function getRealAnalytics(): AnalyticsSummary {
   try {
     const stored = localStorage.getItem(STORAGE_KEY_QUERIES);
     if (stored) queries = JSON.parse(stored);
-  } catch (e) {}
+  } catch {
+    // ignore
+  }
 
   let visits: { timestamp: number; day: string }[] = [];
   try {
     const storedVisits = localStorage.getItem(STORAGE_KEY_VISITS);
     if (storedVisits) visits = JSON.parse(storedVisits);
-  } catch (e) {}
+  } catch {
+    // ignore
+  }
 
   const counts: Record<string, number> = {
     Projects: 0,
