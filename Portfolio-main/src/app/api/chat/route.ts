@@ -16,7 +16,9 @@ export const runtime = 'edge';
 export const maxDuration = 60;
 export const preferredRegion = 'iad1'; // Deploy close to Pinecone (us-east-1) to reduce latency
 
-function getRandomApiKey() {
+import { fallback } from "ai";
+
+function getAllApiKeys() {
   const keys = Object.keys(process.env)
     .filter(key => key.startsWith('GEMINI_API_KEY') || key.startsWith('GOOGLE_API_KEY'))
     .map(key => process.env[key])
@@ -26,8 +28,8 @@ function getRandomApiKey() {
     throw new Error("No Gemini/Google API keys found in environment variables");
   }
   
-  const randomIndex = Math.floor(Math.random() * keys.length);
-  return keys[randomIndex];
+  // Shuffle keys to distribute load initially
+  return keys.sort(() => Math.random() - 0.5);
 }
 function errorHandler(error: unknown) {
   if (error == null) {
@@ -72,9 +74,6 @@ export async function POST(req: Request) {
 
     const { messages } = await req.json();
 
-    const apiKey = getRandomApiKey();
-    const google = createGoogleGenerativeAI({ apiKey });
-
     // ── RAG: Retrieve relevant context ───────────────────────
     // Extract the latest user message for retrieval
     const lastUserMessage = [...messages]
@@ -95,39 +94,9 @@ export async function POST(req: Request) {
 
       if (userQuery.trim()) {
         try {
-          // If there's conversation history, rewrite the query for better RAG retrieval
-          if (messages.length > 1) {
-            const historyText = messages
-              .slice(-6) // Only take the last few messages to save tokens
-              .map((m: { role: string; content: unknown }) => `${m.role === 'user' ? 'User' : 'Assistant'}: ${
-                typeof m.content === 'string' ? m.content : '...'
-              }`)
-              .join('\n');
-
-            const rewritePrompt = `Given the following conversation history, rewrite the user's latest query into a standalone search query. 
-If the user says 'How long did it take?', and the history is about Floq, output 'How long did the Floq project take?'.
-Output ONLY the rewritten query, without any quotes or preamble.
-
-Conversation History:
-${historyText}
-
-Latest Query:
-${userQuery}`;
-
-            try {
-              const { text: rewrittenQuery } = await generateText({
-                model: google("gemini-1.5-flash"), // fast flash model
-                prompt: rewritePrompt,
-              });
-              
-              if (rewrittenQuery && rewrittenQuery.trim()) {
-                console.log(`[RAG] Rewrote query: "${userQuery}" -> "${rewrittenQuery.trim()}"`);
-                userQuery = rewrittenQuery.trim();
-              }
-            } catch (rewriteErr) {
-              console.error('[RAG] Query rewrite failed, falling back to original query:', rewriteErr);
-            }
-          }
+          // To save 50% of Gemini API calls and reduce latency by ~2-3s,
+          // we are skipping the LLM-based query rewrite step.
+          // The raw userQuery will be passed directly to the embedding model.
 
           const retrievalResults = await retrieve(userQuery);
           ragContext = formatContext(retrievalResults);
@@ -160,8 +129,19 @@ ${userQuery}`;
       executeUiAction,
     };
 
+    const allKeys = getAllApiKeys();
+    
+    // Create an array of models, one for each API key
+    const modelArray = allKeys.map(apiKey => 
+      createGoogleGenerativeAI({ apiKey })("gemini-flash-latest")
+    );
+    
+    // Wrap the models in a fallback provider. If the first key hits a rate limit (429),
+    // it will instantly and invisibly fallback to the next key.
+    const robustModel = fallback(modelArray);
+
     const result = streamText({
-      model: google("gemini-flash-latest"),
+      model: robustModel,
       messages: augmentedMessages,
       toolCallStreaming: true,
       tools,

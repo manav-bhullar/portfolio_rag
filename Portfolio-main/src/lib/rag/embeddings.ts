@@ -14,7 +14,7 @@ export interface EmbeddedDocument {
   embedding: number[];
 }
 
-function getRandomApiKey() {
+function getAllApiKeys() {
   const keys = Object.keys(process.env)
     .filter(key => key.startsWith('GEMINI_API_KEY') || key.startsWith('GOOGLE_API_KEY'))
     .map(key => process.env[key])
@@ -24,20 +24,31 @@ function getRandomApiKey() {
     throw new Error("No Gemini/Google API keys found in environment variables");
   }
   
-  const randomIndex = Math.floor(Math.random() * keys.length);
-  return keys[randomIndex];
+  return keys.sort(() => Math.random() - 0.5);
 }
 
 /**
  * Embed a single text string using Google's gemini-embedding-2.
+ * Includes automatic round-robin retries on rate limits.
  */
 export async function getEmbedding(text: string): Promise<number[]> {
-  const google = createGoogleGenerativeAI({ apiKey: getRandomApiKey() });
+  const allKeys = getAllApiKeys();
   
-  const { embedding } = await embed({
-    model: google.textEmbeddingModel('gemini-embedding-2'),
-    value: text,
-  });
+  let lastError = null;
   
-  return embedding;
+  for (const apiKey of allKeys) {
+    try {
+      const google = createGoogleGenerativeAI({ apiKey });
+      const { embedding } = await embed({
+        model: google.textEmbeddingModel('gemini-embedding-2'),
+        value: text,
+      });
+      return embedding;
+    } catch (err: any) {
+      console.warn(`[Embedding] API Key failed, trying next... Error: ${err.message}`);
+      lastError = err;
+    }
+  }
+  
+  throw lastError || new Error("Failed to get embedding after trying all API keys.");
 }
