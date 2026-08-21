@@ -203,7 +203,7 @@ export const Card = ({
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [open]);
 
-  // @ts-expect-error ref typing compatibility with useOutsideClick
+  
   useOutsideClick(containerRef, () => handleClose());
 
   const handleOpen = () => {
