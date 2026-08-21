@@ -375,12 +375,16 @@ He is happy to connect and discuss potential collaborations, projects, or opport
     ],
   },
 
-  // ── Deep Personal Context & Behavioral Grit ──────────────────
+  // ── Deep Personal Context & Behavioral Grit (Structured) ─────────
   {
     id: 'personal-origin-story',
     category: 'personal',
     title: 'The Origin Story: How Manav Started Coding',
-    content: `Manav's interest in technology started well before programming. From childhood, he was fascinated by computers and gaming, but his curiosity gradually became hands-on. In 10th grade, he started experimenting with custom ROMs, patches, and rooting Android phones—he wanted to understand what was happening underneath. The programming logic really clicked when he took Harvard's CS50. It gave structure to his curiosity, making him realize programming is about breaking down problems, understanding systems, and building something from that understanding. This combination of early curiosity and problem-solving is why Computer Engineering was a natural passion, not just a career choice.`,
+    content: JSON.stringify({
+      phase_1_curiosity: "Started well before programming. Fascinated by computers and games. By 10th grade, began modifying, rooting, and patching Android phones to understand what happened underneath the UI.",
+      phase_2_catalyst: "Harvard's CS50 was the exact moment programming logic clicked. It gave structure to the raw curiosity, showing that programming isn't just writing code, but breaking down complex systems.",
+      core_philosophy: "Computer Engineering was a natural passion, not just a career decision. It is the combination of early technological curiosity and a structured problem-solving mindset."
+    }, null, 2),
     keywords: [
       'origin story', 'started coding', 'how', 'why', 'cs50', 'harvard', 
       'custom roms', 'rooting', 'android', 'childhood', 'passion', 'computer engineering'
@@ -391,7 +395,12 @@ He is happy to connect and discuss potential collaborations, projects, or opport
     id: 'personal-workflow',
     category: 'personal',
     title: 'Workflow & Environment Rituals',
-    content: `Manav's ideal work environment is minimal and clean, built around a large amount of screen space. He connects his MacBook to a large TV to work across multiple screens, usually with lo-fi music playing and just water (he is not a coffee person). Deep work is triggered when he finds a problem he genuinely wants to solve, particularly one he has personally experienced. For example, he built an automated workflow using Gemini and Google Sheets just to manage placement application forms he kept forgetting. Once hooked on a problem, working continuously for 3-4 hours feels effortless. His deepest focus comes from curiosity, not from forcing fixed hours.`,
+    content: JSON.stringify({
+      sensory_environment: "Minimal and clean desk. MacBook connected to a large TV for multiple screens. Lo-fi music playing in the background. Only water (not a coffee person).",
+      trigger_for_deep_work: "Finding a problem I genuinely want to solve, especially one I personally experienced (e.g., building a Gemini/Google Sheets workflow to manage placement forms because I kept forgetting them).",
+      focus_duration: "Once genuinely hooked, working continuously for 3-4 hours feels effortless. Phone is only used for project-related tasks.",
+      work_philosophy: "Deepest focus comes from intense curiosity about a problem, not from forcing a fixed number of hours."
+    }, null, 2),
     keywords: [
       'workflow', 'environment', 'desk setup', 'deep work', 'music', 
       'lo-fi', 'water', 'coffee', 'macbook', 'screens', 'focus', 'flow state', 'rituals'
@@ -402,7 +411,17 @@ He is happy to connect and discuss potential collaborations, projects, or opport
     id: 'personal-hobbies-entropy',
     category: 'personal',
     title: 'Hobbies & Outside Learning',
-    content: `Outside of engineering, Manav reads extensively about psychology, human behavior, leadership, and genetics. He doesn't just read to finish books; he thinks deeply about the ideas and compares them to real life. Understanding human behavior makes him a better engineer because software is ultimately built for people, not just machines. He also trains regularly, runs, and stays physically active. He notices a direct connection between physical activity and mental energy—exercise helps him reset and come back with clarity. He believes long-term discipline isn't about never breaking a routine, but about the ability to return to it after a break.`,
+    content: JSON.stringify({
+      reading: {
+        topics: ["Psychology", "Human Behavior", "Leadership", "Genetics"],
+        parallel_to_engineering: "Understanding human behavior makes me a better engineer because software is ultimately built for people, not just machines. It shows how motivations differ and how context influences actions."
+      },
+      fitness: {
+        activities: ["Regular training", "Running", "Physical activity"],
+        parallel_to_engineering: "There is a direct connection between physical activity and mental energy. Sitting too long makes me mentally tired; exercise acts as a hard reset for clarity."
+      },
+      discipline_philosophy: "I am not perfectly consistent, but long-term discipline isn't about never breaking a routine—it's about the ability to return to it after a break."
+    }, null, 2),
     keywords: [
       'hobbies', 'reading', 'psychology', 'human behavior', 'fitness', 
       'training', 'running', 'exercise', 'discipline', 'mental energy', 'books', 'free time'
@@ -413,7 +432,13 @@ He is happy to connect and discuss potential collaborations, projects, or opport
     id: 'personal-learning-loop',
     category: 'personal',
     title: 'The Learning Loop & Avoiding Tutorial Hell',
-    content: `When learning unfamiliar technology, Manav first seeks to understand why it exists and what problem it solves, comparing it with known technologies to build a mental model. He moves to official documentation for core concepts and deliberately avoids staying in "tutorial mode." Once he grasps the fundamentals, he starts building something, because building exposes real gaps in understanding. He uses LLMs (ChatGPT/Gemini) to clarify concepts or understand errors, but not as a replacement for understanding. To avoid tutorial hell, his strategy is: learn enough to build, build enough to expose gaps, then learn specifically to close those gaps.`,
+    content: JSON.stringify({
+      step_1_mental_model: "Understand WHY the technology exists and WHAT problem it solves. Compare it to known technologies to avoid learning APIs in isolation.",
+      step_2_documentation: "Move to official documentation for core concepts. Deliberately avoid staying in 'tutorial mode' for too long.",
+      step_3_build_to_break: "Start building immediately to expose real gaps in understanding. The real test is if I can think in the technology's own concepts.",
+      step_4_llm_assist: "Use LLMs (ChatGPT/Gemini) to clarify concepts, compare approaches, or understand errors—never as a replacement for understanding. Step away before blindly searching for answers.",
+      core_rule: "Learn enough to build, build enough to expose gaps, then learn specifically to close those gaps."
+    }, null, 2),
     keywords: [
       'learning', 'framework', 'tutorial hell', 'methodology', 'documentation', 
       'llms', 'chatgpt', 'gemini', 'mental model', 'building', 'how to learn'
@@ -424,7 +449,12 @@ He is happy to connect and discuss potential collaborations, projects, or opport
     id: 'personal-handling-pressure',
     category: 'personal',
     title: 'Handling High-Pressure Deadlines',
-    content: `Under extremely tight deadlines, Manav's first priority is to stay calm and help the team stay calm. He accepts constraints realistically, prioritizing work based on impact. Critical bugs affecting core functionality take precedence over new features or low-impact edge cases, which are deferred. He believes in communicating early with stakeholders rather than hiding delays. Under pressure, he deliberately lets go of perfectionism—focusing not on the original ideal version, but on the best reliable version that can be shipped with available resources. Handling pressure is about accepting reality and redirecting energy toward the highest-value outcome.`,
+    content: JSON.stringify({
+      rule_1: "Accept reality and stay calm. Do not pretend we have unlimited time or try to maintain the original scope at any cost.",
+      rule_2: "Prioritize by impact. Critical logical/functional bugs take precedence over new features. Low-impact edge cases are deferred or documented.",
+      rule_3: "Communicate early. Do not hide delays from stakeholders until the deadline; ensure everyone understands what is realistically deliverable.",
+      rule_4: "Drop perfectionism. Focus shifts from the original ideal version to the best reliable version that can be shipped with the resources available."
+    }, null, 2),
     keywords: [
       'pressure', 'deadline', 'stress', 'triage', 'prioritize', 
       'perfectionism', 'shipping', 'communication', 'edge cases', 'bugs'
@@ -435,10 +465,16 @@ He is happy to connect and discuss potential collaborations, projects, or opport
     id: 'personal-handling-pushback',
     category: 'personal',
     title: 'Handling Non-Technical Pushback',
-    content: `When facing technical disagreements with non-technical stakeholders, Manav separates the disagreement from the person. He first tries to understand the underlying outcome they want, knowing the requested feature is just one way to achieve it. If an approach is technically infeasible, he explains the problem in terms of impact (e.g., increased response time, reliability issues) rather than jargon. He makes trade-offs explicit ("we can do this, but we give up X"). He is confident in his reasoning but treats disagreement as a chance to test his assumptions, willingly changing his position when presented with better evidence or solutions.`,
+    content: JSON.stringify({
+      situation: "A non-technical stakeholder requests a feature or architectural approach that is technically infeasible or introduces unacceptable trade-offs.",
+      behavior_1_separate: "Separate the technical disagreement from the person. Understand their underlying outcome, as their requested feature is just one way to achieve it.",
+      behavior_2_explain_impact: "Avoid technical jargon. Translate the limitation into business impact (e.g., 'This will increase response time or maintenance cost').",
+      behavior_3_explicit_tradeoff: "Make the trade-off explicit: 'We can do this, but we give up X.' If unacceptable, propose an alternative that reaches the same goal.",
+      impact: "Maintains confidence in technical reasoning while treating disagreement as a healthy test of assumptions. Ensures the final solution is based on evidence, not ego."
+    }, null, 2),
     keywords: [
       'pushback', 'disagreement', 'stakeholders', 'non-technical', 'communication', 
-      'conflict resolution', 'trade-offs', 'assumptions', 'impact'
+      'conflict resolution', 'trade-offs', 'assumptions', 'impact', 'sbi'
     ],
   }
 ];
