@@ -255,23 +255,24 @@ const Chat = () => {
   const headerHeight = hasActiveTool ? 24 : 100;
 
   return (
-    <div className="relative h-screen overflow-hidden">
-      <div className="absolute top-6 right-8 z-51 flex flex-col-reverse items-center justify-center gap-1 md:flex-row">
+    <div className="relative h-[100dvh] overflow-hidden">
+      <div className="absolute top-3 right-3 sm:top-6 sm:right-8 z-51 flex flex-row items-center justify-center gap-1 sm:gap-2">
         <div
           onClick={handleReset}
           title="Home"
-          className="hover:bg-accent cursor-pointer rounded-2xl px-3 py-1.5"
+          className="hover:bg-accent cursor-pointer rounded-xl sm:rounded-2xl px-2 py-1 sm:px-3 sm:py-1.5"
         >
-          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-accent-foreground h-7 w-7"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-accent-foreground h-5 w-5 sm:h-7 sm:w-7"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
         </div>
         <WelcomeModal
           trigger={
-            <div className=" hover:bg-accent cursor-pointer rounded-2xl px-3 py-1.5">
-              <Info className="text-accent-foreground h-8" />
+            <div className="hover:bg-accent cursor-pointer rounded-xl sm:rounded-2xl px-2 py-1 sm:px-3 sm:py-1.5">
+              <Info className="text-accent-foreground h-5 sm:h-8" />
             </div>
           }
         />
-        <div className="pt-2">
+        {/* GitHub star — hidden on mobile to avoid overcrowding the top bar */}
+        <div className="pt-1 hidden sm:block">
           <GitHubButton
             href="https://github.com/manav-bhullar"
             data-color-scheme="no-preference: light; light: light; dark: light_high_contrast;"
@@ -293,7 +294,7 @@ const Chat = () => {
         }}
       >
         <div
-          className={`transition-all duration-300 ease-in-out ${hasActiveTool ? 'pt-6 pb-0' : 'py-6'}`}
+          className={`transition-all duration-300 ease-in-out ${hasActiveTool ? 'pt-3 sm:pt-6 pb-0' : 'py-3 sm:py-6'}`}
         >
           <AnimatePresence>
             {latestUserMessage && !currentAIMessage && (
@@ -334,7 +335,7 @@ const Chat = () => {
                 <ChatLanding submitQuery={submitQuery} />
               </motion.div>
             ) : currentAIMessage ? (
-              <div className="pb-4 pt-12 md:pt-24">
+              <div className="pb-4 pt-8 md:pt-24">
                 <SimplifiedChatView
                   message={currentAIMessage}
                   isLoading={isLoading}
@@ -347,7 +348,7 @@ const Chat = () => {
                 <motion.div
                   key="loading"
                   {...MOTION_CONFIG}
-                  className="px-4 pt-18"
+                  className="px-4 pt-14 sm:pt-18"
                 >
                   <ChatBubble variant="received">
                     <ChatBubbleMessage isLoading />
@@ -359,8 +360,10 @@ const Chat = () => {
         </div>
 
         {/* Fixed Bottom Bar */}
-        <div className="sticky bottom-0 border-t border-border/40 bg-background/95 px-2 pt-4 backdrop-blur-sm md:px-0 md:pb-4">
-          <div className="relative flex flex-col items-center gap-3">
+        <div className="sticky bottom-0 border-t border-border/40 bg-background/95 px-2 pt-3 sm:pt-4 backdrop-blur-sm md:px-0"
+          style={{ paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 8px)' }}
+        >
+          <div className="relative flex flex-col items-center gap-2 sm:gap-3">
             <HelperBoost submitQuery={submitQuery} setInput={setInput} />
             <ChatBottombar
               input={input}

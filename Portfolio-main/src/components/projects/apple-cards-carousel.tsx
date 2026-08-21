@@ -10,7 +10,6 @@ import { AnimatePresence, motion } from 'framer-motion';
 import Image, { ImageProps } from 'next/image';
 import React, {
   createContext,
-  useCallback,
   useContext,
   useEffect,
   useRef,
@@ -185,12 +184,7 @@ export const Card = ({
 }) => {
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
-  const { onCardClose, currentIndex } = useContext(CarouselContext);
-
-  const handleClose = useCallback(() => {
-    setOpen(false);
-    onCardClose(index);
-  }, [index, onCardClose]);
+  const { onCardClose } = useContext(CarouselContext);
 
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
@@ -207,12 +201,18 @@ export const Card = ({
 
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [open, handleClose]);
+  }, [open]);
 
+  // @ts-expect-error ref typing compatibility with useOutsideClick
   useOutsideClick(containerRef, () => handleClose());
 
   const handleOpen = () => {
     setOpen(true);
+  };
+
+  const handleClose = () => {
+    setOpen(false);
+    onCardClose(index);
   };
 
   return (
@@ -232,10 +232,10 @@ export const Card = ({
               exit={{ opacity: 0 }}
               ref={containerRef}
               layoutId={layout ? `card-${card.title}` : undefined}
-              className="relative z-[60] mx-auto my-10 h-fit max-w-5xl rounded-3xl bg-white font-sans dark:bg-neutral-900"
+              className="relative z-[60] mx-4 my-4 sm:mx-auto sm:my-8 md:my-10 h-fit max-w-5xl rounded-2xl sm:rounded-3xl bg-white font-sans dark:bg-neutral-900"
             >
               {/* Sticky close button */}
-              <div className="sticky top-4 z-52 flex justify-end px-8 pt-8 md:px-14 md:pt-8">
+              <div className="sticky top-4 z-52 flex justify-end px-4 pt-4 sm:px-8 sm:pt-8 md:px-14 md:pt-8">
                 <button
                   className="flex h-8 w-8 items-center justify-center rounded-full bg-black/90 shadow-md dark:bg-white/90"
                   onClick={handleClose}
@@ -246,7 +246,7 @@ export const Card = ({
               </div>
 
               {/* Header section with consistent padding */}
-              <div className="relative px-8 pt-2 pb-0 md:px-14">
+              <div className="relative px-4 pt-2 pb-0 sm:px-8 md:px-14">
                 <div>
                   <motion.p
                     layoutId={layout ? `category-${card.title}` : undefined}
@@ -264,7 +264,7 @@ export const Card = ({
               </div>
 
               {/* Content with consistent padding */}
-              <div className="px-8 pt-8 pb-14 md:px-14">{card.content}</div>
+              <div className="px-4 pt-4 pb-8 sm:px-8 sm:pt-8 sm:pb-14 md:px-14">{card.content}</div>
             </motion.div>
           </div>
         )}

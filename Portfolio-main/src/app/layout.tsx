@@ -1,4 +1,3 @@
-import AdminShortcutListener from '@/components/analytics/AdminShortcutListener';
 import { Analytics } from "@vercel/analytics/react"
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
@@ -89,7 +88,7 @@ export default function RootLayout({
       </head>
       <body
         className={cn(
-          "min-h-screen bg-background font-sans antialiased",
+          "min-h-[100dvh] bg-background font-sans antialiased",
           inter.variable,
           googleSansFlex.variable,
         )}
@@ -100,13 +99,12 @@ export default function RootLayout({
             defaultTheme="light"
             enableSystem={false}
           >
-            <main className="flex min-h-screen flex-col">
+            <main className="flex min-h-[100dvh] flex-col">
               {children}
             </main>
             <Toaster />
           </ThemeProvider>
           <Analytics />
-          <AdminShortcutListener />
         </PostHogProvider>
       </body>
     </html>

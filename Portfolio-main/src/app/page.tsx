@@ -54,7 +54,7 @@ export default function Home() {
   } as const;
 
   return (
-    <div className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-background px-4 py-16">
+    <div className="relative flex min-h-[100dvh] flex-col items-center justify-center overflow-hidden bg-background px-4 py-20 sm:py-16">
       {/* Responsive wavy clip-path (objectBoundingBox = scales with element size) */}
       <svg width="0" height="0" className="absolute">
         <defs>
@@ -64,9 +64,17 @@ export default function Home() {
         </defs>
       </svg>
 
-      {/* Top right GitHub button */}
-      <div className="absolute top-6 right-8 z-20 flex items-center gap-4">
-        <div className="pt-1">
+      {/* GitHub & Analytics buttons */}
+      <div className="absolute top-4 right-4 sm:top-6 sm:right-8 z-20 flex items-center gap-2 sm:gap-4">
+        <button
+          onClick={() => router.push('/analytics')}
+          className="flex items-center gap-1.5 sm:gap-2 rounded-full border bg-background/50 backdrop-blur-sm px-2.5 py-1 text-xs sm:px-4 sm:py-1.5 sm:text-sm font-semibold text-foreground hover:bg-secondary transition-colors"
+        >
+          <BarChart3 className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-[#3E8EDE]" />
+          <span>Analytics</span>
+        </button>
+        {/* GitHub star button — hidden on small screens to save top-bar space */}
+        <div className="pt-1 hidden sm:block">
           <GitHubButton
             href="https://github.com/manav-bhullar"
             data-color-scheme="no-preference: light; light: light; dark: light_high_contrast;"
@@ -79,7 +87,7 @@ export default function Home() {
         </div>
       </div>
 
-      <div className="absolute top-6 left-8 z-20">
+      <div className="absolute top-4 left-4 sm:top-6 sm:left-8 z-20">
         <WelcomeModal />
       </div>
 
@@ -93,16 +101,16 @@ export default function Home() {
         {/* Organic colored bleed behind the card */}
         <div className="absolute -inset-4 z-0 rounded-[40%_60%_55%_45%/50%_45%_55%_50%] bg-gradient-to-tr from-[#3FB37F] via-[#E0559C] to-[#F0954A] opacity-80 blur-2xl filter" />
 
-        <div className="shape-blob-hero relative z-10 flex w-full flex-col items-center gap-6 bg-card px-8 py-16 text-center shadow-[0_20px_60px_-15px_rgba(25,25,25,0.12)] sm:px-16">
+        <div className="shape-blob-hero relative z-10 flex w-full flex-col items-center gap-5 sm:gap-6 bg-card px-5 py-10 sm:px-8 sm:py-14 md:px-16 md:py-16 text-center shadow-[0_20px_60px_-15px_rgba(25,25,25,0.12)]">
         <div>
-          <p className="text-sm font-bold tracking-[0.15em] text-muted-foreground uppercase">
+          <p className="text-xs sm:text-sm font-bold tracking-[0.15em] text-muted-foreground uppercase">
             Let&apos;s build something impactful.
           </p>
-          <h1 className="font-display mt-2 text-6xl leading-[0.95] font-black tracking-tight text-foreground sm:text-7xl md:text-8xl">
+          <h1 className="font-display mt-2 text-5xl leading-[0.95] font-black tracking-tight text-foreground sm:text-6xl md:text-7xl lg:text-8xl">
             Manav Bhullar.
           </h1>
-          <p className="mt-4 text-lg font-medium text-muted-foreground sm:text-xl">
-            Full-Stack Software Engineer & Data Analyst.
+          <p className="mt-3 sm:mt-4 text-base sm:text-lg font-medium text-muted-foreground md:text-xl">
+            Full-Stack Software Engineer &amp; Data Analyst.
           </p>
         </div>
 
@@ -118,7 +126,7 @@ export default function Home() {
           className="w-full max-w-lg"
         >
           <div
-            className="flex items-center gap-2 rounded-full border border-border bg-background py-2 pr-2 pl-5 transition-all focus-within:scale-[1.02] focus-within:border-[#3FB37F] focus-within:shadow-[0_8px_30px_rgb(0,0,0,0.12)] focus-within:ring-4 focus-within:ring-[#3FB37F]/10"
+            className="flex items-center gap-2 rounded-full border border-border bg-background py-2 pr-2 pl-4 sm:pl-5 transition-all focus-within:scale-[1.02] focus-within:border-[#3FB37F] focus-within:shadow-[0_8px_30px_rgb(0,0,0,0.12)] focus-within:ring-4 focus-within:ring-[#3FB37F]/10"
           >
             <Search className="h-4 w-4 shrink-0 text-muted-foreground" />
             <input
@@ -127,7 +135,7 @@ export default function Home() {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               aria-label="Ask about my computer engineering work"
-              placeholder="Ask me about my computer engineering work..."
+              placeholder="Ask me anything..."
               className="w-full border-none bg-transparent py-1 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none"
             />
             <motion.button
@@ -156,9 +164,9 @@ export default function Home() {
               onClick={() => goToChat(questions[key])}
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.95 }}
-              className="flex items-center gap-2 cursor-pointer rounded-full border border-border bg-card px-4 py-2 text-sm font-semibold text-foreground hover:bg-secondary transition-colors"
+              className="flex items-center gap-1.5 sm:gap-2 cursor-pointer rounded-full border border-border bg-card px-3 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-semibold text-foreground hover:bg-secondary transition-colors"
             >
-              <Icon size={16} strokeWidth={2.25} color={color} />
+              <Icon size={14} strokeWidth={2.25} color={color} />
               <span>{key}</span>
             </motion.button>
           ))}
