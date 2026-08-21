@@ -14,7 +14,7 @@ export interface EmbeddedDocument {
   embedding: number[];
 }
 
-function getAllApiKeys() {
+function getShuffledApiKeys() {
   const keys = Object.keys(process.env)
     .filter(key => key.startsWith('GEMINI_API_KEY') || key.startsWith('GOOGLE_API_KEY'))
     .map(key => process.env[key])
@@ -32,7 +32,7 @@ function getAllApiKeys() {
  * Includes automatic round-robin retries on rate limits.
  */
 export async function getEmbedding(text: string): Promise<number[]> {
-  const allKeys = getAllApiKeys();
+  const allKeys = getShuffledApiKeys();
   
   let lastError = null;
   

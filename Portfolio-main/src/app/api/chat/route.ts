@@ -16,9 +16,7 @@ export const runtime = 'edge';
 export const maxDuration = 60;
 export const preferredRegion = 'iad1'; // Deploy close to Pinecone (us-east-1) to reduce latency
 
-import { fallback } from "ai";
-
-function getAllApiKeys() {
+function getRandomApiKey() {
   const keys = Object.keys(process.env)
     .filter(key => key.startsWith('GEMINI_API_KEY') || key.startsWith('GOOGLE_API_KEY'))
     .map(key => process.env[key])
@@ -28,9 +26,10 @@ function getAllApiKeys() {
     throw new Error("No Gemini/Google API keys found in environment variables");
   }
   
-  // Shuffle keys to distribute load initially
-  return keys.sort(() => Math.random() - 0.5);
+  const randomIndex = Math.floor(Math.random() * keys.length);
+  return keys[randomIndex];
 }
+
 function errorHandler(error: unknown) {
   if (error == null) {
     return 'Unknown error';
@@ -74,6 +73,9 @@ export async function POST(req: Request) {
 
     const { messages } = await req.json();
 
+    const apiKey = getRandomApiKey();
+    const google = createGoogleGenerativeAI({ apiKey });
+
     // ── RAG: Retrieve relevant context ───────────────────────
     // Extract the latest user message for retrieval
     const lastUserMessage = [...messages]
@@ -114,14 +116,8 @@ Latest Query:
 ${userQuery}`;
 
             try {
-              const allKeys = getAllApiKeys();
-              const modelArray = allKeys.map(apiKey => 
-                createGoogleGenerativeAI({ apiKey })("gemini-1.5-flash-8b") // Use the much faster 8b model
-              );
-              const robustRewriteModel = fallback(modelArray);
-              
               const { text: rewrittenQuery } = await generateText({
-                model: robustRewriteModel,
+                model: google("gemini-1.5-flash-8b"), // fast flash model to prevent timeouts
                 prompt: rewritePrompt,
               });
               
@@ -165,19 +161,8 @@ ${userQuery}`;
       executeUiAction,
     };
 
-    const allKeys = getAllApiKeys();
-    
-    // Create an array of models, one for each API key
-    const modelArray = allKeys.map(apiKey => 
-      createGoogleGenerativeAI({ apiKey })("gemini-flash-latest")
-    );
-    
-    // Wrap the models in a fallback provider. If the first key hits a rate limit (429),
-    // it will instantly and invisibly fallback to the next key.
-    const robustModel = fallback(modelArray);
-
     const result = streamText({
-      model: robustModel,
+      model: google("gemini-flash-latest"),
       messages: augmentedMessages,
       toolCallStreaming: true,
       tools,
