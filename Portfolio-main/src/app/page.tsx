@@ -66,13 +66,6 @@ export default function Home() {
 
       {/* GitHub & Analytics buttons */}
       <div className="absolute top-4 right-4 sm:top-6 sm:right-8 z-20 flex items-center gap-2 sm:gap-4">
-        <button
-          onClick={() => router.push('/analytics')}
-          className="flex items-center gap-1.5 sm:gap-2 rounded-full border bg-background/50 backdrop-blur-sm px-2.5 py-1 text-xs sm:px-4 sm:py-1.5 sm:text-sm font-semibold text-foreground hover:bg-secondary transition-colors"
-        >
-          <BarChart3 className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-[#3E8EDE]" />
-          <span>Analytics</span>
-        </button>
         {/* GitHub star button — hidden on small screens to save top-bar space */}
         <div className="pt-1 hidden sm:block">
           <GitHubButton
