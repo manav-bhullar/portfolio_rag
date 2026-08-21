@@ -5,8 +5,8 @@ import { resolve } from 'path';
 config({ path: resolve(process.cwd(), '.env.local') });
 
 import { KNOWLEDGE_BASE } from '../src/lib/rag/knowledge-base';
-import { getPineconeIndex } from '../src/lib/rag/pinecone';
 import { getEmbedding } from '../src/lib/rag/embeddings';
+import { Pinecone } from '@pinecone-database/pinecone';
 
 async function ingest() {
   console.log(`[Ingest] Starting ingestion of ${KNOWLEDGE_BASE.length} documents...`);
@@ -16,7 +16,8 @@ async function ingest() {
     process.exit(1);
   }
 
-  const index = getPineconeIndex();
+  const pc = new Pinecone({ apiKey: process.env.PINECONE_API_KEY });
+  const index = pc.index(process.env.PINECONE_INDEX);
   const vectors = [];
 
   for (const doc of KNOWLEDGE_BASE) {
