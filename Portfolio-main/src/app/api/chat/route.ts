@@ -114,12 +114,14 @@ Latest Query:
 ${userQuery}`;
 
             try {
-              // Get the first available key for rewriting (using our shuffled keys array)
-              const firstKey = getAllApiKeys()[0];
-              const googleProvider = createGoogleGenerativeAI({ apiKey: firstKey });
+              const allKeys = getAllApiKeys();
+              const modelArray = allKeys.map(apiKey => 
+                createGoogleGenerativeAI({ apiKey })("gemini-1.5-flash-8b") // Use the much faster 8b model
+              );
+              const robustRewriteModel = fallback(modelArray);
               
               const { text: rewrittenQuery } = await generateText({
-                model: googleProvider("gemini-1.5-flash"), // fast flash model
+                model: robustRewriteModel,
                 prompt: rewritePrompt,
               });
               
