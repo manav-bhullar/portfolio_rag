@@ -6,7 +6,7 @@
  */
 
 import { getEmbedding } from './embeddings';
-import { getPineconeIndex } from './pinecone';
+import { queryPinecone } from './pinecone';
 import type { KnowledgeDocument } from './knowledge-base';
 
 // ── Types ─────────────────────────────────────────────────────
@@ -99,18 +99,13 @@ export async function retrieve(
   // Tokenize query for keyword matching
   const queryTokens = tokenize(query);
 
-  // Fetch from Pinecone
-  const index = getPineconeIndex();
-  const queryResponse = await index.query({
-    vector: queryEmbedding,
-    topK: PINECONE_FETCH_K,
-    includeMetadata: true,
-  });
+  // Fetch from Pinecone using Edge-compatible fetch
+  const queryResponse = await queryPinecone(queryEmbedding, PINECONE_FETCH_K);
 
   if (!queryResponse.matches) return [];
 
   // Score all retrieved documents
-  const scored: RetrievalResult[] = queryResponse.matches.map((match) => {
+  const scored: RetrievalResult[] = queryResponse.matches.map((match: any) => {
     const metadata = (match.metadata ?? {}) as Record<string, unknown>;
     
     // Pinecone stores arrays natively, but just in case it's a string

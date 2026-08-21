@@ -12,6 +12,7 @@ import { getCrazy } from './tools/getCrazy';
 import { executeUiAction } from './tools/executeUiAction';
 import { retrieve, formatContext } from '@/lib/rag/retriever';
 
+export const runtime = 'edge';
 export const maxDuration = 60;
 export const preferredRegion = 'iad1'; // Deploy close to Pinecone (us-east-1) to reduce latency
 

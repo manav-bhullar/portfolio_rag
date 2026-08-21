@@ -1,24 +1,40 @@
-import { Pinecone } from '@pinecone-database/pinecone';
+export async function queryPinecone(vector: number[], topK: number) {
+  const apiKey = process.env.PINECONE_API_KEY;
+  const indexName = process.env.PINECONE_INDEX || 'portfolio-rag'; // fallback to user's known index
 
-let pineconeClient: Pinecone | null = null;
-
-export function getPineconeClient() {
-  if (!pineconeClient) {
-    if (!process.env.PINECONE_API_KEY) {
-      throw new Error("PINECONE_API_KEY is not defined in environment variables");
-    }
-    pineconeClient = new Pinecone({
-      apiKey: process.env.PINECONE_API_KEY,
-    });
+  if (!apiKey) {
+    throw new Error("PINECONE_API_KEY is not defined in environment variables");
   }
-  return pineconeClient;
-}
 
-export function getPineconeIndex() {
-  const client = getPineconeClient();
-  const indexName = process.env.PINECONE_INDEX;
-  if (!indexName) {
-    throw new Error("PINECONE_INDEX is not defined in environment variables");
+  // 1. Get host for the index
+  const metaRes = await fetch(`https://api.pinecone.io/indexes/${indexName}`, {
+    headers: { 'Api-Key': apiKey },
+  });
+  
+  if (!metaRes.ok) {
+    throw new Error(`Failed to fetch Pinecone index info: ${await metaRes.text()}`);
   }
-  return client.index(indexName);
+  
+  const metaData = await metaRes.json();
+  const host = metaData.host;
+
+  // 2. Query the index
+  const queryRes = await fetch(`https://${host}/query`, {
+    method: 'POST',
+    headers: {
+      'Api-Key': apiKey,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      vector,
+      topK,
+      includeMetadata: true,
+    }),
+  });
+
+  if (!queryRes.ok) {
+    throw new Error(`Failed to query Pinecone: ${await queryRes.text()}`);
+  }
+
+  return await queryRes.json();
 }
