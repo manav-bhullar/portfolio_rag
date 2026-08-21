@@ -80,6 +80,7 @@ export function SimplifiedChatView({
     getSkills: 'Loading skills...',
     getInterests: 'Loading interests...',
     getCrazy: 'Loading something crazy...',
+    executeUiAction: 'Executing system action...',
   };
 
   const loadingText = activeToolName ? (TOOL_LABELS[activeToolName] || `Executing ${activeToolName}...`) : 'Thinking...';

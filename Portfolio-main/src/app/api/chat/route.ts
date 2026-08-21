@@ -9,6 +9,7 @@ import { getContact } from './tools/getContact';
 import { getSkills } from './tools/getSkills';
 import { getInterests } from './tools/getInterests';
 import { getCrazy } from './tools/getCrazy';
+import { executeUiAction } from './tools/executeUiAction';
 import { retrieve, formatContext } from '@/lib/rag/retriever';
 
 export const maxDuration = 60;
@@ -154,6 +155,7 @@ ${userQuery}`;
       getSkills,
       getInterests,
       getCrazy,
+      executeUiAction,
     };
 
     const result = streamText({

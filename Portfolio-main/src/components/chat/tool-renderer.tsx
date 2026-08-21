@@ -6,6 +6,7 @@ import Resume from '../resume';
 import Skills from '../skills';
 import Interests from '../interests';
 import Crazy from '../crazy';
+import UiActionExecutor from './ui-action-executor';
 
 export interface ToolInvocationItem {
   toolCallId: string;
@@ -82,6 +83,13 @@ export default function ToolRenderer({
             return (
               <div key={toolCallId} className="w-full rounded-lg">
                 <Crazy />
+              </div>
+            );
+
+          case 'executeUiAction':
+            return (
+              <div key={toolCallId} className="w-full rounded-lg">
+                <UiActionExecutor action={(tool.args as { action: string })?.action || (tool.result as { action: string })?.action} />
               </div>
             );
 

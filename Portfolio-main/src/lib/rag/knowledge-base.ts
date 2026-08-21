@@ -226,7 +226,7 @@ Technical details:
 - Exposes conversational Q&A, gap-analysis, and eligibility-shortlisting as separate FastAPI endpoints
 - Designed a custom API key rotation layer across 5-6 Gemini keys to scale free-tier throughput to ~7,500 requests/day, bypassing per-key rate limits — instead of one key choking, rotate across several and load-balance requests
 
-Note: This portfolio's own chat system is NOT vector-based RAG — it uses a lightweight in-memory RAG approach because there's much less data. PIP-RAG uses Qdrant because 226 companies' worth of placement data is actually too much for in-memory search.`,
+Note: This portfolio's own chat system previously used a lightweight in-memory RAG approach, but has now been upgraded to a Pinecone-based vector RAG system to support the growing knowledge base. PIP-RAG uses Qdrant because 226 companies' worth of placement data requires a dedicated vector store.`,
     keywords: [
       'pip-rag', 'rag', 'placement', 'intelligence', 'qdrant', 'vector',
       'embedding', 'gemini', 'fastapi', 'interview', 'companies',
@@ -354,7 +354,7 @@ What kind of project makes him say "yes" immediately: anything with a genuinely 
     content: `Manav Bhullar's contact information:
 - GitHub: https://github.com/manav-bhullar
 - LinkedIn: https://linkedin.com/in/manav-bhullar
-- Email: manavbhullar2004@gmail.com
+- Email: manavbhullar341@gmail.com
 - Location: Patiala, Punjab, India
 
 He is happy to connect and discuss potential collaborations, projects, or opportunities.`,
@@ -374,4 +374,71 @@ He is happy to connect and discuss potential collaborations, projects, or opport
       'gemini', 'throughput', 'clever', 'creative', 'fun', 'story',
     ],
   },
+
+  // ── Deep Personal Context & Behavioral Grit ──────────────────
+  {
+    id: 'personal-origin-story',
+    category: 'personal',
+    title: 'The Origin Story: How Manav Started Coding',
+    content: `Manav's interest in technology started well before programming. From childhood, he was fascinated by computers and gaming, but his curiosity gradually became hands-on. In 10th grade, he started experimenting with custom ROMs, patches, and rooting Android phones—he wanted to understand what was happening underneath. The programming logic really clicked when he took Harvard's CS50. It gave structure to his curiosity, making him realize programming is about breaking down problems, understanding systems, and building something from that understanding. This combination of early curiosity and problem-solving is why Computer Engineering was a natural passion, not just a career choice.`,
+    keywords: [
+      'origin story', 'started coding', 'how', 'why', 'cs50', 'harvard', 
+      'custom roms', 'rooting', 'android', 'childhood', 'passion', 'computer engineering'
+    ],
+  },
+
+  {
+    id: 'personal-workflow',
+    category: 'personal',
+    title: 'Workflow & Environment Rituals',
+    content: `Manav's ideal work environment is minimal and clean, built around a large amount of screen space. He connects his MacBook to a large TV to work across multiple screens, usually with lo-fi music playing and just water (he is not a coffee person). Deep work is triggered when he finds a problem he genuinely wants to solve, particularly one he has personally experienced. For example, he built an automated workflow using Gemini and Google Sheets just to manage placement application forms he kept forgetting. Once hooked on a problem, working continuously for 3-4 hours feels effortless. His deepest focus comes from curiosity, not from forcing fixed hours.`,
+    keywords: [
+      'workflow', 'environment', 'desk setup', 'deep work', 'music', 
+      'lo-fi', 'water', 'coffee', 'macbook', 'screens', 'focus', 'flow state', 'rituals'
+    ],
+  },
+
+  {
+    id: 'personal-hobbies-entropy',
+    category: 'personal',
+    title: 'Hobbies & Outside Learning',
+    content: `Outside of engineering, Manav reads extensively about psychology, human behavior, leadership, and genetics. He doesn't just read to finish books; he thinks deeply about the ideas and compares them to real life. Understanding human behavior makes him a better engineer because software is ultimately built for people, not just machines. He also trains regularly, runs, and stays physically active. He notices a direct connection between physical activity and mental energy—exercise helps him reset and come back with clarity. He believes long-term discipline isn't about never breaking a routine, but about the ability to return to it after a break.`,
+    keywords: [
+      'hobbies', 'reading', 'psychology', 'human behavior', 'fitness', 
+      'training', 'running', 'exercise', 'discipline', 'mental energy', 'books', 'free time'
+    ],
+  },
+
+  {
+    id: 'personal-learning-loop',
+    category: 'personal',
+    title: 'The Learning Loop & Avoiding Tutorial Hell',
+    content: `When learning unfamiliar technology, Manav first seeks to understand why it exists and what problem it solves, comparing it with known technologies to build a mental model. He moves to official documentation for core concepts and deliberately avoids staying in "tutorial mode." Once he grasps the fundamentals, he starts building something, because building exposes real gaps in understanding. He uses LLMs (ChatGPT/Gemini) to clarify concepts or understand errors, but not as a replacement for understanding. To avoid tutorial hell, his strategy is: learn enough to build, build enough to expose gaps, then learn specifically to close those gaps.`,
+    keywords: [
+      'learning', 'framework', 'tutorial hell', 'methodology', 'documentation', 
+      'llms', 'chatgpt', 'gemini', 'mental model', 'building', 'how to learn'
+    ],
+  },
+
+  {
+    id: 'personal-handling-pressure',
+    category: 'personal',
+    title: 'Handling High-Pressure Deadlines',
+    content: `Under extremely tight deadlines, Manav's first priority is to stay calm and help the team stay calm. He accepts constraints realistically, prioritizing work based on impact. Critical bugs affecting core functionality take precedence over new features or low-impact edge cases, which are deferred. He believes in communicating early with stakeholders rather than hiding delays. Under pressure, he deliberately lets go of perfectionism—focusing not on the original ideal version, but on the best reliable version that can be shipped with available resources. Handling pressure is about accepting reality and redirecting energy toward the highest-value outcome.`,
+    keywords: [
+      'pressure', 'deadline', 'stress', 'triage', 'prioritize', 
+      'perfectionism', 'shipping', 'communication', 'edge cases', 'bugs'
+    ],
+  },
+
+  {
+    id: 'personal-handling-pushback',
+    category: 'personal',
+    title: 'Handling Non-Technical Pushback',
+    content: `When facing technical disagreements with non-technical stakeholders, Manav separates the disagreement from the person. He first tries to understand the underlying outcome they want, knowing the requested feature is just one way to achieve it. If an approach is technically infeasible, he explains the problem in terms of impact (e.g., increased response time, reliability issues) rather than jargon. He makes trade-offs explicit ("we can do this, but we give up X"). He is confident in his reasoning but treats disagreement as a chance to test his assumptions, willingly changing his position when presented with better evidence or solutions.`,
+    keywords: [
+      'pushback', 'disagreement', 'stakeholders', 'non-technical', 'communication', 
+      'conflict resolution', 'trade-offs', 'assumptions', 'impact'
+    ],
+  }
 ];

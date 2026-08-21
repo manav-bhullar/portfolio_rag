@@ -165,7 +165,7 @@ exports.KNOWLEDGE_BASE = [
         id: 'contact',
         category: 'personal',
         title: 'Contact Information',
-        content: "Manav Bhullar's contact information:\n- GitHub: https://github.com/manav-bhullar\n- LinkedIn: https://linkedin.com/in/manav-bhullar\n- Email: manavbhullar2004@gmail.com\n- Location: Patiala, Punjab, India\n\nHe is happy to connect and discuss potential collaborations, projects, or opportunities.",
+        content: "Manav Bhullar's contact information:\n- GitHub: https://github.com/manav-bhullar\n- LinkedIn: https://linkedin.com/in/manav-bhullar\n- Email: manavbhullar341@gmail.com\n- Location: Patiala, Punjab, India\n\nHe is happy to connect and discuss potential collaborations, projects, or opportunities.",
         keywords: [
             'contact', 'email', 'github', 'linkedin', 'reach', 'connect',
             'hire', 'location', 'social',
