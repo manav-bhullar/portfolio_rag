@@ -1,0 +1,3 @@
+## 2026-08-22 - Focus States on Framer Motion Components
+**Learning:** When adding focus states to interactive components that are part of a larger animated UI (like AnimatedTestimonials), ensuring the outline isn't clipped by overflow hidden or layout shifts requires using outline-none and relying on ring utilities (e.g., focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2) for reliable visibility.
+**Action:** Always prefer Tailwind's ring utilities with focus-visible over raw outline for buttons in complex animated carousels to ensure accessibility indicators are both visible and aesthetically pleasing.
