@@ -3,7 +3,7 @@
 
 import { ChatRequestOptions } from 'ai';
 import { motion } from 'framer-motion';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, Square } from 'lucide-react';
 import React, { useEffect } from 'react';
 
 interface ChatBottombarProps {
@@ -70,8 +70,8 @@ export default function ChatBottombar({
 
           <button
             type="submit"
-            aria-label="Send message"
-            disabled={isLoading || !input.trim() || isToolInProgress}
+            aria-label={isLoading ? "Stop generating" : "Send message"}
+            disabled={(!isLoading && !input.trim()) || isToolInProgress}
             className="flex items-center justify-center rounded-full bg-foreground p-2 text-primary-foreground disabled:opacity-50"
             onClick={(e) => {
               if (isLoading) {
@@ -80,7 +80,11 @@ export default function ChatBottombar({
               }
             }}
           >
-            <ArrowRight className="h-6 w-6" />
+            {isLoading ? (
+              <Square className="h-5 w-5 fill-current" />
+            ) : (
+              <ArrowRight className="h-6 w-6" />
+            )}
           </button>
         </div>
       </form>

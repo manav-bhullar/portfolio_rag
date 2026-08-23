@@ -1,0 +1,3 @@
+## 2025-02-18 - Fix Chat Generation Stop Action Accessibility
+**Learning:** The submit button's intended stop functionality was blocked because the button was disabled during loading states. This prevented the `onClick` handler from firing, making it impossible for users to halt long-running generations, which degrades the UX.
+**Action:** Always ensure interactive state-change buttons (like a 'Stop' button) remain enabled during the states they are meant to interrupt, and provide clear visual feedback (e.g., swapping the send icon for a stop icon) along with appropriate `aria-label` updates for screen readers.
