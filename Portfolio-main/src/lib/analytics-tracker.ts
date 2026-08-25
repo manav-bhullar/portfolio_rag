@@ -44,8 +44,8 @@ export function trackChatQuery(query: string) {
         topic,
         timestamp: new Date().toISOString(),
       });
-    } catch (e) {
-      console.warn('Posthog capture skipped', e);
+    } catch {
+      console.warn('Posthog capture skipped');
     }
   }
 
@@ -57,8 +57,8 @@ export function trackChatQuery(query: string) {
       list.push(event);
       if (list.length > 500) list.shift();
       localStorage.setItem(STORAGE_KEY_QUERIES, JSON.stringify(list));
-    } catch (e) {
-      console.error('Error saving query event:', e);
+    } catch {
+      console.error('Error saving query event:');
     }
   }
 
@@ -77,8 +77,8 @@ export function trackPageView() {
     visits.push({ timestamp: now, day: dayKey });
     if (visits.length > 1000) visits.shift();
     localStorage.setItem(STORAGE_KEY_VISITS, JSON.stringify(visits));
-  } catch (e) {
-    console.error('Error saving visit event:', e);
+  } catch {
+    console.error('Error saving visit event:');
   }
 }
 
@@ -105,13 +105,13 @@ export function getRealAnalytics(): AnalyticsSummary {
   try {
     const stored = localStorage.getItem(STORAGE_KEY_QUERIES);
     if (stored) queries = JSON.parse(stored);
-  } catch (e) {}
+  } catch {}
 
   let visits: { timestamp: number; day: string }[] = [];
   try {
     const storedVisits = localStorage.getItem(STORAGE_KEY_VISITS);
     if (storedVisits) visits = JSON.parse(storedVisits);
-  } catch (e) {}
+  } catch {}
 
   const counts: Record<string, number> = {
     Projects: 0,
