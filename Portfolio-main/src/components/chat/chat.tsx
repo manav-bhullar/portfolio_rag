@@ -5,8 +5,6 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { useSearchParams, useRouter } from 'next/navigation';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
-import posthog from 'posthog-js';
-
 // Component imports
 import ChatBottombar from '@/components/chat/chat-bottombar';
 import ChatLanding from '@/components/chat/chat-landing';
@@ -20,7 +18,6 @@ import WelcomeModal from '@/components/welcome-modal';
 import { Info } from 'lucide-react';
 import GitHubButton from 'react-github-btn';
 import HelperBoost from './HelperBoost';
-
 const MOTION_CONFIG = {
   initial: { opacity: 0, y: 20 },
   animate: { opacity: 1, y: 0 },
@@ -30,19 +27,17 @@ const MOTION_CONFIG = {
     ease: 'easeOut',
   },
 } as const;
-
 const Chat = () => {
   const searchParams = useSearchParams();
   const router = useRouter();
   const initialQuery = searchParams.get('query');
   const [autoSubmitted, setAutoSubmitted] = useState(false);
   const [loadingSubmit, setLoadingSubmit] = useState(false);
-
   const {
     messages,
     input,
     handleInputChange,
-    handleSubmit,
+    // handleSubmit,
     isLoading,
     stop,
     setMessages,
@@ -69,7 +64,6 @@ const Chat = () => {
       console.log('Tool call:', toolName);
     },
   });
-
   const { currentAIMessage, latestUserMessage, hasActiveTool } = useMemo(() => {
     const latestAIMessageIndex = messages.findLastIndex(
       (m) => m.role === 'assistant'
@@ -77,7 +71,6 @@ const Chat = () => {
     const latestUserMessageIndex = messages.findLastIndex(
       (m) => m.role === 'user'
     );
-
     const result = {
       currentAIMessage:
         latestAIMessageIndex !== -1 ? messages[latestAIMessageIndex] : null,
@@ -85,7 +78,6 @@ const Chat = () => {
         latestUserMessageIndex !== -1 ? messages[latestUserMessageIndex] : null,
       hasActiveTool: false,
     };
-
     if (result.currentAIMessage) {
       result.hasActiveTool =
         result.currentAIMessage.parts?.some(
@@ -94,14 +86,11 @@ const Chat = () => {
             part.toolInvocation?.state === 'result'
         ) || false;
     }
-
     if (latestAIMessageIndex < latestUserMessageIndex) {
       result.currentAIMessage = null;
     }
-
     return result;
   }, [messages]);
-
   const isToolInProgress = messages.some(
     (m) =>
       m.role === 'assistant' &&
@@ -111,105 +100,103 @@ const Chat = () => {
           part.toolInvocation?.state !== 'result'
       )
   );
-
-  const submitQuery = useCallback((query: string) => {
-    if (!query.trim() || isToolInProgress) return;
-
-    // Keep URL in sync with latest active query
-    if (typeof window !== 'undefined') {
-      try {
-        const url = new URL(window.location.href);
-        url.searchParams.set('query', query.trim());
-        window.history.replaceState(null, '', url.pathname + url.search);
-      } catch (e) {
-        console.error('Failed to update URL search params:', e);
+  const submitQuery = useCallback(
+    (query: string) => {
+      if (!query.trim() || isToolInProgress) return;
+      // Keep URL in sync with latest active query
+      if (typeof window !== 'undefined') {
+        try {
+          const url = new URL(window.location.href);
+          url.searchParams.set('query', query.trim());
+          window.history.replaceState(null, '', url.pathname + url.search);
+        } catch (e) {
+          console.error('Failed to update URL search params:', e);
+        }
       }
-    }
-
-    // Pre-process default questions to save API quota with robust matching
-    const normalizedQuery = query.toLowerCase().replace(/\s+/g, ' ').trim();
-    
-    const isMe = normalizedQuery.includes('who are you and what do you do');
-    const isProjects = normalizedQuery.includes('what are your projects');
-    const isSkills = normalizedQuery.includes('technical skills and tech stack');
-    const isFun = normalizedQuery.includes('what do you do for fun');
-    const isContact = normalizedQuery.includes('how can i contact you');
-
-    if (isMe || isProjects || isSkills || isFun || isContact) {
-      let toolName = '';
-      let textContent = '';
-      
-      if (isMe) {
-        toolName = 'getPresentation';
-        textContent = "Hey 👋 I'm Manav Bhullar. I build across three domains - full-stack web dev, data analytics, and AI/ML. Here is my background!";
-      } else if (isProjects) {
-        toolName = 'getProjects';
-        textContent = "Here are some of the projects I've been working on! I love building full-stack distributed systems, data pipelines, and RAG applications.";
-      } else if (isSkills) {
-        toolName = 'getSkills';
-        textContent = "I've worked with a wide range of technologies across web development, data engineering, and AI. Here is my tech stack!";
-      } else if (isFun) {
-        toolName = 'getCrazy';
-        textContent = "Outside of coding, I'm really into fitness and reading! But since you asked for a crazy story, let me tell you about how I rate-limited myself out of my own portfolio...";
-      } else if (isContact) {
-        toolName = 'getContact';
-        textContent = "You can find me on GitHub, LinkedIn, or shoot me an email. Let's build something cool together!";
+      // Pre-process default questions to save API quota with robust matching
+      const normalizedQuery = query.toLowerCase().replace(/\s+/g, ' ').trim();
+      const isMe = normalizedQuery.includes('who are you and what do you do');
+      const isProjects = normalizedQuery.includes('what are your projects');
+      const isSkills = normalizedQuery.includes(
+        'technical skills and tech stack'
+      );
+      const isFun = normalizedQuery.includes('what do you do for fun');
+      const isContact = normalizedQuery.includes('how can i contact you');
+      if (isMe || isProjects || isSkills || isFun || isContact) {
+        let toolName = '';
+        let textContent = '';
+        if (isMe) {
+          toolName = 'getPresentation';
+          textContent =
+            "Hey 👋 I'm Manav Bhullar. I build across three domains - full-stack web dev, data analytics, and AI/ML. Here is my background!";
+        } else if (isProjects) {
+          toolName = 'getProjects';
+          textContent =
+            "Here are some of the projects I've been working on! I love building full-stack distributed systems, data pipelines, and RAG applications.";
+        } else if (isSkills) {
+          toolName = 'getSkills';
+          textContent =
+            "I've worked with a wide range of technologies across web development, data engineering, and AI. Here is my tech stack!";
+        } else if (isFun) {
+          toolName = 'getCrazy';
+          textContent =
+            "Outside of coding, I'm really into fitness and reading! But since you asked for a crazy story, let me tell you about how I rate-limited myself out of my own portfolio...";
+        } else if (isContact) {
+          toolName = 'getContact';
+          textContent =
+            "You can find me on GitHub, LinkedIn, or shoot me an email. Let's build something cool together!";
+        }
+        const userMessage = {
+          id: Date.now().toString(),
+          role: 'user',
+          content: query,
+        };
+        const assistantMessage = {
+          id: (Date.now() + 1).toString(),
+          role: 'assistant',
+          content: textContent,
+          parts: [
+            { type: 'text', text: textContent },
+            {
+              type: 'tool-invocation',
+              toolInvocation: {
+                toolCallId: 'mock_' + Date.now(),
+                toolName: toolName,
+                args: {},
+                state: 'result',
+                result: { success: true },
+              },
+            },
+          ],
+        };
+        setLoadingSubmit(true);
+        // Artificial delay to show "Thinking..." UX
+        setTimeout(() => {
+          setMessages([
+            ...messages,
+            userMessage as unknown as Message,
+            assistantMessage as unknown as Message,
+          ]);
+          setLoadingSubmit(false);
+        }, 500);
+        // Track chat message sent event in PostHog
+        if (typeof window !== 'undefined') {
+          trackChatQuery(query);
+        }
+        return;
       }
-
-      const userMessage = {
-        id: Date.now().toString(),
-        role: 'user',
-        content: query,
-      };
-
-      const assistantMessage = {
-        id: (Date.now() + 1).toString(),
-        role: 'assistant',
-        content: textContent,
-        parts: [
-          { type: 'text', text: textContent },
-          {
-            type: 'tool-invocation',
-            toolInvocation: {
-              toolCallId: 'mock_' + Date.now(),
-              toolName: toolName,
-              args: {},
-              state: 'result',
-              result: { success: true },
-            }
-          }
-        ]
-      };
-
       setLoadingSubmit(true);
-      
-      // Artificial delay to show "Thinking..." UX
-      setTimeout(() => {
-        setMessages([...messages, userMessage as unknown as Message, assistantMessage as unknown as Message]);
-        setLoadingSubmit(false);
-      }, 500);
-
       // Track chat message sent event in PostHog
       if (typeof window !== 'undefined') {
         trackChatQuery(query);
       }
-
-      return;
-    }
-
-    setLoadingSubmit(true);
-
-    // Track chat message sent event in PostHog
-    if (typeof window !== 'undefined') {
-      trackChatQuery(query);
-    }
-
-    append({
-      role: 'user',
-      content: query,
-    });
-  }, [isToolInProgress, messages, setMessages, append]);
-
+      append({
+        role: 'user',
+        content: query,
+      });
+    },
+    [isToolInProgress, messages, setMessages, append]
+  );
   useEffect(() => {
     if (initialQuery && !autoSubmitted) {
       setAutoSubmitted(true);
@@ -217,7 +204,6 @@ const Chat = () => {
       submitQuery(initialQuery);
     }
   }, [initialQuery, autoSubmitted, submitQuery, setInput]);
-
   useEffect(() => {
     const handleChatSubmit = (e: Event) => {
       const customEvent = e as CustomEvent<string>;
@@ -228,51 +214,60 @@ const Chat = () => {
     window.addEventListener('chat:submit', handleChatSubmit);
     return () => window.removeEventListener('chat:submit', handleChatSubmit);
   }, [submitQuery]);
-
   const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!input.trim() || isToolInProgress) return;
     submitQuery(input);
     setInput('');
   };
-
   const handleStop = () => {
     stop();
     setLoadingSubmit(false);
   };
-
   const handleReset = () => {
     setMessages([]);
     setInput('');
     router.push('/');
   };
-
   // Check if this is the initial empty state (no messages)
   const isEmptyState =
     !currentAIMessage && !latestUserMessage && !loadingSubmit;
-
   // Calculate header height based on hasActiveTool
   const headerHeight = hasActiveTool ? 24 : 100;
-
   return (
     <div className="relative h-[100dvh] overflow-hidden">
-      <div className="absolute top-3 right-3 sm:top-6 sm:right-8 z-51 flex flex-row items-center justify-center gap-1 sm:gap-2">
-        <div
+      <div className="absolute top-3 right-3 z-51 flex flex-row items-center justify-center gap-1 sm:top-6 sm:right-8 sm:gap-2">
+        <button
           onClick={handleReset}
           title="Home"
-          className="hover:bg-accent cursor-pointer rounded-xl sm:rounded-2xl px-2 py-1 sm:px-3 sm:py-1.5"
+          aria-label="Return to home"
+          className="hover:bg-accent focus-visible:ring-ring cursor-pointer rounded-xl px-2 py-1 transition-all outline-none focus-visible:ring-2 focus-visible:ring-offset-2 sm:rounded-2xl sm:px-3 sm:py-1.5"
         >
-          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-accent-foreground h-5 w-5 sm:h-7 sm:w-7"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-        </div>
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="text-accent-foreground h-5 w-5 sm:h-7 sm:w-7"
+          >
+            <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+            <polyline points="9 22 9 12 15 12 15 22" />
+          </svg>
+        </button>
         <WelcomeModal
           trigger={
-            <div className="hover:bg-accent cursor-pointer rounded-xl sm:rounded-2xl px-2 py-1 sm:px-3 sm:py-1.5">
+            <div className="hover:bg-accent cursor-pointer rounded-xl px-2 py-1 sm:rounded-2xl sm:px-3 sm:py-1.5">
               <Info className="text-accent-foreground h-5 sm:h-8" />
             </div>
           }
         />
         {/* GitHub star — hidden on mobile to avoid overcrowding the top bar */}
-        <div className="pt-1 hidden sm:block">
+        <div className="hidden pt-1 sm:block">
           <GitHubButton
             href="https://github.com/manav-bhullar"
             data-color-scheme="no-preference: light; light: light; dark: light_high_contrast;"
@@ -284,7 +279,6 @@ const Chat = () => {
           </GitHubButton>
         </div>
       </div>
-
       {/* Fixed Header with Gradient — shows the latest sent message */}
       <div
         className="fixed top-0 right-0 left-0 z-50"
@@ -294,7 +288,7 @@ const Chat = () => {
         }}
       >
         <div
-          className={`transition-all duration-300 ease-in-out ${hasActiveTool ? 'pt-3 sm:pt-6 pb-0' : 'py-3 sm:py-6'}`}
+          className={`transition-all duration-300 ease-in-out ${hasActiveTool ? 'pt-3 pb-0 sm:pt-6' : 'py-3 sm:py-6'}`}
         >
           <AnimatePresence>
             {latestUserMessage && !currentAIMessage && (
@@ -317,7 +311,6 @@ const Chat = () => {
           </AnimatePresence>
         </div>
       </div>
-
       {/* Main Content Area */}
       <div className="container mx-auto flex h-full max-w-3xl flex-col">
         {/* Scrollable Chat Content */}
@@ -335,7 +328,7 @@ const Chat = () => {
                 <ChatLanding submitQuery={submitQuery} />
               </motion.div>
             ) : currentAIMessage ? (
-              <div className="pb-4 pt-8 md:pt-24">
+              <div className="pt-8 pb-4 md:pt-24">
                 <SimplifiedChatView
                   message={currentAIMessage}
                   isLoading={isLoading}
@@ -358,10 +351,12 @@ const Chat = () => {
             )}
           </AnimatePresence>
         </div>
-
         {/* Fixed Bottom Bar */}
-        <div className="sticky bottom-0 border-t border-border/40 bg-background/95 px-2 pt-3 sm:pt-4 backdrop-blur-sm md:px-0"
-          style={{ paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 8px)' }}
+        <div
+          className="border-border/40 bg-background/95 sticky bottom-0 border-t px-2 pt-3 backdrop-blur-sm sm:pt-4 md:px-0"
+          style={{
+            paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 8px)',
+          }}
         >
           <div className="relative flex flex-col items-center gap-2 sm:gap-3">
             <HelperBoost submitQuery={submitQuery} setInput={setInput} />
@@ -379,5 +374,4 @@ const Chat = () => {
     </div>
   );
 };
-
 export default Chat;
