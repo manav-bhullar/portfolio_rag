@@ -71,6 +71,55 @@ const CodeBlock = ({ content }: { content: string }) => {
   );
 };
 
+const REMARK_PLUGINS = [remarkGfm];
+const MARKDOWN_COMPONENTS = {
+  p: ({ children }: { children: React.ReactNode }) => (
+    <p className="break-words whitespace-pre-wrap">
+      {children}
+    </p>
+  ),
+  ul: ({ children }: { children: React.ReactNode }) => (
+    <ul className="my-4 list-disc pl-6">{children}</ul>
+  ),
+  ol: ({ children }: { children: React.ReactNode }) => (
+    <ol className="my-4 list-decimal pl-6">{children}</ol>
+  ),
+  li: ({ children }: { children: React.ReactNode }) => <li className="my-1">{children}</li>,
+  code: ({
+    inline,
+    className,
+    children,
+    ...props
+  }: React.ComponentPropsWithoutRef<'code'> & { inline?: boolean }) => {
+    const text = String(children).replace(/\n$/, '');
+
+    // Check if this is our mock citation
+    if (inline && text.startsWith('[') && text.endsWith(']')) {
+      const sourceId = text.slice(1, -1);
+      return (
+        <span
+          className="inline-flex cursor-help items-center rounded-full bg-[#3FB37F]/10 px-2.5 py-0.5 text-xs font-semibold text-[#3FB37F] transition-colors hover:bg-[#3FB37F]/20"
+          title={`Source: ${sourceId}`}
+        >
+          {sourceId}
+        </span>
+      );
+    }
+
+    return <code className={className} {...props}>{children}</code>;
+  },
+  a: ({ href, children }: { href?: string; children: React.ReactNode }) => (
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="text-blue-500 hover:underline"
+    >
+      {children}
+    </a>
+  ),
+};
+
 export default function ChatMessageContent({
   message,
 }: ChatMessageContentProps) {
@@ -108,54 +157,8 @@ export default function ChatMessageContent({
               // Regular text content
               <div key={`text-${i}`} className="prose dark:prose-invert w-full">
                 <Markdown
-                  remarkPlugins={[remarkGfm]}
-                  components={{
-                    p: ({ children }) => (
-                      <p className="break-words whitespace-pre-wrap">
-                        {children}
-                      </p>
-                    ),
-                    ul: ({ children }) => (
-                      <ul className="my-4 list-disc pl-6">{children}</ul>
-                    ),
-                    ol: ({ children }) => (
-                      <ol className="my-4 list-decimal pl-6">{children}</ol>
-                    ),
-                    li: ({ children }) => <li className="my-1">{children}</li>,
-                    code: ({
-                      inline,
-                      className,
-                      children,
-                      ...props
-                    }: React.ComponentPropsWithoutRef<'code'> & { inline?: boolean }) => {
-                      const text = String(children).replace(/\n$/, '');
-                      
-                      // Check if this is our mock citation
-                      if (inline && text.startsWith('[') && text.endsWith(']')) {
-                        const sourceId = text.slice(1, -1);
-                        return (
-                          <span 
-                            className="inline-flex cursor-help items-center rounded-full bg-[#3FB37F]/10 px-2.5 py-0.5 text-xs font-semibold text-[#3FB37F] transition-colors hover:bg-[#3FB37F]/20"
-                            title={`Source: ${sourceId}`}
-                          >
-                            {sourceId}
-                          </span>
-                        );
-                      }
-                      
-                      return <code className={className} {...props}>{children}</code>;
-                    },
-                    a: ({ href, children }) => (
-                      <a
-                        href={href}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-blue-500 hover:underline"
-                      >
-                        {children}
-                      </a>
-                    ),
-                  }}
+                  remarkPlugins={REMARK_PLUGINS}
+                  components={MARKDOWN_COMPONENTS}
                 >
                   {content}
                 </Markdown>
