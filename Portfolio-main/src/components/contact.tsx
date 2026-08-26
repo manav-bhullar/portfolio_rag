@@ -30,11 +30,6 @@ export function Contact() {
     ],
   };
 
-  // Function to handle opening links
-  const openLink = (url: string) => {
-    window.open(url, '_blank', 'noopener,noreferrer');
-  };
-
   return (
     <div className="mx-auto mt-8 w-full">
       <div className="rounded-organic bg-accent w-full overflow-hidden px-6 py-8 font-sans sm:px-10 md:px-16 md:py-12">
@@ -50,42 +45,40 @@ export function Contact() {
 
         {/* Email Section */}
         <div className="mt-8 flex flex-col md:mt-10">
-          <div
-            className="group mb-2 cursor-pointer"
-            onClick={() => openLink(`mailto:${contactInfo.email}`)}
+          <a
+            href={`mailto:${contactInfo.email}`}
+            className="group mb-2 flex w-fit items-center gap-1 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
-            <div className="flex items-center gap-1">
-              <span className="text-[var(--accent-olist)] text-base font-medium hover:underline sm:text-lg">
-                {contactInfo.email}
-              </span>
-              <ChevronRight className="h-5 w-5 text-[var(--accent-olist)] transition-transform duration-300 group-hover:translate-x-1" />
-            </div>
-          </div>
+            <span className="text-[var(--accent-olist)] text-base font-medium group-hover:underline sm:text-lg">
+              {contactInfo.email}
+            </span>
+            <ChevronRight className="h-5 w-5 text-[var(--accent-olist)] transition-transform duration-300 group-hover:translate-x-1" />
+          </a>
 
           {/* Phone */}
-          <div
-            className="group mb-5 cursor-pointer"
-            onClick={() => openLink(`tel:${contactInfo.phone.replace(/\s/g, '')}`)}
+          <a
+            href={`tel:${contactInfo.phone.replace(/\s/g, '')}`}
+            className="group mb-5 flex w-fit items-center gap-1 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
-            <div className="flex items-center gap-1">
-              <span className="text-base font-medium text-muted-foreground hover:underline sm:text-lg">
-                {contactInfo.phone}
-              </span>
-              <ChevronRight className="h-5 w-5 text-muted-foreground transition-transform duration-300 group-hover:translate-x-1" />
-            </div>
-          </div>
+            <span className="text-base font-medium text-muted-foreground group-hover:underline sm:text-lg">
+              {contactInfo.phone}
+            </span>
+            <ChevronRight className="h-5 w-5 text-muted-foreground transition-transform duration-300 group-hover:translate-x-1" />
+          </a>
 
           {/* Social Links */}
           <div className="flex flex-wrap gap-x-6 gap-y-5 sm:gap-x-8">
             {contactInfo.socials.map((social) => (
-              <button
+              <a
                 key={social.name}
-                className="text-muted-foreground hover:text-foreground cursor-pointer text-sm transition-colors"
-                onClick={() => openLink(social.url)}
+                href={social.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-muted-foreground hover:text-foreground rounded-sm text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 title={social.name}
               >
                 {social.name}
-              </button>
+              </a>
             ))}
           </div>
         </div>
