@@ -1,0 +1,3 @@
+## 2024-05-24 - [Avoid Nested Interactive Elements]
+**Learning:** When adding semantic `<button>` elements to improve accessibility, be careful when dealing with custom component triggers (like `WelcomeModal`) to avoid nesting `<button>` inside `<button>`. This results in invalid HTML and major issues for screen readers.
+**Action:** When updating a custom trigger prop, verify the element being passed to the trigger is not already a `<button>` before modifying the trigger wrapper itself to be a `<button>`. Or conversely, just make sure to only change one of the two into a semantic interactive element.
