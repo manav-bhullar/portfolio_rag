@@ -74,9 +74,15 @@ export async function POST(req: Request) {
 
     // ── RAG: Retrieve relevant context ───────────────────────
     // Extract the latest user message for retrieval
-    const lastUserMessage = [...messages]
-      .reverse()
-      .find((m: { role: string }) => m.role === 'user');
+    // ⚡ Bolt Performance Optimization: Replace `[...messages].reverse().find()`
+    // with a backward for-loop to prevent O(n) memory allocation and reduce GC pressure.
+    let lastUserMessage = undefined;
+    for (let i = messages.length - 1; i >= 0; i--) {
+      if (messages[i].role === 'user') {
+        lastUserMessage = messages[i];
+        break;
+      }
+    }
 
     let ragContext = '';
     if (lastUserMessage) {
