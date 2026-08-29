@@ -5,7 +5,6 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { useSearchParams, useRouter } from 'next/navigation';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
-import posthog from 'posthog-js';
 
 // Component imports
 import ChatBottombar from '@/components/chat/chat-bottombar';
@@ -42,7 +41,7 @@ const Chat = () => {
     messages,
     input,
     handleInputChange,
-    handleSubmit,
+
     isLoading,
     stop,
     setMessages,
@@ -257,18 +256,22 @@ const Chat = () => {
   return (
     <div className="relative h-[100dvh] overflow-hidden">
       <div className="absolute top-3 right-3 sm:top-6 sm:right-8 z-51 flex flex-row items-center justify-center gap-1 sm:gap-2">
-        <div
+        <button
           onClick={handleReset}
           title="Home"
-          className="hover:bg-accent cursor-pointer rounded-xl sm:rounded-2xl px-2 py-1 sm:px-3 sm:py-1.5"
+          aria-label="Go home"
+          className="hover:bg-accent cursor-pointer rounded-xl sm:rounded-2xl px-2 py-1 sm:px-3 sm:py-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-accent-foreground h-5 w-5 sm:h-7 sm:w-7"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-        </div>
+        </button>
         <WelcomeModal
           trigger={
-            <div className="hover:bg-accent cursor-pointer rounded-xl sm:rounded-2xl px-2 py-1 sm:px-3 sm:py-1.5">
+            <button
+              aria-label="Show info"
+              className="hover:bg-accent cursor-pointer rounded-xl sm:rounded-2xl px-2 py-1 sm:px-3 sm:py-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
               <Info className="text-accent-foreground h-5 sm:h-8" />
-            </div>
+            </button>
           }
         />
         {/* GitHub star — hidden on mobile to avoid overcrowding the top bar */}
