@@ -10,7 +10,7 @@ import {
 } from '@/components/ui/dialog';
 import { motion } from 'framer-motion';
 import { Info, X } from 'lucide-react';
-import { useState } from 'react';
+import React, { useState, cloneElement, isValidElement } from 'react';
 
 // Added a trigger prop to accept custom triggers
 interface WelcomeModalProps {
@@ -39,14 +39,38 @@ export default function WelcomeModal({ trigger }: WelcomeModalProps) {
     window.location.href = '/chat?query=How%20can%20I%20contact%20you%3F';
   };
 
+  const renderTrigger = () => {
+    if (!trigger) {
+      return defaultTrigger;
+    }
+
+    if (isValidElement(trigger)) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      return cloneElement(trigger as React.ReactElement<any>, {
+        onClick: (e: React.MouseEvent) => {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const triggerProps = trigger.props as any;
+          if (triggerProps.onClick) {
+            triggerProps.onClick(e);
+          }
+          if (!e.defaultPrevented) {
+            setIsOpen(true);
+          }
+        },
+      });
+    }
+
+    // Fallback for non-element triggers
+    return (
+      <span onClick={() => setIsOpen(true)} className="cursor-pointer" tabIndex={0} role="button" onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setIsOpen(true); } }}>
+        {trigger}
+      </span>
+    );
+  };
+
   return (
     <>
-      {/* Use custom trigger if provided, otherwise use default */}
-      {trigger ? (
-        <div onClick={() => setIsOpen(true)}>{trigger}</div>
-      ) : (
-        defaultTrigger
-      )}
+      {renderTrigger()}
 
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
         <DialogContent className="z-52 bg-background max-h-[85dvh] overflow-auto rounded-2xl border-none p-4 sm:p-6 md:p-8 shadow-xl sm:max-w-[85vw] md:max-w-[80vw] lg:max-w-[1000px]">
