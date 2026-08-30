@@ -1,0 +1,3 @@
+## 2023-10-27 - [Component Accessibility: Custom Trigger Props]
+**Learning:** Passing a native `<button>` element as a custom `trigger` prop to a modal and indiscriminately wrapping it in another interactive element (like `<div onClick={...}>`) creates invalid, inaccessible nested interactive elements.
+**Action:** Use `React.isValidElement` and `React.cloneElement` to safely merge necessary event handlers (e.g. `onClick`) directly onto the custom trigger to maintain valid semantic HTML and accessibility. Also ensure standalone action items are wrapped in `<button>` elements, not `<div>`, and include appropriate ARIA labels and focus-visible states.
