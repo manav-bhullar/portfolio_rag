@@ -35,7 +35,7 @@ export const Compare = ({
 
   const sliderRef = useRef<HTMLDivElement>(null);
 
-  const autoplayRef = useRef<NodeJS.Timeout | null>(null);
+  const autoplayRef = useRef<number | null>(null);
 
   const startAutoplay = useCallback(() => {
     if (!autoplay) return;
@@ -48,15 +48,17 @@ export const Compare = ({
       const percentage = progress <= 1 ? progress * 100 : (2 - progress) * 100;
 
       setSliderXPercent(percentage);
-      autoplayRef.current = setTimeout(animate, 16); // ~60fps
+      // Use requestAnimationFrame instead of setTimeout for smoother animations
+      // synced with display refresh rate and better background tab performance
+      autoplayRef.current = requestAnimationFrame(animate);
     };
 
-    animate();
+    autoplayRef.current = requestAnimationFrame(animate);
   }, [autoplay, autoplayDuration]);
 
   const stopAutoplay = useCallback(() => {
-    if (autoplayRef.current) {
-      clearTimeout(autoplayRef.current);
+    if (autoplayRef.current !== null) {
+      cancelAnimationFrame(autoplayRef.current);
       autoplayRef.current = null;
     }
   }, []);
