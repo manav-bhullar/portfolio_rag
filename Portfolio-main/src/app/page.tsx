@@ -25,6 +25,27 @@ const questionConfig = [
   { key: 'Contact', color: '#8B5FE0', icon: UserRoundSearch },
 ] as const;
 
+// Moved variants outside the component to prevent re-creation on every render,
+// reducing garbage collection overhead and potential unnecessary re-renders.
+const topElementVariants = {
+  hidden: { opacity: 0, y: -30, scale: 0.96 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    scale: 1,
+    transition: { type: 'spring', stiffness: 200, damping: 20 },
+  },
+} as const;
+
+const bottomElementVariants = {
+  hidden: { opacity: 0, y: 30 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { ease: 'easeOut', duration: 0.6, delay: 0.15 },
+  },
+} as const;
+
 /* ---------- component ---------- */
 export default function Home() {
   const [input, setInput] = useState('');
@@ -33,25 +54,6 @@ export default function Home() {
 
   const goToChat = (query: string) =>
     router.push(`/chat?query=${encodeURIComponent(query)}`);
-
-  const topElementVariants = {
-    hidden: { opacity: 0, y: -30, scale: 0.96 },
-    visible: {
-      opacity: 1,
-      y: 0,
-      scale: 1,
-      transition: { type: 'spring', stiffness: 200, damping: 20 },
-    },
-  } as const;
-
-  const bottomElementVariants = {
-    hidden: { opacity: 0, y: 30 },
-    visible: {
-      opacity: 1,
-      y: 0,
-      transition: { ease: 'easeOut', duration: 0.6, delay: 0.15 },
-    },
-  } as const;
 
   return (
     <div className="relative flex min-h-[100dvh] flex-col items-center justify-center overflow-hidden bg-background px-4 py-20 sm:py-16">
