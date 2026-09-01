@@ -93,9 +93,7 @@ const questionsByCategory = [
     id: 'skills',
     name: 'Skills',
     icon: GraduationCapIcon,
-    questions: [
-      'What are your skills?'
-    ],
+    questions: ['What are your skills?'],
   },
   {
     id: 'fun',
@@ -138,9 +136,7 @@ const AnimatedChevron = () => {
   );
 };
 
-export default function HelperBoost({
-  submitQuery,
-}: HelperBoostProps) {
+export default function HelperBoost({ submitQuery }: HelperBoostProps) {
   const [isVisible, setIsVisible] = useState(true);
   const [open, setOpen] = useState(false);
 
@@ -176,8 +172,10 @@ export default function HelperBoost({
             <button
               onClick={toggleVisibility}
               aria-expanded={isVisible}
-              aria-label={isVisible ? 'Hide quick questions' : 'Show quick questions'}
-              className="flex items-center gap-1 px-4 py-2 text-xs text-muted-foreground transition-colors hover:text-foreground"
+              aria-label={
+                isVisible ? 'Hide quick questions' : 'Show quick questions'
+              }
+              className="text-muted-foreground hover:text-foreground flex items-center gap-1 px-4 py-2 text-xs transition-colors"
             >
               {isVisible ? (
                 <>
@@ -197,7 +195,7 @@ export default function HelperBoost({
           {isVisible && (
             <div className="w-full">
               <div
-                className="flex w-full flex-nowrap overflow-x-auto gap-2 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden md:flex-wrap md:overflow-x-visible md:gap-3"
+                className="flex w-full [scrollbar-width:none] flex-nowrap gap-2 overflow-x-auto pb-1 md:flex-wrap md:gap-3 md:overflow-x-visible [&::-webkit-scrollbar]:hidden"
                 style={{ justifyContent: 'safe center' }}
               >
                 {questionConfig.map(({ key, color, icon: Icon }) => (
@@ -205,11 +203,18 @@ export default function HelperBoost({
                     key={key}
                     onClick={() => handleQuestionClick(key)}
                     variant="outline"
-                    className="border-border hover:bg-secondary h-auto min-w-fit flex-shrink-0 cursor-pointer rounded-full border bg-card px-3 sm:px-4 py-2.5 sm:py-3 shadow-none transition-none active:scale-95"
+                    className="border-border hover:bg-secondary bg-card h-auto min-w-fit flex-shrink-0 cursor-pointer rounded-full border px-3 py-2.5 shadow-none transition-none active:scale-95 sm:px-4 sm:py-3"
                   >
-                    <div className="flex items-center gap-2 text-foreground">
-                      <Icon size={14} className="sm:w-4 sm:h-4" strokeWidth={2.25} color={color} />
-                      <span className="text-xs sm:text-sm font-semibold">{key}</span>
+                    <div className="text-foreground flex items-center gap-2">
+                      <Icon
+                        size={14}
+                        className="sm:h-4 sm:w-4"
+                        strokeWidth={2.25}
+                        color={color}
+                      />
+                      <span className="text-xs font-semibold sm:text-sm">
+                        {key}
+                      </span>
                     </div>
                   </Button>
                 ))}
@@ -218,19 +223,19 @@ export default function HelperBoost({
                 <TooltipProvider>
                   <Tooltip delayDuration={0}>
                     <TooltipTrigger asChild>
-                      <Drawer.Trigger className="group relative flex flex-shrink-0 items-center justify-center">
-                        <motion.div
-                          className="hover:bg-secondary flex h-auto cursor-pointer items-center space-x-1 rounded-full border border-border bg-card px-3 sm:px-4 py-2.5 sm:py-3 text-xs sm:text-sm transition-all duration-200"
+                      <Drawer.Trigger asChild aria-label="More quick questions">
+                        <motion.button
+                          className="group hover:bg-secondary border-border bg-card focus-visible:ring-ring flex h-auto flex-shrink-0 cursor-pointer items-center justify-center space-x-1 rounded-full border px-3 py-2.5 text-xs transition-all duration-200 focus-visible:ring-2 focus-visible:outline-none sm:px-4 sm:py-3 sm:text-sm"
                           whileHover={{ scale: 1 }}
                           whileTap={{ scale: 0.98 }}
                         >
-                          <div className="flex items-center gap-3 text-foreground">
+                          <div className="text-foreground flex items-center gap-3">
                             <CircleEllipsis
                               className="h-[20px] w-[18px]"
                               strokeWidth={2}
                             />
                           </div>
-                        </motion.div>
+                        </motion.button>
                       </Drawer.Trigger>
                     </TooltipTrigger>
                     <TooltipContent>
@@ -248,8 +253,8 @@ export default function HelperBoost({
             width/centering here rather than overriding height) */}
         <Drawer.Portal>
           <Drawer.Overlay className="fixed inset-0 z-100 bg-black/50 backdrop-blur-xs" />
-          <Drawer.Content className="fixed right-0 bottom-0 left-0 z-100 mx-auto flex h-[80%] max-w-xl flex-col rounded-t-[2rem] bg-background outline-none lg:h-[60%]">
-            <div className="flex-1 overflow-y-auto rounded-t-[2rem] bg-card p-4">
+          <Drawer.Content className="bg-background fixed right-0 bottom-0 left-0 z-100 mx-auto flex h-[80%] max-w-xl flex-col rounded-t-[2rem] outline-none lg:h-[60%]">
+            <div className="bg-card flex-1 overflow-y-auto rounded-t-[2rem] p-4">
               <div className="mx-auto max-w-md space-y-4">
                 <div
                   aria-hidden
@@ -294,8 +299,8 @@ function CategorySection({
   return (
     <div className="space-y-3">
       <div className="flex items-center gap-2.5 px-1">
-        <Icon className="h-5 w-5 text-foreground" />
-        <Drawer.Title className="font-display text-[22px] font-bold text-foreground">
+        <Icon className="text-foreground h-5 w-5" />
+        <Drawer.Title className="font-display text-foreground text-[22px] font-bold">
           {name}
         </Drawer.Title>
       </div>
@@ -342,7 +347,9 @@ function QuestionItem({ question, onClick, isSpecial }: QuestionItemProps) {
     >
       <span
         className={
-          isSpecial ? 'font-semibold text-primary-foreground' : 'text-foreground'
+          isSpecial
+            ? 'text-primary-foreground font-semibold'
+            : 'text-foreground'
         }
       >
         {question}

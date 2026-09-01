@@ -10,7 +10,7 @@ import {
 } from '@/components/ui/dialog';
 import { motion } from 'framer-motion';
 import { Info, X } from 'lucide-react';
-import { useState } from 'react';
+import React, { useState } from 'react';
 
 // Added a trigger prop to accept custom triggers
 interface WelcomeModalProps {
@@ -24,7 +24,7 @@ export default function WelcomeModal({ trigger }: WelcomeModalProps) {
   const defaultTrigger = (
     <Button
       variant="ghost"
-      className="hover:bg-accent h-auto w-auto cursor-pointer rounded-xl sm:rounded-2xl p-2 sm:p-3 md:p-4 focus-visible:bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0"
+      className="hover:bg-accent h-auto w-auto cursor-pointer rounded-xl p-2 focus-visible:bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 sm:rounded-2xl sm:p-3 md:p-4"
       onClick={() => setIsOpen(true)}
     >
       <Info className="w-6 md:w-8" />
@@ -42,14 +42,27 @@ export default function WelcomeModal({ trigger }: WelcomeModalProps) {
   return (
     <>
       {/* Use custom trigger if provided, otherwise use default */}
-      {trigger ? (
-        <div onClick={() => setIsOpen(true)}>{trigger}</div>
-      ) : (
-        defaultTrigger
-      )}
+      {trigger
+        ? React.cloneElement(
+            trigger as React.ReactElement<{
+              onClick?: (e: React.MouseEvent) => void;
+            }>,
+            {
+              onClick: (e: React.MouseEvent) => {
+                const originalOnClick = (
+                  trigger as React.ReactElement<{
+                    onClick?: (e: React.MouseEvent) => void;
+                  }>
+                ).props.onClick;
+                if (originalOnClick) originalOnClick(e);
+                setIsOpen(true);
+              },
+            }
+          )
+        : defaultTrigger}
 
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
-        <DialogContent className="z-52 bg-background max-h-[85dvh] overflow-auto rounded-2xl border-none p-4 sm:p-6 md:p-8 shadow-xl sm:max-w-[85vw] md:max-w-[80vw] lg:max-w-[1000px]">
+        <DialogContent className="bg-background z-52 max-h-[85dvh] overflow-auto rounded-2xl border-none p-4 shadow-xl sm:max-w-[85vw] sm:p-6 md:max-w-[80vw] md:p-8 lg:max-w-[1000px]">
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -59,7 +72,7 @@ export default function WelcomeModal({ trigger }: WelcomeModalProps) {
             {/* Header */}
             <DialogHeader className="relative flex flex-row items-start justify-between px-4 pt-4 pb-3 sm:px-6 sm:pt-6 md:px-8 md:pt-8 md:pb-6">
               <div>
-                <DialogTitle className="flex items-center gap-2 text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight">
+                <DialogTitle className="flex items-center gap-2 text-2xl font-bold tracking-tight sm:text-3xl md:text-4xl">
                   Welcome to AI Portfolio
                 </DialogTitle>
                 <DialogDescription className="mt-2 text-base">
@@ -78,8 +91,8 @@ export default function WelcomeModal({ trigger }: WelcomeModalProps) {
             </DialogHeader>
 
             {/* Content area */}
-            <div className="space-y-4 sm:space-y-6 overflow-y-auto px-1 py-2 sm:px-4 sm:py-4 md:px-8">
-              <section className="bg-accent w-full space-y-6 md:space-y-8 rounded-xl sm:rounded-2xl p-4 sm:p-6 md:p-8">
+            <div className="space-y-4 overflow-y-auto px-1 py-2 sm:space-y-6 sm:px-4 sm:py-4 md:px-8">
+              <section className="bg-accent w-full space-y-6 rounded-xl p-4 sm:rounded-2xl sm:p-6 md:space-y-8 md:p-8">
                 {/* What section */}
                 <div className="space-y-3">
                   <h3 className="text-primary flex items-center gap-2 text-xl font-semibold">
@@ -88,8 +101,8 @@ export default function WelcomeModal({ trigger }: WelcomeModalProps) {
                   <p className="text-accent-foreground text-base leading-relaxed">
                     I&apos;m so excited to present my{' '}
                     <strong>brand new AI Portfolio.</strong>
-                    <br /> Whether you&apos;re a recruiter, a friend, family member,
-                    or just curious, feel free to ask anything you want!
+                    <br /> Whether you&apos;re a recruiter, a friend, family
+                    member, or just curious, feel free to ask anything you want!
                     <br /> You can inquire about my projects, skills, education,
                     or even my personal interests.
                   </p>
@@ -101,12 +114,12 @@ export default function WelcomeModal({ trigger }: WelcomeModalProps) {
                     Why ???
                   </h3>
                   <p className="text-accent-foreground text-base leading-relaxed">
-                    Traditional portfolios can be limiting. <br /> They can&apos;t
-                    adapt to every visitor&apos;s specific needs. <br /> With this AI
-                    approach, my portfolio becomes{' '}
+                    Traditional portfolios can be limiting. <br /> They
+                    can&apos;t adapt to every visitor&apos;s specific needs.{' '}
+                    <br /> With this AI approach, my portfolio becomes{' '}
                     <strong>
-                      exactly what you&apos;re interested in knowing about me and my
-                      work.
+                      exactly what you&apos;re interested in knowing about me
+                      and my work.
                     </strong>
                   </p>
                 </div>
