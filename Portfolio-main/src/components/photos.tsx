@@ -112,7 +112,7 @@ export function Photos({ photos, className = '', title }: PhotosProps) {
             >
               {/* Close button */}
               <button
-                className="absolute top-4 right-4 z-10 rounded-full bg-black/50 p-2 text-white hover:bg-black/70"
+                className="absolute top-4 right-4 z-10 rounded-full bg-black/50 p-2 text-white hover:bg-black/70" aria-label="Close photo"
                 onClick={closePhoto}
               >
                 <X className="h-6 w-6" />
