@@ -24,7 +24,7 @@ import {
   UserRoundSearch,
   UserSearch,
 } from 'lucide-react';
-import { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { Drawer } from 'vaul';
 
 interface HelperBoostProps {
@@ -138,28 +138,28 @@ const AnimatedChevron = () => {
   );
 };
 
-export default function HelperBoost({
+const HelperBoost = React.memo(function HelperBoost({
   submitQuery,
 }: HelperBoostProps) {
   const [isVisible, setIsVisible] = useState(true);
   const [open, setOpen] = useState(false);
 
-  const handleQuestionClick = (questionKey: string) => {
+  const handleQuestionClick = useCallback((questionKey: string) => {
     if (submitQuery) {
       submitQuery(questions[questionKey as keyof typeof questions]);
     }
-  };
+  }, [submitQuery]);
 
-  const handleDrawerQuestionClick = (question: string) => {
+  const handleDrawerQuestionClick = useCallback((question: string) => {
     if (submitQuery) {
       submitQuery(question);
     }
     setOpen(false);
-  };
+  }, [submitQuery]);
 
-  const toggleVisibility = () => {
-    setIsVisible(!isVisible);
-  };
+  const toggleVisibility = useCallback(() => {
+    setIsVisible((prev) => !prev);
+  }, []);
 
   return (
     <>
@@ -201,17 +201,13 @@ export default function HelperBoost({
                 style={{ justifyContent: 'safe center' }}
               >
                 {questionConfig.map(({ key, color, icon: Icon }) => (
-                  <Button
+                  <HelperButton
                     key={key}
-                    onClick={() => handleQuestionClick(key)}
-                    variant="outline"
-                    className="border-border hover:bg-secondary h-auto min-w-fit flex-shrink-0 cursor-pointer rounded-full border bg-card px-3 sm:px-4 py-2.5 sm:py-3 shadow-none transition-none active:scale-95"
-                  >
-                    <div className="flex items-center gap-2 text-foreground">
-                      <Icon size={14} className="sm:w-4 sm:h-4" strokeWidth={2.25} color={color} />
-                      <span className="text-xs sm:text-sm font-semibold">{key}</span>
-                    </div>
-                  </Button>
+                    questionKey={key}
+                    color={color}
+                    Icon={Icon}
+                    onClick={handleQuestionClick}
+                  />
                 ))}
 
                 {/* Need Inspiration Button */}
@@ -275,7 +271,39 @@ export default function HelperBoost({
       </Drawer.Root>
     </>
   );
-}
+});
+
+export default HelperBoost;
+
+// Extracted HelperButton for map loop
+const HelperButton = React.memo(function HelperButton({
+  questionKey,
+  color,
+  Icon,
+  onClick,
+}: {
+  questionKey: string;
+  color: string;
+  Icon: React.ElementType;
+  onClick: (key: string) => void;
+}) {
+  const handleClick = useCallback(() => {
+    onClick(questionKey);
+  }, [onClick, questionKey]);
+
+  return (
+    <Button
+      onClick={handleClick}
+      variant="outline"
+      className="border-border hover:bg-secondary h-auto min-w-fit flex-shrink-0 cursor-pointer rounded-full border bg-card px-3 sm:px-4 py-2.5 sm:py-3 shadow-none transition-none active:scale-95"
+    >
+      <div className="flex items-center gap-2 text-foreground">
+        <Icon size={14} className="sm:w-4 sm:h-4" strokeWidth={2.25} color={color} />
+        <span className="text-xs sm:text-sm font-semibold">{questionKey}</span>
+      </div>
+    </Button>
+  );
+});
 
 // Component for each category section
 interface CategorySectionProps {
@@ -285,7 +313,7 @@ interface CategorySectionProps {
   onQuestionClick: (question: string) => void;
 }
 
-function CategorySection({
+const CategorySection = React.memo(function CategorySection({
   name,
   Icon,
   questions,
@@ -307,24 +335,28 @@ function CategorySection({
           <QuestionItem
             key={index}
             question={question}
-            onClick={() => onQuestionClick(question)}
+            onClick={onQuestionClick}
             isSpecial={specialQuestions.includes(question)}
           />
         ))}
       </div>
     </div>
   );
-}
+});
 
 // Component for each question item with animated chevron
 interface QuestionItemProps {
   question: string;
-  onClick: () => void;
+  onClick: (question: string) => void;
   isSpecial: boolean;
 }
 
-function QuestionItem({ question, onClick, isSpecial }: QuestionItemProps) {
+const QuestionItem = React.memo(function QuestionItem({ question, onClick, isSpecial }: QuestionItemProps) {
   const [isHovered, setIsHovered] = useState(false);
+
+  const handleClick = useCallback(() => {
+    onClick(question);
+  }, [onClick, question]);
 
   return (
     <motion.button
@@ -335,7 +367,7 @@ function QuestionItem({ question, onClick, isSpecial }: QuestionItemProps) {
         'focus:outline-none focus-visible:ring-2 focus-visible:ring-[#3FB37F]',
         isSpecial ? 'bg-foreground' : 'bg-secondary'
       )}
-      onClick={onClick}
+      onClick={handleClick}
       onHoverStart={() => setIsHovered(true)}
       onHoverEnd={() => setIsHovered(false)}
       whileTap={{ scale: 0.98 }}
@@ -364,4 +396,4 @@ function QuestionItem({ question, onClick, isSpecial }: QuestionItemProps) {
       </motion.div>
     </motion.button>
   );
-}
+});
