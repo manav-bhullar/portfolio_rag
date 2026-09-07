@@ -10,7 +10,7 @@ import {
 } from '@/components/ui/dialog';
 import { motion } from 'framer-motion';
 import { Info, X } from 'lucide-react';
-import { useState } from 'react';
+import React, { useState } from 'react';
 
 // Added a trigger prop to accept custom triggers
 interface WelcomeModalProps {
@@ -43,7 +43,16 @@ export default function WelcomeModal({ trigger }: WelcomeModalProps) {
     <>
       {/* Use custom trigger if provided, otherwise use default */}
       {trigger ? (
-        <div onClick={() => setIsOpen(true)}>{trigger}</div>
+        React.cloneElement(trigger as React.ReactElement<{ onClick?: (e: React.MouseEvent) => void }>, {
+          onClick: (e?: React.MouseEvent) => {
+            // Call original onClick if it exists
+            const originalOnClick = (trigger as React.ReactElement<{ onClick?: (e: React.MouseEvent) => void }>).props.onClick;
+            if (originalOnClick && e) {
+              originalOnClick(e);
+            }
+            setIsOpen(true);
+          }
+        })
       ) : (
         defaultTrigger
       )}
