@@ -2,7 +2,16 @@
 
 import WelcomeModal from '@/components/welcome-modal';
 import { motion } from 'framer-motion';
-import { ArrowRight, Search, Laugh, BriefcaseBusiness, Layers, PartyPopper, UserRoundSearch, BarChart3 } from 'lucide-react';
+import {
+  ArrowRight,
+  Search,
+  Laugh,
+  BriefcaseBusiness,
+  Layers,
+  PartyPopper,
+  UserRoundSearch,
+  BarChart3,
+} from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useRef, useState } from 'react';
 import GitHubButton from 'react-github-btn';
@@ -25,11 +34,56 @@ const questionConfig = [
   { key: 'Contact', color: '#8B5FE0', icon: UserRoundSearch },
 ] as const;
 
-/* ---------- component ---------- */
-export default function Home() {
+/* ---------- components ---------- */
+function SearchForm({
+  goToChat,
+  bottomElementVariants,
+}: {
+  goToChat: (query: string) => void;
+  bottomElementVariants: import('framer-motion').Variants;
+}) {
   const [input, setInput] = useState('');
-  const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
+
+  return (
+    <motion.form
+      variants={bottomElementVariants}
+      initial="hidden"
+      animate="visible"
+      onSubmit={(e) => {
+        e.preventDefault();
+        if (input.trim()) goToChat(input.trim());
+      }}
+      className="w-full max-w-lg"
+    >
+      <div className="border-border bg-background flex items-center gap-2 rounded-full border py-2 pr-2 pl-4 transition-all focus-within:scale-[1.02] focus-within:border-[#3FB37F] focus-within:shadow-[0_8px_30px_rgb(0,0,0,0.12)] focus-within:ring-4 focus-within:ring-[#3FB37F]/10 sm:pl-5">
+        <Search className="text-muted-foreground h-4 w-4 shrink-0" />
+        <input
+          ref={inputRef}
+          type="text"
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          aria-label="Ask about my computer engineering work"
+          placeholder="Ask me anything..."
+          className="text-foreground placeholder:text-muted-foreground w-full border-none bg-transparent py-1 text-sm focus:outline-none"
+        />
+        <motion.button
+          type="submit"
+          disabled={!input.trim()}
+          aria-label="Submit question"
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.9 }}
+          className="bg-foreground text-primary-foreground disabled:hover:bg-foreground flex shrink-0 cursor-pointer items-center justify-center rounded-full p-2 transition-colors hover:bg-[#3FB37F] disabled:opacity-40"
+        >
+          <ArrowRight className="h-4 w-4" />
+        </motion.button>
+      </div>
+    </motion.form>
+  );
+}
+
+export default function Home() {
+  const router = useRouter();
 
   const goToChat = (query: string) =>
     router.push(`/chat?query=${encodeURIComponent(query)}`);
@@ -54,7 +108,7 @@ export default function Home() {
   } as const;
 
   return (
-    <div className="relative flex min-h-[100dvh] flex-col items-center justify-center overflow-hidden bg-background px-4 py-20 sm:py-16">
+    <div className="bg-background relative flex min-h-[100dvh] flex-col items-center justify-center overflow-hidden px-4 py-20 sm:py-16">
       {/* Responsive wavy clip-path (objectBoundingBox = scales with element size) */}
       <svg width="0" height="0" className="absolute">
         <defs>
@@ -65,16 +119,16 @@ export default function Home() {
       </svg>
 
       {/* GitHub & Analytics buttons */}
-      <div className="absolute top-4 right-4 sm:top-6 sm:right-8 z-20 flex items-center gap-2 sm:gap-4">
+      <div className="absolute top-4 right-4 z-20 flex items-center gap-2 sm:top-6 sm:right-8 sm:gap-4">
         <button
           onClick={() => router.push('/analytics')}
-          className="flex items-center gap-1.5 sm:gap-2 rounded-full border bg-background/50 backdrop-blur-sm px-2.5 py-1 text-xs sm:px-4 sm:py-1.5 sm:text-sm font-semibold text-foreground hover:bg-secondary transition-colors"
+          className="bg-background/50 text-foreground hover:bg-secondary flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-semibold backdrop-blur-sm transition-colors sm:gap-2 sm:px-4 sm:py-1.5 sm:text-sm"
         >
-          <BarChart3 className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-[#3E8EDE]" />
+          <BarChart3 className="h-3.5 w-3.5 text-[#3E8EDE] sm:h-4 sm:w-4" />
           <span>Analytics</span>
         </button>
         {/* GitHub star button — hidden on small screens to save top-bar space */}
-        <div className="pt-1 hidden sm:block">
+        <div className="hidden pt-1 sm:block">
           <GitHubButton
             href="https://github.com/manav-bhullar"
             data-color-scheme="no-preference: light; light: light; dark: light_high_contrast;"
@@ -87,7 +141,7 @@ export default function Home() {
         </div>
       </div>
 
-      <div className="absolute top-4 left-4 sm:top-6 sm:left-8 z-20">
+      <div className="absolute top-4 left-4 z-20 sm:top-6 sm:left-8">
         <WelcomeModal />
       </div>
 
@@ -101,76 +155,45 @@ export default function Home() {
         {/* Organic colored bleed behind the card */}
         <div className="absolute -inset-4 z-0 rounded-[40%_60%_55%_45%/50%_45%_55%_50%] bg-gradient-to-tr from-[#3FB37F] via-[#E0559C] to-[#F0954A] opacity-80 blur-2xl filter" />
 
-        <div className="shape-blob-hero relative z-10 flex w-full flex-col items-center gap-5 sm:gap-6 bg-card px-5 py-10 sm:px-8 sm:py-14 md:px-16 md:py-16 text-center shadow-[0_20px_60px_-15px_rgba(25,25,25,0.12)]">
-        <div>
-          <p className="text-xs sm:text-sm font-bold tracking-[0.15em] text-muted-foreground uppercase">
-            Let&apos;s build something impactful.
-          </p>
-          <h1 className="font-display mt-2 text-5xl leading-[0.95] font-black tracking-tight text-foreground sm:text-6xl md:text-7xl lg:text-8xl">
-            Manav Bhullar.
-          </h1>
-          <p className="mt-3 sm:mt-4 text-base sm:text-lg font-medium text-muted-foreground md:text-xl">
-            Full-Stack Software Engineer &amp; Data Analyst.
-          </p>
-        </div>
-
-        {/* free-form question */}
-        <motion.form
-          variants={bottomElementVariants}
-          initial="hidden"
-          animate="visible"
-          onSubmit={(e) => {
-            e.preventDefault();
-            if (input.trim()) goToChat(input.trim());
-          }}
-          className="w-full max-w-lg"
-        >
-          <div
-            className="flex items-center gap-2 rounded-full border border-border bg-background py-2 pr-2 pl-4 sm:pl-5 transition-all focus-within:scale-[1.02] focus-within:border-[#3FB37F] focus-within:shadow-[0_8px_30px_rgb(0,0,0,0.12)] focus-within:ring-4 focus-within:ring-[#3FB37F]/10"
-          >
-            <Search className="h-4 w-4 shrink-0 text-muted-foreground" />
-            <input
-              ref={inputRef}
-              type="text"
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              aria-label="Ask about my computer engineering work"
-              placeholder="Ask me anything..."
-              className="w-full border-none bg-transparent py-1 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none"
-            />
-            <motion.button
-              type="submit"
-              disabled={!input.trim()}
-              aria-label="Submit question"
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.9 }}
-              className="flex shrink-0 cursor-pointer items-center justify-center rounded-full bg-foreground p-2 text-primary-foreground transition-colors hover:bg-[#3FB37F] disabled:opacity-40 disabled:hover:bg-foreground"
-            >
-              <ArrowRight className="h-4 w-4" />
-            </motion.button>
+        <div className="shape-blob-hero bg-card relative z-10 flex w-full flex-col items-center gap-5 px-5 py-10 text-center shadow-[0_20px_60px_-15px_rgba(25,25,25,0.12)] sm:gap-6 sm:px-8 sm:py-14 md:px-16 md:py-16">
+          <div>
+            <p className="text-muted-foreground text-xs font-bold tracking-[0.15em] uppercase sm:text-sm">
+              Let&apos;s build something impactful.
+            </p>
+            <h1 className="font-display text-foreground mt-2 text-5xl leading-[0.95] font-black tracking-tight sm:text-6xl md:text-7xl lg:text-8xl">
+              Manav Bhullar.
+            </h1>
+            <p className="text-muted-foreground mt-3 text-base font-medium sm:mt-4 sm:text-lg md:text-xl">
+              Full-Stack Software Engineer &amp; Data Analyst.
+            </p>
           </div>
-        </motion.form>
 
-        {/* quick-question chips */}
-        <motion.div
-          variants={bottomElementVariants}
-          initial="hidden"
-          animate="visible"
-          className="flex flex-wrap items-center justify-center gap-2"
-        >
-          {questionConfig.map(({ key, color, icon: Icon }) => (
-            <motion.button
-              key={key}
-              onClick={() => goToChat(questions[key])}
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.95 }}
-              className="flex items-center gap-1.5 sm:gap-2 cursor-pointer rounded-full border border-border bg-card px-3 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-semibold text-foreground hover:bg-secondary transition-colors"
-            >
-              <Icon size={14} strokeWidth={2.25} color={color} />
-              <span>{key}</span>
-            </motion.button>
-          ))}
-        </motion.div>
+          {/* free-form question */}
+          <SearchForm
+            goToChat={goToChat}
+            bottomElementVariants={bottomElementVariants}
+          />
+
+          {/* quick-question chips */}
+          <motion.div
+            variants={bottomElementVariants}
+            initial="hidden"
+            animate="visible"
+            className="flex flex-wrap items-center justify-center gap-2"
+          >
+            {questionConfig.map(({ key, color, icon: Icon }) => (
+              <motion.button
+                key={key}
+                onClick={() => goToChat(questions[key])}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.95 }}
+                className="border-border bg-card text-foreground hover:bg-secondary flex cursor-pointer items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors sm:gap-2 sm:px-4 sm:py-2 sm:text-sm"
+              >
+                <Icon size={14} strokeWidth={2.25} color={color} />
+                <span>{key}</span>
+              </motion.button>
+            ))}
+          </motion.div>
         </div>
       </motion.div>
     </div>
