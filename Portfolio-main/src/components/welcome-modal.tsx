@@ -8,6 +8,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import React from 'react';
 import { motion } from 'framer-motion';
 import { Info, X } from 'lucide-react';
 import { useState } from 'react';
@@ -43,7 +44,18 @@ export default function WelcomeModal({ trigger }: WelcomeModalProps) {
     <>
       {/* Use custom trigger if provided, otherwise use default */}
       {trigger ? (
-        <div onClick={() => setIsOpen(true)}>{trigger}</div>
+        React.isValidElement(trigger) ? (
+          React.cloneElement(
+            trigger as React.ReactElement<{ onClick?: (e: React.MouseEvent) => void }>,
+            { onClick: (e: React.MouseEvent) => {
+              const element = trigger as React.ReactElement<{ onClick?: (e: React.MouseEvent) => void }>;
+              if (element.props.onClick) element.props.onClick(e);
+              setIsOpen(true);
+            }}
+          )
+        ) : (
+          <div onClick={() => setIsOpen(true)}>{trigger}</div>
+        )
       ) : (
         defaultTrigger
       )}
