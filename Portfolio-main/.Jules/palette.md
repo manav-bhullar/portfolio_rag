@@ -1,0 +1,3 @@
+## 2023-10-27 - [Welcome Modal Interactive Triggers]
+**Learning:** When adding custom trigger elements to modal wrappers, simply wrapping the `ReactNode` trigger in a `div` creates invalid interactive nesting. Moreover, when migrating interactive elements (like custom "Contact Me" buttons) from `div`s to semantic `button`s, it's easy to accidentally leave nested block flow content (like `<p>` tags) inside, which is technically invalid HTML5.
+**Action:** Use `React.cloneElement` to safely pass click handlers onto the provided trigger elements instead of wrapping them in `div`s, and when migrating elements to `button`s, verify that any nested children are valid phrasing content (like `span`s) rather than flow content (like `p`s or `div`s).
