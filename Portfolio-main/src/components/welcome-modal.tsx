@@ -10,7 +10,7 @@ import {
 } from '@/components/ui/dialog';
 import { motion } from 'framer-motion';
 import { Info, X } from 'lucide-react';
-import { useState } from 'react';
+import React, { useState } from 'react';
 
 // Added a trigger prop to accept custom triggers
 interface WelcomeModalProps {
@@ -43,7 +43,28 @@ export default function WelcomeModal({ trigger }: WelcomeModalProps) {
     <>
       {/* Use custom trigger if provided, otherwise use default */}
       {trigger ? (
-        <div onClick={() => setIsOpen(true)}>{trigger}</div>
+        React.isValidElement(trigger) ? (
+          React.cloneElement(
+            trigger as React.ReactElement<{
+              onClick?: (e: React.MouseEvent) => void;
+            }>,
+            {
+              onClick: (e: React.MouseEvent) => {
+                const originalOnClick = (
+                  trigger as React.ReactElement<{
+                    onClick?: (e: React.MouseEvent) => void;
+                  }>
+                ).props.onClick;
+                if (originalOnClick) {
+                  originalOnClick(e);
+                }
+                setIsOpen(true);
+              },
+            }
+          )
+        ) : (
+          <div onClick={() => setIsOpen(true)}>{trigger}</div>
+        )
       ) : (
         defaultTrigger
       )}
@@ -122,17 +143,17 @@ export default function WelcomeModal({ trigger }: WelcomeModalProps) {
               >
                 Start Chatting
               </Button>
-              <div
-                className="mt-6 flex cursor-pointer flex-wrap gap-1 text-center text-sm"
+              <button
+                className="mt-6 flex cursor-pointer flex-wrap items-center justify-center gap-1 text-center text-sm rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
                 onClick={handleContactMe}
               >
-                <p className="text-muted-foreground">
+                <span className="text-muted-foreground">
                   If you love it, please share it! Feedback is always welcome.
-                </p>
-                <div className="flex cursor-pointer items-center text-blue-500 hover:underline">
+                </span>
+                <span className="flex cursor-pointer items-center text-blue-500 hover:underline">
                   Contact me.
-                </div>
-              </div>
+                </span>
+              </button>
             </div>
           </motion.div>
         </DialogContent>
