@@ -100,15 +100,18 @@ const Chat = () => {
     return result;
   }, [messages]);
 
-  const isToolInProgress = messages.some(
-    (m) =>
-      m.role === 'assistant' &&
-      m.parts?.some(
-        (part) =>
-          part.type === 'tool-invocation' &&
-          part.toolInvocation?.state !== 'result'
-      )
-  );
+  // Memoize O(N) calculation to prevent performance bottleneck on keystroke re-renders
+  const isToolInProgress = useMemo(() => {
+    return messages.some(
+      (m) =>
+        m.role === 'assistant' &&
+        m.parts?.some(
+          (part) =>
+            part.type === 'tool-invocation' &&
+            part.toolInvocation?.state !== 'result'
+        )
+    );
+  }, [messages]);
 
   const submitQuery = useCallback((query: string) => {
     if (!query.trim() || isToolInProgress) return;
