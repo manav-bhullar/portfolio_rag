@@ -1,0 +1,3 @@
+## 2026-09-13 - [Semantic Links for Accessibility]
+**Learning:** In the Portfolio-main project, the `<Contact />` component rendered interactive links (email, phone, external URLs) using non-semantic `<div>` and `<button>` tags with `onClick={window.open(...)}` handlers. This prevents native keyboard accessibility and right-click context menu usage. It's also rendered dynamically within the chat interface, not on a standalone page.
+**Action:** Replace interactive `<div>` and `<button>` wrappers with semantic `<a>` tags using standard protocols (`mailto:`, `tel:`, `https:`) and `target="_blank"` where appropriate to ensure native accessibility, while adding `focus-visible:ring` classes for keyboard focus.
