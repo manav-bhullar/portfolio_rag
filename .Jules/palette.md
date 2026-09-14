@@ -1,0 +1,3 @@
+## 2026-09-14 - Semantic Trigger Overrides with `React.cloneElement`
+**Learning:** Using `React.cloneElement` to safely merge event handlers (like `onClick` and `onKeyDown`) directly onto a custom generic trigger, rather than wrapping the generic trigger inside another interactive element (like `<div>` or `<button>`), helps adhere strictly to HTML5 structure rules and avoids nested interactive elements.
+**Action:** When creating custom Radix/Vaul components (like modals or drawers) that accept generic interactive triggers, use `React.cloneElement` to assign necessary event handlers without invalid nesting.
