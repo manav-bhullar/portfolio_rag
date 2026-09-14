@@ -43,7 +43,8 @@ export function ProjectCard({ project, onOpen }: ProjectCardProps) {
       whileHover={{ y: -3 }}
       whileTap={{ scale: 0.98 }}
       style={{ ['--card-accent-color' as string]: accentVar[accent] }}
-      className="shape-card-accent flex h-full w-64 shrink-0 flex-col items-start rounded-2xl border border-border bg-card p-5 text-left shadow-[0_10px_25px_-12px_rgba(25,25,25,0.15)]"
+      className="shape-card-accent pressable flex h-full w-[min(78vw,20rem)] shrink-0 flex-col items-start rounded-2xl border border-border bg-card p-5 text-left shadow-[0_10px_25px_-12px_rgba(25,25,25,0.15)] md:w-64"
+      aria-label={`Open ${title} details`}
     >
       <div
         className="mb-4 flex h-11 w-11 items-center justify-center rounded-xl"

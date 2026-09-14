@@ -4,7 +4,7 @@
     {
       "name": "portfolio-dev",
       "runtimeExecutable": "npm",
-      "runtimeArgs": ["--prefix", "/Users/manav/dev/manav-portfolio", "run", "dev"],
+      "runtimeArgs": ["--prefix", "/Users/manav/Library/CloudStorage/OneDrive-MSFT/Codes/portfolio/Portfolio-main", "run", "dev"],
       "port": 3000
     }
   ]

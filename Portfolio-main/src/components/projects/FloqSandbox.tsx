@@ -33,11 +33,11 @@ export default function FloqSandbox() {
 
   return (
     <div className="w-full rounded-xl border bg-card p-4 shadow-sm">
-      <div className="mb-4 flex items-center justify-between">
-        <h4 className="font-semibold tracking-tight">Constrained Backtracking Visualization</h4>
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
+        <h4 className="min-w-0 text-[15px] font-semibold tracking-tight sm:text-base">Constrained Backtracking Visualization</h4>
         <button
           onClick={handleNextStep}
-          className="flex items-center gap-2 rounded-full bg-primary/10 px-3 py-1 text-sm font-medium text-primary hover:bg-primary/20 cursor-pointer"
+          className="flex items-center gap-2 pressable min-h-10 shrink-0 rounded-full bg-primary/10 px-4 py-2 text-sm font-medium text-primary hover:bg-primary/20 cursor-pointer"
         >
           {step === sequences.length - 1 ? <RefreshCw className="h-4 w-4" /> : 'Next Step'}
         </button>

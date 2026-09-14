@@ -1,4 +1,3 @@
-import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
 import {
@@ -7,7 +6,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@radix-ui/react-tooltip';
-import { motion } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
 import {
   BriefcaseBusiness,
   BriefcaseIcon,
@@ -30,6 +29,8 @@ import { Drawer } from 'vaul';
 interface HelperBoostProps {
   submitQuery?: (query: string) => void;
   setInput?: (value: string) => void;
+  /** Hide the chip row (e.g. while the on-screen keyboard is up) */
+  collapsed?: boolean;
 }
 
 const questions = {
@@ -140,6 +141,7 @@ const AnimatedChevron = () => {
 
 export default function HelperBoost({
   submitQuery,
+  collapsed = false,
 }: HelperBoostProps) {
   const [isVisible, setIsVisible] = useState(true);
   const [open, setOpen] = useState(false);
@@ -165,14 +167,10 @@ export default function HelperBoost({
     <>
       <Drawer.Root open={open} onOpenChange={setOpen}>
         <div className="w-full">
-          {/* Toggle Button */}
-          <div
-            className={
-              isVisible
-                ? 'mb-2 flex justify-center'
-                : 'mb-0 flex justify-center'
-            }
-          >
+          {/* Toggle — desktop only. On phones the row is always there (it's the
+              primary navigation) and a text toggle would just spend vertical
+              space; the keyboard collapses it automatically instead. */}
+          <div className="hidden justify-center md:flex">
             <button
               onClick={toggleVisibility}
               aria-expanded={isVisible}
@@ -193,54 +191,56 @@ export default function HelperBoost({
             </button>
           </div>
 
-          {/* HelperBoost Content */}
-          {isVisible && (
-            <div className="w-full">
-              <div
-                className="flex w-full flex-nowrap overflow-x-auto gap-2 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden md:flex-wrap md:overflow-x-visible md:gap-3"
-                style={{ justifyContent: 'safe center' }}
+          <AnimatePresence initial={false}>
+            {isVisible && !collapsed && (
+              <motion.div
+                key="chips"
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: 'auto', opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.2, ease: 'easeOut' }}
+                className="w-full overflow-hidden"
               >
-                {questionConfig.map(({ key, color, icon: Icon }) => (
-                  <Button
-                    key={key}
-                    onClick={() => handleQuestionClick(key)}
-                    variant="outline"
-                    className="border-border hover:bg-secondary h-auto min-w-fit flex-shrink-0 cursor-pointer rounded-full border bg-card px-3 sm:px-4 py-2.5 sm:py-3 shadow-none transition-none active:scale-95"
-                  >
-                    <div className="flex items-center gap-2 text-foreground">
-                      <Icon size={14} className="sm:w-4 sm:h-4" strokeWidth={2.25} color={color} />
-                      <span className="text-xs sm:text-sm font-semibold">{key}</span>
-                    </div>
-                  </Button>
-                ))}
+                {/* Edge-to-edge scroller on phones (negative margin cancels the
+                    composer's side padding) with faded edges so it reads as
+                    swipeable; wraps normally from md up. */}
+                <div
+                  className="scroll-x fade-x -mx-3 flex flex-nowrap gap-2 px-3 pt-1 pb-2 sm:mx-0 sm:px-0 md:flex-wrap md:justify-center md:gap-3 md:overflow-visible"
+                  role="group"
+                  aria-label="Quick questions"
+                >
+                  {questionConfig.map(({ key, color, icon: Icon }) => (
+                    <button
+                      key={key}
+                      type="button"
+                      onClick={() => handleQuestionClick(key)}
+                      className="pressable flex h-10 shrink-0 items-center gap-2 rounded-full border border-border bg-card px-4 text-sm font-semibold text-foreground transition-colors hover:bg-secondary md:h-11"
+                    >
+                      <Icon size={16} strokeWidth={2.25} color={color} />
+                      <span>{key}</span>
+                    </button>
+                  ))}
 
-                {/* Need Inspiration Button */}
-                <TooltipProvider>
-                  <Tooltip delayDuration={0}>
-                    <TooltipTrigger asChild>
-                      <Drawer.Trigger className="group relative flex flex-shrink-0 items-center justify-center">
-                        <motion.div
-                          className="hover:bg-secondary flex h-auto cursor-pointer items-center space-x-1 rounded-full border border-border bg-card px-3 sm:px-4 py-2.5 sm:py-3 text-xs sm:text-sm transition-all duration-200"
-                          whileHover={{ scale: 1 }}
-                          whileTap={{ scale: 0.98 }}
+                  {/* More questions — opens the bottom sheet */}
+                  <TooltipProvider>
+                    <Tooltip delayDuration={0}>
+                      <TooltipTrigger asChild>
+                        <Drawer.Trigger
+                          aria-label="More questions"
+                          className="pressable flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-border bg-card text-foreground transition-colors hover:bg-secondary md:h-11 md:w-auto md:px-4"
                         >
-                          <div className="flex items-center gap-3 text-foreground">
-                            <CircleEllipsis
-                              className="h-[20px] w-[18px]"
-                              strokeWidth={2}
-                            />
-                          </div>
-                        </motion.div>
-                      </Drawer.Trigger>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <AnimatedChevron />
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              </div>
-            </div>
-          )}
+                          <CircleEllipsis className="h-5 w-5" strokeWidth={2} />
+                        </Drawer.Trigger>
+                      </TooltipTrigger>
+                      <TooltipContent className="hidden md:block">
+                        <AnimatedChevron />
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
 
         {/* Drawer Content — kept as a bottom sheet (vaul measures/calculates
@@ -248,15 +248,20 @@ export default function HelperBoost({
             width/centering here rather than overriding height) */}
         <Drawer.Portal>
           <Drawer.Overlay className="fixed inset-0 z-100 bg-black/50 backdrop-blur-xs" />
-          <Drawer.Content className="fixed right-0 bottom-0 left-0 z-100 mx-auto flex h-[80%] max-w-xl flex-col rounded-t-[2rem] bg-background outline-none lg:h-[60%]">
-            <div className="flex-1 overflow-y-auto rounded-t-[2rem] bg-card p-4">
+          <Drawer.Content
+            className="fixed right-0 bottom-0 left-0 z-100 mx-auto flex h-[85dvh] max-w-xl flex-col rounded-t-[2rem] bg-card outline-none lg:h-[60dvh]"
+            aria-describedby={undefined}
+          >
+            <div className="flex shrink-0 justify-center pt-3 pb-2">
+              <div aria-hidden className="h-1.5 w-10 rounded-full bg-border" />
+            </div>
+            <div
+              className="scroll-y min-h-0 flex-1 px-4"
+              style={{ paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 24px)' }}
+            >
               <div className="mx-auto max-w-md space-y-4">
-                <div
-                  aria-hidden
-                  className="bg-border mx-auto mb-8 h-1.5 w-12 flex-shrink-0 rounded-full"
-                />
                 <div className="mx-auto w-full max-w-md">
-                  <div className="space-y-8 pb-16">
+                  <div className="space-y-8 pb-4">
                     {questionsByCategory.map((category) => (
                       <CategorySection
                         key={category.id}
@@ -329,8 +334,8 @@ function QuestionItem({ question, onClick, isSpecial }: QuestionItemProps) {
   return (
     <motion.button
       className={cn(
-        'flex w-full items-center justify-between rounded-2xl',
-        'text-md px-6 py-4 text-left font-normal',
+        'pressable flex w-full min-h-12 items-center justify-between gap-3 rounded-2xl',
+        'px-5 py-3.5 text-left text-[15px] font-normal',
         'transition-all',
         'focus:outline-none focus-visible:ring-2 focus-visible:ring-[#3FB37F]',
         isSpecial ? 'bg-foreground' : 'bg-secondary'

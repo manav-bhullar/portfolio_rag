@@ -11,6 +11,7 @@ import {
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import React, { useState } from 'react';
 import UnderTheHood, { type RetrievalDiagnostics } from './under-the-hood';
+import { cn } from '@/lib/utils';
 
 export type ChatMessageContentProps = {
   message: Message;
@@ -83,6 +84,9 @@ export default function ChatMessageContent({
   const sourceTitleById = new Map<string, string>(
     diagnostics?.sources.map((s) => [s.id, s.title]) ?? []
   );
+  const sourceUrlById = new Map<string, string>(
+    diagnostics?.sources.filter((s) => s.url).map((s) => [s.id, s.url as string]) ?? []
+  );
 
   // Only handle text parts
   const renderContent = () => {
@@ -126,35 +130,70 @@ export default function ChatMessageContent({
                       </p>
                     ),
                     ul: ({ children }) => (
-                      <ul className="my-4 list-disc pl-6">{children}</ul>
+                      <ul className="my-2 list-disc pl-5 sm:my-3 sm:pl-6">{children}</ul>
                     ),
                     ol: ({ children }) => (
-                      <ol className="my-4 list-decimal pl-6">{children}</ol>
+                      <ol className="my-2 list-decimal pl-5 sm:my-3 sm:pl-6">{children}</ol>
                     ),
                     li: ({ children }) => <li className="my-1">{children}</li>,
                     code: ({
-                      inline,
                       className,
                       children,
                       ...props
-                    }: React.ComponentPropsWithoutRef<'code'> & { inline?: boolean }) => {
+                    }: React.ComponentPropsWithoutRef<'code'>) => {
                       const text = String(children).replace(/\n$/, '');
-                      
-                      // Check if this is our mock citation
-                      if (inline && text.startsWith('[') && text.endsWith(']')) {
-                        const sourceId = text.slice(1, -1);
-                        const sourceTitle = sourceTitleById.get(sourceId);
+
+                      // Citation marker we injected above. react-markdown v10 no
+                      // longer passes `inline`, so detect by shape: single-line,
+                      // no language class, wrapped in [ ]. A citation may carry
+                      // several comma-separated ids — render one pill per id so
+                      // the row wraps cleanly on a narrow screen instead of one
+                      // long monospace token.
+                      const isBlock = /language-/.test(className ?? '') || text.includes('\n');
+                      if (!isBlock && text.startsWith('[') && text.endsWith(']')) {
+                        const ids = text.slice(1, -1).split(',').map((s) => s.trim()).filter(Boolean);
                         return (
-                          <span
-                            className="inline-flex cursor-help items-center rounded-full bg-[#3FB37F]/10 px-2.5 py-0.5 text-xs font-semibold text-[#3FB37F] transition-colors hover:bg-[#3FB37F]/20"
-                            title={sourceTitle ? `Source: ${sourceTitle}` : `Source: ${sourceId}`}
-                          >
-                            {sourceTitle ?? sourceId}
-                          </span>
+                          <>
+                            {ids.map((sourceId) => {
+                              const sourceTitle = sourceTitleById.get(sourceId);
+                              const sourceUrl = sourceUrlById.get(sourceId);
+                              const pillClassName =
+                                'mx-0.5 inline-block max-w-[80vw] truncate rounded-full sm:max-w-sm bg-[#3FB37F]/10 px-2 py-0.5 align-baseline text-[11px] font-semibold text-[#3FB37F] transition-colors hover:bg-[#3FB37F]/20';
+
+                              if (sourceUrl) {
+                                return (
+                                  <a
+                                    key={sourceId}
+                                    href={sourceUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className={cn(pillClassName, 'cursor-pointer underline decoration-dotted')}
+                                    title={`View source: ${sourceTitle ?? sourceId}`}
+                                  >
+                                    {sourceTitle ?? sourceId}
+                                  </a>
+                                );
+                              }
+
+                              return (
+                                <span
+                                  key={sourceId}
+                                  className={cn(pillClassName, 'cursor-help')}
+                                  title={sourceTitle ? `Source: ${sourceTitle}` : `Source: ${sourceId}`}
+                                >
+                                  {sourceTitle ?? sourceId}
+                                </span>
+                              );
+                            })}
+                          </>
                         );
                       }
-                      
-                      return <code className={className} {...props}>{children}</code>;
+
+                      return (
+                        <code className={cn('rounded bg-secondary px-1 py-0.5 text-[0.9em]', className)} {...props}>
+                          {children}
+                        </code>
+                      );
                     },
                     a: ({ href, children }) => (
                       <a
@@ -191,7 +230,7 @@ export default function ChatMessageContent({
                       // we can dispatch a custom event that chat.tsx can listen for
                       window.dispatchEvent(new CustomEvent('chat:submit', { detail: q }));
                     }}
-                    className="rounded-full border bg-secondary/50 px-3 py-1.5 text-left text-sm text-foreground transition-colors hover:bg-secondary"
+                    className="pressable min-h-10 rounded-full border bg-secondary/50 px-4 py-2 text-left text-sm text-foreground transition-colors hover:bg-secondary"
                   >
                     {q}
                   </button>

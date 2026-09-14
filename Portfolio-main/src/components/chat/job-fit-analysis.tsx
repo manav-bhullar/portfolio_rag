@@ -1,7 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { CheckCircle2, CircleAlert, FileText } from 'lucide-react';
+import { CheckCircle2, CircleAlert, FileText, PenLine } from 'lucide-react';
 
 export interface JobFitResult {
   matchScore: number;
@@ -23,8 +23,23 @@ function scoreColor(score: number): string {
   return 'var(--accent-nyctaxi)';
 }
 
-export function JobFitAnalysis({ result }: { result: JobFitResult }) {
+export function JobFitAnalysis({
+  result,
+  jobDescription,
+}: {
+  result: JobFitResult;
+  jobDescription?: string;
+}) {
   const color = scoreColor(result.matchScore);
+
+  const handleDraftCoverLetter = () => {
+    if (!jobDescription) return;
+    window.dispatchEvent(
+      new CustomEvent('chat:submit', {
+        detail: `Draft a cover letter for this role:\n\n${jobDescription}`,
+      })
+    );
+  };
 
   return (
     <motion.div
@@ -33,13 +48,13 @@ export function JobFitAnalysis({ result }: { result: JobFitResult }) {
       transition={{ type: 'spring', stiffness: 220, damping: 22 }}
       className="mx-auto w-full max-w-2xl"
     >
-      <div className="rounded-organic bg-accent overflow-hidden px-6 py-7 sm:px-8">
+      <div className="rounded-organic bg-accent overflow-hidden px-5 py-7 sm:px-8">
         <div className="mb-5 flex items-center justify-between gap-4">
-          <h2 className="font-display text-2xl font-bold text-foreground">
+          <h2 className="font-display text-xl font-bold text-foreground sm:text-2xl">
             Job Fit Analysis
           </h2>
           <div
-            className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full text-lg font-extrabold text-white"
+            className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full text-base font-extrabold text-white sm:h-16 sm:w-16 sm:text-lg"
             style={{ backgroundColor: color }}
           >
             {result.matchScore}%
@@ -85,16 +100,30 @@ export function JobFitAnalysis({ result }: { result: JobFitResult }) {
         <a
           href={RESUME_URLS[result.recommendedResume]}
           download
-          className="group flex items-center justify-between rounded-xl bg-card p-4 transition-colors hover:bg-card/70"
+          className="group pressable flex min-h-12 items-center justify-between gap-3 rounded-xl bg-card p-4 transition-colors hover:bg-card/70"
         >
-          <div className="flex items-center gap-2">
-            <FileText className="h-4 w-4 text-muted-foreground" />
+          <div className="flex min-w-0 items-center gap-2">
+            <FileText className="h-4 w-4 shrink-0 text-muted-foreground" />
             <span className="text-sm font-medium text-foreground">
               Recommended: {result.recommendedResume} resume
             </span>
           </div>
           <span className="text-xs font-semibold text-muted-foreground">Download</span>
         </a>
+
+        {jobDescription && (
+          <button
+            onClick={handleDraftCoverLetter}
+            className="group pressable mt-3 flex min-h-12 w-full items-center justify-between gap-3 rounded-xl bg-card p-4 transition-colors hover:bg-card/70"
+          >
+            <div className="flex min-w-0 items-center gap-2">
+              <PenLine className="h-4 w-4 shrink-0 text-muted-foreground" />
+              <span className="text-sm font-medium text-foreground">
+                Draft a cover letter for this role
+              </span>
+            </div>
+          </button>
+        )}
       </div>
     </motion.div>
   );

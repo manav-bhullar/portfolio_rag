@@ -5,7 +5,6 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { useSearchParams, useRouter } from 'next/navigation';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
-import posthog from 'posthog-js';
 
 // Component imports
 import ChatBottombar from '@/components/chat/chat-bottombar';
@@ -17,9 +16,10 @@ import {
   ChatBubbleMessage,
 } from '@/components/ui/chat/chat-bubble';
 import WelcomeModal from '@/components/welcome-modal';
-import { Info } from 'lucide-react';
+import { ArrowDown, House, Info, RotateCcw } from 'lucide-react';
 import GitHubButton from 'react-github-btn';
 import HelperBoost from './HelperBoost';
+import { useVisualViewport } from '@/hooks/use-visual-viewport';
 
 const MOTION_CONFIG = {
   initial: { opacity: 0, y: 20 },
@@ -51,14 +51,18 @@ const Chat = () => {
   const initialQuery = searchParams.get('query');
   const [autoSubmitted, setAutoSubmitted] = useState(false);
   const [loadingSubmit, setLoadingSubmit] = useState(false);
-  const [initialMessages] = useState<Message[]>(loadStoredMessages);
+  // Stored history is read *after* mount (see effect below) so the server
+  // and first client render agree — reading localStorage inside useState's
+  // initializer caused a hydration mismatch on every reload with history.
+  const [hydrated, setHydrated] = useState(false);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const [isAtBottom, setIsAtBottom] = useState(true);
+  const { keyboardOpen } = useVisualViewport();
 
   const {
     messages,
     input,
     handleInputChange,
-    handleSubmit,
     isLoading,
     stop,
     setMessages,
@@ -66,8 +70,8 @@ const Chat = () => {
     reload,
     addToolResult,
     append,
+    error,
   } = useChat({
-    initialMessages,
     onResponse: (response) => {
       if (response) {
         setLoadingSubmit(false);
@@ -166,11 +170,12 @@ const Chat = () => {
         ]
       };
 
+      // Echo the user's message immediately so the thread responds to the tap
+      // at once; the canned answer lands after a short "Thinking..." beat.
+      setMessages([...messages, userMessage as unknown as Message]);
       setLoadingSubmit(true);
-      
-      // Artificial delay to show "Thinking..." UX
       setTimeout(() => {
-        setMessages([...messages, userMessage as unknown as Message, assistantMessage as unknown as Message]);
+        setMessages((prev) => [...prev, assistantMessage as unknown as Message]);
         setLoadingSubmit(false);
       }, 500);
 
@@ -195,19 +200,26 @@ const Chat = () => {
     });
   }, [isToolInProgress, messages, setMessages, append]);
 
+  // Restore the persisted thread once, on the client, after mount.
+  useEffect(() => {
+    const stored = loadStoredMessages();
+    if (stored.length > 0) setMessages(stored);
+    setHydrated(true);
+  }, [setMessages]);
+
   useEffect(() => {
     // Don't replay the landing page's query param over a restored thread —
     // only auto-submit it into a genuinely fresh (empty) session.
-    if (initialQuery && !autoSubmitted && messages.length === 0) {
+    if (hydrated && initialQuery && !autoSubmitted && messages.length === 0) {
       setAutoSubmitted(true);
       setInput('');
       submitQuery(initialQuery);
     }
-  }, [initialQuery, autoSubmitted, submitQuery, setInput, messages.length]);
+  }, [hydrated, initialQuery, autoSubmitted, submitQuery, setInput, messages.length]);
 
   // Session memory: persist the full thread so a reload doesn't lose it.
   useEffect(() => {
-    if (typeof window === 'undefined') return;
+    if (typeof window === 'undefined' || !hydrated) return;
     try {
       if (messages.length > 0) {
         window.localStorage.setItem(STORAGE_KEY, JSON.stringify(messages));
@@ -217,13 +229,41 @@ const Chat = () => {
     } catch {
       // localStorage unavailable (private mode, quota) — degrade silently
     }
-  }, [messages]);
+  }, [messages, hydrated]);
 
-  // Auto-scroll the thread to the newest message as it streams in.
+  // Track whether the reader is pinned to the bottom of the thread. We only
+  // auto-follow streaming output while pinned — yanking someone back down
+  // while they're reading a project card mid-stream is the single most
+  // annoying thing a chat UI can do on a phone.
   useEffect(() => {
     const el = scrollContainerRef.current;
-    if (el) el.scrollTop = el.scrollHeight;
-  }, [messages, isLoading]);
+    if (!el) return;
+    const onScroll = () => {
+      const distance = el.scrollHeight - el.scrollTop - el.clientHeight;
+      setIsAtBottom(distance < 96);
+    };
+    onScroll();
+    el.addEventListener('scroll', onScroll, { passive: true });
+    return () => el.removeEventListener('scroll', onScroll);
+  }, []);
+
+  const scrollToBottom = useCallback((behavior: ScrollBehavior = 'smooth') => {
+    const el = scrollContainerRef.current;
+    if (el) el.scrollTo({ top: el.scrollHeight, behavior });
+  }, []);
+
+  const lastRole = messages[messages.length - 1]?.role;
+  useEffect(() => {
+    // Always follow our own just-sent message; otherwise only follow while pinned.
+    if (lastRole === 'user' || isAtBottom) scrollToBottom(lastRole === 'user' ? 'smooth' : 'auto');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [messages, isLoading, lastRole]);
+
+  // When the keyboard slides up the visible area shrinks; keep the latest
+  // message in view instead of leaving the reader staring at the middle.
+  useEffect(() => {
+    if (keyboardOpen && isAtBottom) scrollToBottom('auto');
+  }, [keyboardOpen, isAtBottom, scrollToBottom]);
 
   useEffect(() => {
     const handleChatSubmit = (e: Event) => {
@@ -238,7 +278,7 @@ const Chat = () => {
 
   const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!input.trim() || isToolInProgress) return;
+    if (!input.trim() || isToolInProgress || isLoading) return;
     submitQuery(input);
     setInput('');
   };
@@ -266,72 +306,81 @@ const Chat = () => {
 
   const lastMessageId = messages.length > 0 ? messages[messages.length - 1].id : null;
 
-  return (
-    <div className="relative h-[100dvh] overflow-hidden">
-      <div className="absolute top-3 right-3 sm:top-6 sm:right-8 z-51 flex flex-row items-center justify-center gap-1 sm:gap-2">
-        <div
-          onClick={handleReset}
-          title="Home"
-          className="hover:bg-accent cursor-pointer rounded-xl sm:rounded-2xl px-2 py-1 sm:px-3 sm:py-1.5"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-accent-foreground h-5 w-5 sm:h-7 sm:w-7"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-        </div>
-        <WelcomeModal
-          trigger={
-            <div className="hover:bg-accent cursor-pointer rounded-xl sm:rounded-2xl px-2 py-1 sm:px-3 sm:py-1.5">
-              <Info className="text-accent-foreground h-5 sm:h-8" />
-            </div>
-          }
-        />
-        {/* GitHub star — hidden on mobile to avoid overcrowding the top bar */}
-        <div className="pt-1 hidden sm:block">
-          <GitHubButton
-            href="https://github.com/manav-bhullar"
-            data-color-scheme="no-preference: light; light: light; dark: light_high_contrast;"
-            data-size="large"
-            data-show-count="true"
-            aria-label="Visit manav-bhullar on GitHub"
-          >
-            Star
-          </GitHubButton>
-        </div>
-      </div>
+  const showInlineError = !!error && !isLoading && !loadingSubmit && lastRole === 'user';
 
-      {/* Fixed gradient fade at the top of the scrolling thread */}
-      <div
-        className="pointer-events-none fixed top-0 right-0 left-0 z-40 h-16 sm:h-20"
+  return (
+    <div className="app-shell relative flex flex-col overflow-hidden">
+      {/* Header — safe-area padded, fades into the thread. Absolutely
+          positioned so the thread scrolls underneath it. */}
+      <header
+        className="pt-safe pointer-events-none absolute inset-x-0 top-0 z-50"
         style={{
           background:
-            'linear-gradient(to bottom, rgba(237, 230, 214, 1) 0%, rgba(237, 230, 214, 0.8) 50%, rgba(237, 230, 214, 0) 100%)',
+            'linear-gradient(to bottom, rgba(237, 230, 214, 1) 0%, rgba(237, 230, 214, 0.85) 60%, rgba(237, 230, 214, 0) 100%)',
         }}
-      />
+      >
+        <div className="mx-auto flex h-14 max-w-3xl items-center justify-end gap-1 px-2 sm:h-16 sm:px-4">
+          <button
+            type="button"
+            onClick={handleReset}
+            aria-label="Start over"
+            title="Home"
+            className="pressable pointer-events-auto flex h-11 w-11 items-center justify-center rounded-full text-foreground hover:bg-accent"
+          >
+            <House className="h-6 w-6" strokeWidth={2} />
+          </button>
+          <WelcomeModal
+            trigger={
+              <button
+                type="button"
+                aria-label="About this portfolio"
+                className="pressable pointer-events-auto flex h-11 w-11 items-center justify-center rounded-full text-foreground hover:bg-accent"
+              >
+                <Info className="h-6 w-6" strokeWidth={2} />
+              </button>
+            }
+          />
+          {/* GitHub star — hidden on phones to keep the header to two clear targets */}
+          <div className="pointer-events-auto hidden pl-2 pt-1 sm:block">
+            <GitHubButton
+              href="https://github.com/manav-bhullar"
+              data-color-scheme="no-preference: light; light: light; dark: light_high_contrast;"
+              data-size="large"
+              data-show-count="true"
+              aria-label="Visit manav-bhullar on GitHub"
+            >
+              Star
+            </GitHubButton>
+          </div>
+        </div>
+      </header>
 
-      {/* Main Content Area */}
-      <div className="container mx-auto flex h-full max-w-3xl flex-col">
-        {/* Scrollable Chat Content — the full threaded conversation */}
-        <div
-          ref={scrollContainerRef}
-          className="flex-1 overflow-y-auto px-2 pt-14 sm:pt-16"
-        >
+      {/* Scrollable thread */}
+      <div
+        ref={scrollContainerRef}
+        className="scroll-y min-h-0 flex-1 px-4 md:px-2"
+        style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 3.5rem)' }}
+      >
+        <div className="mx-auto flex min-h-full max-w-3xl flex-col">
           {isEmptyState ? (
             <motion.div
               key="landing"
-              className="flex min-h-full items-center justify-center"
+              className="flex flex-1 items-center justify-center"
               {...MOTION_CONFIG}
             >
               <ChatLanding submitQuery={submitQuery} />
             </motion.div>
           ) : (
-            <div className="flex flex-col gap-4 pt-4 pb-4">
+            <div className="flex flex-col gap-4 pt-2 pb-4 sm:pt-4">
               <AnimatePresence initial={false}>
                 {messages.map((message) =>
                   message.role === 'user' ? (
                     <motion.div
                       key={message.id}
                       {...MOTION_CONFIG}
-                      className="flex justify-end px-2"
+                      className="flex justify-end md:px-2"
                     >
-                      <ChatBubble variant="sent">
+                      <ChatBubble variant="sent" className="max-w-[88%] sm:max-w-[80%]">
                         <ChatBubbleMessage>
                           <ChatMessageContent
                             message={message}
@@ -356,33 +405,85 @@ const Chat = () => {
 
                 {/* "Thinking..." shown after the user's message, before the
                     assistant message has arrived yet */}
-                {loadingSubmit && messages[messages.length - 1]?.role === 'user' && (
-                  <motion.div key="loading" {...MOTION_CONFIG} className="px-4">
+                {loadingSubmit && lastRole === 'user' && (
+                  <motion.div key="loading" {...MOTION_CONFIG} className="md:px-4">
                     <ChatBubble variant="received">
                       <ChatBubbleMessage isLoading />
                     </ChatBubble>
+                  </motion.div>
+                )}
+
+                {/* Inline failure state. A toast alone is easy to miss on a
+                    phone (and it lands on top of the composer); the thread
+                    itself should say what happened and offer a retry. */}
+                {showInlineError && (
+                  <motion.div key="error" {...MOTION_CONFIG} className="md:px-4">
+                    <div
+                      role="alert"
+                      className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-2xl bg-secondary px-4 py-3 text-sm text-foreground"
+                    >
+                      <span className="min-w-0 flex-1">
+                        I couldn&apos;t get a reply just now — the model is busy.
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setLoadingSubmit(true);
+                          reload();
+                        }}
+                        className="pressable flex min-h-10 items-center gap-1.5 rounded-full bg-foreground px-4 text-sm font-semibold text-primary-foreground"
+                      >
+                        <RotateCcw className="h-4 w-4" />
+                        Retry
+                      </button>
+                    </div>
                   </motion.div>
                 )}
               </AnimatePresence>
             </div>
           )}
         </div>
+      </div>
 
-        {/* Fixed Bottom Bar */}
-        <div className="sticky bottom-0 border-t border-border/40 bg-background/95 px-2 pt-3 sm:pt-4 backdrop-blur-sm md:px-0"
-          style={{ paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 8px)' }}
+      {/* Composer — chips + input. Sits inside the keyboard-aware shell so it
+          rides up with the keyboard instead of disappearing behind it. */}
+      <div className="relative shrink-0 border-t border-border/40 bg-background/95 backdrop-blur-sm">
+        {/* Scroll-to-latest — appears once the reader has scrolled up */}
+        <AnimatePresence>
+          {!isEmptyState && !isAtBottom && (
+            <motion.button
+              key="to-bottom"
+              type="button"
+              initial={{ opacity: 0, y: 8, scale: 0.9, x: '-50%' }}
+              animate={{ opacity: 1, y: 0, scale: 1, x: '-50%' }}
+              exit={{ opacity: 0, y: 8, scale: 0.9, x: '-50%' }}
+              transition={{ type: 'spring', stiffness: 400, damping: 28 }}
+              onClick={() => scrollToBottom()}
+              aria-label="Scroll to latest message"
+              className="pressable absolute -top-12 left-1/2 z-10 flex h-10 w-10 items-center justify-center rounded-full border border-border bg-card text-foreground shadow-[0_6px_20px_-6px_rgba(25,25,25,0.3)]"
+            >
+              <ArrowDown className="h-5 w-5" />
+            </motion.button>
+          )}
+        </AnimatePresence>
+
+        <div
+          className="mx-auto flex max-w-3xl flex-col items-center px-3 pt-2 sm:px-2 sm:pt-3 md:px-0"
+          style={{ paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 10px)' }}
         >
-          <div className="relative flex flex-col items-center gap-2 sm:gap-3">
-            <HelperBoost submitQuery={submitQuery} setInput={setInput} />
-            <ChatBottombar
-              input={input}
-              handleInputChange={handleInputChange}
-              handleSubmit={onSubmit}
-              isLoading={isLoading}
-              stop={handleStop}
-              isToolInProgress={isToolInProgress}
-            />
-          </div>
+          <HelperBoost
+            submitQuery={submitQuery}
+            setInput={setInput}
+            collapsed={keyboardOpen}
+          />
+          <ChatBottombar
+            input={input}
+            handleInputChange={handleInputChange}
+            handleSubmit={onSubmit}
+            isLoading={isLoading}
+            stop={handleStop}
+            isToolInProgress={isToolInProgress}
+          />
         </div>
       </div>
     </div>

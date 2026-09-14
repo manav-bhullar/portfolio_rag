@@ -97,7 +97,7 @@ export default function UiActionExecutor({ action }: { action: string }) {
             initial={{ opacity: 0, y: 50 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 50 }}
-            className="fixed bottom-10 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 rounded-lg border-2 border-yellow-500 bg-background px-6 py-4 shadow-xl"
+            className="fixed top-[calc(env(safe-area-inset-top,0px)+4.5rem)] left-1/2 z-50 flex w-[calc(100%-2rem)] max-w-sm -translate-x-1/2 items-center gap-3 rounded-lg border-2 border-yellow-500 bg-background px-5 py-4 shadow-xl md:top-auto md:bottom-10 md:w-auto md:max-w-none md:px-6"
           >
             <span className="text-2xl">🏆</span>
             <div>

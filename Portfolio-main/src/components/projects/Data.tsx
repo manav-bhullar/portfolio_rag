@@ -68,14 +68,14 @@ export const ProjectContent = ({ project }: { project: ProjectProps }) => {
   }
 
   return (
-    <div className="space-y-8">
-      <div className="rounded-2xl bg-secondary p-6">
+    <div className="space-y-6 pb-2 md:space-y-8">
+      <div className="rounded-2xl bg-secondary p-4 sm:p-6">
         <div className="space-y-5">
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <span>{projectData.date}</span>
           </div>
 
-          <p className="text-foreground leading-relaxed">
+          <p className="text-[15px] leading-relaxed text-foreground sm:text-base">
             {projectData.description}
           </p>
           

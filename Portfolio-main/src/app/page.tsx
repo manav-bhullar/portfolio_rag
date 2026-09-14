@@ -2,7 +2,7 @@
 
 import WelcomeModal from '@/components/welcome-modal';
 import { motion } from 'framer-motion';
-import { ArrowRight, Search, Laugh, BriefcaseBusiness, Layers, PartyPopper, UserRoundSearch, BarChart3 } from 'lucide-react';
+import { ArrowRight, Search, Laugh, BriefcaseBusiness, Layers, PartyPopper, UserRoundSearch } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useRef, useState } from 'react';
 import GitHubButton from 'react-github-btn';
@@ -54,7 +54,7 @@ export default function Home() {
   } as const;
 
   return (
-    <div className="relative flex min-h-[100dvh] flex-col items-center justify-center overflow-hidden bg-background px-4 py-20 sm:py-16">
+    <div className="relative flex min-h-[100dvh] flex-col items-center justify-center overflow-hidden bg-background px-4 pt-[calc(env(safe-area-inset-top,0px)+4.5rem)] pb-[calc(env(safe-area-inset-bottom,0px)+3rem)] sm:py-16">
       {/* Responsive wavy clip-path (objectBoundingBox = scales with element size) */}
       <svg width="0" height="0" className="absolute">
         <defs>
@@ -80,7 +80,7 @@ export default function Home() {
         </div>
       </div>
 
-      <div className="absolute top-4 left-4 sm:top-6 sm:left-8 z-20">
+      <div className="absolute top-[calc(env(safe-area-inset-top,0px)+0.5rem)] left-3 z-20 sm:top-6 sm:left-8">
         <WelcomeModal />
       </div>
 
@@ -92,7 +92,9 @@ export default function Home() {
         className="relative z-10 w-full max-w-3xl"
       >
         {/* Organic colored bleed behind the card */}
-        <div className="absolute -inset-4 z-0 rounded-[40%_60%_55%_45%/50%_45%_55%_50%] bg-gradient-to-tr from-[#3FB37F] via-[#E0559C] to-[#F0954A] opacity-80 blur-2xl filter" />
+        {/* will-change + translateZ: keep the 40px blur on its own GPU layer so the
+            spring entrance doesn't re-rasterise it every frame on phone GPUs */}
+        <div className="absolute -inset-4 z-0 rounded-[40%_60%_55%_45%/50%_45%_55%_50%] bg-gradient-to-tr from-[#3FB37F] via-[#E0559C] to-[#F0954A] opacity-80 blur-2xl filter [transform:translateZ(0)] will-change-transform" />
 
         <div className="shape-blob-hero relative z-10 flex w-full flex-col items-center gap-5 sm:gap-6 bg-card px-5 py-10 sm:px-8 sm:py-14 md:px-16 md:py-16 text-center shadow-[0_20px_60px_-15px_rgba(25,25,25,0.12)]">
         <div>
@@ -119,7 +121,7 @@ export default function Home() {
           className="w-full max-w-lg"
         >
           <div
-            className="flex items-center gap-2 rounded-full border border-border bg-background py-2 pr-2 pl-4 sm:pl-5 transition-all focus-within:scale-[1.02] focus-within:border-[#3FB37F] focus-within:shadow-[0_8px_30px_rgb(0,0,0,0.12)] focus-within:ring-4 focus-within:ring-[#3FB37F]/10"
+            className="flex min-h-12 items-center gap-2 rounded-full border border-border bg-background py-1.5 pr-1.5 pl-4 transition-[border-color,box-shadow,transform] focus-within:border-[#3FB37F] focus-within:shadow-[0_8px_30px_rgb(0,0,0,0.12)] focus-within:ring-4 focus-within:ring-[#3FB37F]/10 sm:pl-5 md:focus-within:scale-[1.02]"
           >
             <Search className="h-4 w-4 shrink-0 text-muted-foreground" />
             <input
@@ -129,7 +131,10 @@ export default function Home() {
               onChange={(e) => setInput(e.target.value)}
               aria-label="Ask about my computer engineering work"
               placeholder="Ask me anything..."
-              className="w-full border-none bg-transparent py-1 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none"
+              enterKeyHint="send"
+              autoComplete="off"
+              autoCapitalize="sentences"
+              className="min-w-0 flex-1 border-none bg-transparent py-1 text-base text-foreground placeholder:text-muted-foreground focus:outline-none md:text-sm"
             />
             <motion.button
               type="submit"
@@ -137,7 +142,7 @@ export default function Home() {
               aria-label="Submit question"
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.9 }}
-              className="flex shrink-0 cursor-pointer items-center justify-center rounded-full bg-foreground p-2 text-primary-foreground transition-colors hover:bg-[#3FB37F] disabled:opacity-40 disabled:hover:bg-foreground"
+              className="flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-full bg-foreground text-primary-foreground transition-colors hover:bg-[#3FB37F] disabled:opacity-40 disabled:hover:bg-foreground"
             >
               <ArrowRight className="h-4 w-4" />
             </motion.button>
@@ -157,9 +162,9 @@ export default function Home() {
               onClick={() => goToChat(questions[key])}
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.95 }}
-              className="flex items-center gap-1.5 sm:gap-2 cursor-pointer rounded-full border border-border bg-card px-3 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-semibold text-foreground hover:bg-secondary transition-colors"
+              className="flex min-h-11 cursor-pointer items-center gap-2 rounded-full border border-border bg-card px-4 text-sm font-semibold text-foreground transition-colors hover:bg-secondary"
             >
-              <Icon size={14} strokeWidth={2.25} color={color} />
+              <Icon size={16} strokeWidth={2.25} color={color} />
               <span>{key}</span>
             </motion.button>
           ))}

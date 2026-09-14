@@ -18,11 +18,11 @@ export default function OlistSandbox() {
 
   return (
     <div className="w-full rounded-xl border bg-card p-4 shadow-sm mt-6">
-      <div className="mb-4 flex items-center justify-between">
-        <h4 className="font-semibold tracking-tight">RFM Segmentation &amp; SLA Impact</h4>
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
+        <h4 className="min-w-0 text-[15px] font-semibold tracking-tight sm:text-base">RFM Segmentation &amp; SLA Impact</h4>
         <button
           onClick={handleNext}
-          className="rounded-full bg-[#3E8EDE]/10 px-3 py-1 text-sm font-medium text-[#3E8EDE] hover:bg-[#3E8EDE]/20 cursor-pointer"
+          className="pressable min-h-10 shrink-0 rounded-full bg-[#3E8EDE]/10 px-4 py-2 text-sm font-medium text-[#3E8EDE] hover:bg-[#3E8EDE]/20 cursor-pointer"
         >
           {step === 2 ? 'Restart' : 'Next'}
         </button>

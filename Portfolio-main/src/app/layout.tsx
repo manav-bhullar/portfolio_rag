@@ -1,9 +1,10 @@
 import { Analytics } from "@vercel/analytics/react"
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import localFont from "next/font/local";
 import { cn } from "@/lib/utils";
 import { ThemeProvider } from "@/components/theme-provider";
+import { MotionProvider } from "@/components/motion-provider";
 import { Toaster } from "@/components/ui/sonner";
 import { PostHogProvider } from '@/components/posthog-provider';
 import "./globals.css";
@@ -75,6 +76,20 @@ export const metadata: Metadata = {
   },
 };
 
+// Mobile viewport contract:
+// - viewportFit: cover  -> lets us pad with env(safe-area-inset-*) on notched phones
+// - interactiveWidget    -> Chrome/Android shrinks the layout viewport when the
+//                           keyboard opens (iOS is handled by useVisualViewport)
+// - no maximum-scale / user-scalable=no: pinch-zoom stays available (WCAG 1.4.4).
+//   iOS auto-zoom on input focus is prevented by keeping input font-size >= 16px.
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+  interactiveWidget: "resizes-content",
+  themeColor: "#EDE6D6",
+};
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -83,7 +98,6 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
-        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
         <link rel="icon" href="/favicon.svg" sizes="any" />
       </head>
       <body
@@ -99,10 +113,12 @@ export default function RootLayout({
             defaultTheme="light"
             enableSystem={false}
           >
-            <main className="flex min-h-[100dvh] flex-col">
-              {children}
-            </main>
-            <Toaster />
+            <MotionProvider>
+              <main className="flex min-h-[100dvh] flex-col">
+                {children}
+              </main>
+            </MotionProvider>
+            <Toaster position="top-center" offset={64} mobileOffset={{ top: 'calc(env(safe-area-inset-top, 0px) + 60px)' }} />
           </ThemeProvider>
           <Analytics />
         </PostHogProvider>

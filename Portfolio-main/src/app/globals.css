@@ -139,8 +139,95 @@
   * {
     @apply border-border outline-ring/50;
   }
+  html {
+    /* Stop iOS Safari from inflating text after orientation change */
+    -webkit-text-size-adjust: 100%;
+    /* Set by useVisualViewport() on the client; 100dvh is the SSR/no-JS value */
+    --app-height: 100dvh;
+    --keyboard-height: 0px;
+  }
   body {
     @apply bg-background text-foreground;
+    /* No grey flash on tap (Android/iOS) — we provide our own :active feedback */
+    -webkit-tap-highlight-color: transparent;
+    /* The chat shell owns scrolling; stop the page rubber-banding behind it */
+    overscroll-behavior-y: none;
+  }
+  /* Any real form control must be >= 16px or iOS Safari zooms the page on focus */
+  input, textarea, select {
+    font-size: max(16px, 1em);
+  }
+  @media (min-width: 768px) {
+    input, textarea, select {
+      font-size: inherit;
+    }
+  }
+}
+
+/* ---- Mobile utilities ---- */
+
+/* Full-height app shell that tracks the on-screen keyboard (see useVisualViewport) */
+.app-shell {
+  height: 100dvh;
+  height: var(--app-height, 100dvh);
+}
+
+/* Safe-area padding for notched / home-indicator phones */
+.pt-safe { padding-top: env(safe-area-inset-top, 0px); }
+.pb-safe { padding-bottom: env(safe-area-inset-bottom, 0px); }
+.pl-safe { padding-left: env(safe-area-inset-left, 0px); }
+.pr-safe { padding-right: env(safe-area-inset-right, 0px); }
+
+/* Horizontal scroller: hidden scrollbar, snap, momentum, no page-level overscroll */
+.scroll-x {
+  overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.scroll-x::-webkit-scrollbar { display: none; }
+.snap-x-mandatory {
+  scroll-snap-type: x mandatory;
+}
+.snap-x-mandatory > * {
+  scroll-snap-align: start;
+}
+
+/* Vertical scroller for the chat thread */
+.scroll-y {
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Minimum 44x44 hit area (Apple HIG / WCAG 2.5.5) without changing visual size */
+.tap-target {
+  position: relative;
+}
+.tap-target::after {
+  content: "";
+  position: absolute;
+  inset: 50% auto auto 50%;
+  width: max(100%, 44px);
+  height: max(100%, 44px);
+  transform: translate(-50%, -50%);
+}
+
+/* Fade the clipped edges of a horizontal chip row so it reads as scrollable.
+   Phone-only: from md up the row wraps instead of scrolling. */
+@media (max-width: 767px) {
+  .fade-x {
+    -webkit-mask-image: linear-gradient(to right, transparent, black 16px, black calc(100% - 16px), transparent);
+    mask-image: linear-gradient(to right, transparent, black 16px, black calc(100% - 16px), transparent);
+  }
+}
+
+/* Pressable feedback for touch — replaces hover, which doesn't exist on phones */
+@media (hover: none) {
+  .pressable:active {
+    transform: scale(0.97);
+    transition: transform 80ms ease-out;
   }
 }
 
@@ -201,14 +288,35 @@ pre {
 .shape-card-accent::before {
   content: "";
   position: absolute;
-  inset: -14px -14px auto auto;
-  width: 64px;
-  height: 64px;
+  inset: -12px -12px auto auto;
+  width: 48px;
+  height: 48px;
   border-radius: 40% 60% 55% 45% / 50% 45% 55% 50%;
   background: var(--card-accent-color, var(--accent-floq));
   z-index: -1;
 }
+@media (min-width: 768px) {
+  .shape-card-accent::before {
+    inset: -14px -14px auto auto;
+    width: 64px;
+    height: 64px;
+  }
+}
 
+/* Percentage radii scale independently against the box's own width and
+   height, so on any card whose height can vary with its content (a long
+   cover letter, a multi-item skills/gaps list) the vertical percentages
+   blow up against the extra height and the corner ellipse eats into the
+   content — this bit a live job-fit-analysis card badly enough to clip
+   its own heading. Fixed rem radii don't have this failure mode: they stay
+   the same regardless of how tall the content grows, so every breakpoint
+   uses them (slightly larger above md, where cards are wider and a bigger
+   radius still reads as organic rather than square). */
 .rounded-organic {
-  border-radius: 38% 62% 58% 42% / 48% 42% 58% 52%;
+  border-radius: 2rem 2.75rem 2.25rem 2.5rem / 2.5rem 2rem 2.75rem 2.25rem;
+}
+@media (min-width: 768px) {
+  .rounded-organic {
+    border-radius: 3rem 4rem 3.5rem 3.75rem / 3.75rem 3rem 4rem 3.5rem;
+  }
 }
