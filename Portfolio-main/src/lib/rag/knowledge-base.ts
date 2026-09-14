@@ -226,7 +226,7 @@ Technical details:
 - Exposes conversational Q&A, gap-analysis, and eligibility-shortlisting as separate FastAPI endpoints
 - Designed a custom API key rotation layer across 5-6 Gemini keys to scale free-tier throughput to ~7,500 requests/day, bypassing per-key rate limits — instead of one key choking, rotate across several and load-balance requests
 
-Note: This portfolio's own chat system is NOT vector-based RAG — it uses a lightweight in-memory RAG approach because there's much less data. PIP-RAG uses Qdrant because 226 companies' worth of placement data is actually too much for in-memory search.`,
+Note: This portfolio's own chat system previously used a lightweight in-memory RAG approach, but has now been upgraded to a Pinecone-based vector RAG system to support the growing knowledge base. PIP-RAG uses Qdrant because 226 companies' worth of placement data requires a dedicated vector store.`,
     keywords: [
       'pip-rag', 'rag', 'placement', 'intelligence', 'qdrant', 'vector',
       'embedding', 'gemini', 'fastapi', 'interview', 'companies',
@@ -270,6 +270,30 @@ Technical details:
       'nyc', 'taxi', 'demand', 'analytics', 'data', 'python', 'bigquery',
       'folium', 'pyarrow', 'surge', 'choropleth', 'map', 'trips',
       'tip', 'payment', 'window functions', 'operations',
+    ],
+  },
+
+  {
+    id: 'project-ai-portfolio-rag',
+    category: 'project',
+    title: "AI Portfolio RAG — This Portfolio's Own Chatbot",
+    url: 'https://github.com/manav-bhullar/portfolio_rag',
+    content: `This portfolio site is itself a real RAG (Retrieval-Augmented Generation) project, not a static bio with a chat widget bolted on. Tech stack: Next.js 15, Vercel AI SDK, Google Gemini API, Pinecone (vector database).
+
+Technical details:
+- A knowledge base of focused documents — background, projects, experience, skills, and personal context — is embedded with Gemini's gemini-embedding-2 model and stored in Pinecone.
+- Retrieval is hybrid: Pinecone vector similarity (75% weight) combined with local keyword/title matching (25% weight), re-ranked and merged, with the top documents injected as context per query.
+- Multi-turn conversations get their query rewritten into a standalone search query before retrieval — e.g. "how long did it take?" becomes "how long did the Floq project take?" — so follow-up questions still retrieve the right documents instead of nothing.
+- The system prompt requires inline citations: every claim pulled from retrieved context is tagged \`[citation: source_id]\`, so answers trace back to a specific document rather than just sounding plausible.
+- Runs on a custom multi-key rotation layer across 9 Gemini API keys (the same trick proven on PIP-RAG) to scale free-tier throughput, with a sliding-window rate limiter (Upstash Redis in production, in-memory fallback locally) protecting against abuse.
+- Deployed on Vercel's Edge runtime, region-pinned near Pinecone's us-east-1 to cut retrieval latency.
+
+Ask this chatbot how it works, and the answer you get is a live demonstration of the thing being described.`,
+    keywords: [
+      'ai portfolio rag', 'this chatbot', 'how does this work', 'this website',
+      'this portfolio', 'rag', 'retrieval', 'pinecone', 'embeddings', 'gemini',
+      'vector search', 'architecture', 'meta', 'how were you built',
+      'citations', 'key rotation', 'rate limiting', 'edge', 'vercel', 'next.js',
     ],
   },
 
@@ -353,8 +377,8 @@ What kind of project makes him say "yes" immediately: anything with a genuinely 
     title: 'Contact Information',
     content: `Manav Bhullar's contact information:
 - GitHub: https://github.com/manav-bhullar
-- LinkedIn: https://linkedin.com/in/manav-bhullar
-- Email: manavbhullar2004@gmail.com
+- LinkedIn: https://www.linkedin.com/in/manav-bhullar-a27a0b282/
+- Email: manavbhullar341@gmail.com
 - Location: Patiala, Punjab, India
 
 He is happy to connect and discuss potential collaborations, projects, or opportunities.`,
@@ -368,10 +392,116 @@ He is happy to connect and discuss potential collaborations, projects, or opport
     id: 'crazy-hack',
     category: 'personal',
     title: 'Craziest Engineering Hack — API Key Rotation',
-    content: `The craziest engineering hack Manav has pulled off: On PIP-RAG, his placement-intelligence RAG system, he hit Gemini's free-tier rate limits fast once real usage kicked in. So he built a custom API key rotation layer across 5-6 Gemini keys — load-balancing requests across all of them to scale free-tier throughput to ~7,500 requests/day, completely bypassing the per-key limit. No paid tier, no downtime, just distributing the load. Probably the hackiest-but-most-effective thing he's shipped.`,
+    content: `The craziest engineering hack Manav has pulled off: building and scaling his RAG systems and LLM applications, he hit Gemini's free-tier rate limits fast once real usage kicked in — one key just couldn't keep up. So he built a custom API key rotation layer across several Gemini keys, load-balancing requests across all of them instead of paying up. No paid tier, no downtime, just distributing the load.
+
+This exact technique is running live right now: this portfolio's own chatbot rotates across 9 Gemini API keys server-side, with keys that hit a rate limit automatically put on cooldown so future requests skip them instead of failing. It first proved out on his standalone RAG project PIP-RAG, scaling free-tier throughput there to ~7,500 requests/day.`,
     keywords: [
       'crazy', 'craziest', 'hack', 'rate limit', 'api key', 'rotation',
       'gemini', 'throughput', 'clever', 'creative', 'fun', 'story',
+      'this chatbot', 'this portfolio', 'cooldown',
     ],
   },
+
+  // ── Deep Personal Context & Behavioral Grit (Structured) ─────────
+  {
+    id: 'personal-origin-story',
+    category: 'personal',
+    title: 'The Origin Story: How Manav Started Coding',
+    content: JSON.stringify({
+      phase_1_curiosity: "Started well before programming. Fascinated by computers and games. By 10th grade, began modifying, rooting, and patching Android phones to understand what happened underneath the UI.",
+      phase_2_catalyst: "Harvard's CS50 was the exact moment programming logic clicked. It gave structure to the raw curiosity, showing that programming isn't just writing code, but breaking down complex systems.",
+      core_philosophy: "Computer Engineering was a natural passion, not just a career decision. It is the combination of early technological curiosity and a structured problem-solving mindset."
+    }, null, 2),
+    keywords: [
+      'origin story', 'started coding', 'how', 'why', 'cs50', 'harvard', 
+      'custom roms', 'rooting', 'android', 'childhood', 'passion', 'computer engineering'
+    ],
+  },
+
+  {
+    id: 'personal-workflow',
+    category: 'personal',
+    title: 'Workflow & Environment Rituals',
+    content: JSON.stringify({
+      sensory_environment: "Minimal and clean desk. MacBook connected to a large TV for multiple screens. Lo-fi music playing in the background. Only water (not a coffee person).",
+      trigger_for_deep_work: "Finding a problem I genuinely want to solve, especially one I personally experienced (e.g., building a Gemini/Google Sheets workflow to manage placement forms because I kept forgetting them).",
+      focus_duration: "Once genuinely hooked, working continuously for 3-4 hours feels effortless. Phone is only used for project-related tasks.",
+      work_philosophy: "Deepest focus comes from intense curiosity about a problem, not from forcing a fixed number of hours."
+    }, null, 2),
+    keywords: [
+      'workflow', 'environment', 'desk setup', 'deep work', 'music', 
+      'lo-fi', 'water', 'coffee', 'macbook', 'screens', 'focus', 'flow state', 'rituals'
+    ],
+  },
+
+  {
+    id: 'personal-hobbies-entropy',
+    category: 'personal',
+    title: 'Hobbies & Outside Learning',
+    content: JSON.stringify({
+      reading: {
+        topics: ["Psychology", "Human Behavior", "Leadership", "Genetics"],
+        parallel_to_engineering: "Understanding human behavior makes me a better engineer because software is ultimately built for people, not just machines. It shows how motivations differ and how context influences actions."
+      },
+      fitness: {
+        activities: ["Regular training", "Running", "Physical activity"],
+        parallel_to_engineering: "There is a direct connection between physical activity and mental energy. Sitting too long makes me mentally tired; exercise acts as a hard reset for clarity."
+      },
+      discipline_philosophy: "I am not perfectly consistent, but long-term discipline isn't about never breaking a routine—it's about the ability to return to it after a break."
+    }, null, 2),
+    keywords: [
+      'hobbies', 'reading', 'psychology', 'human behavior', 'fitness', 
+      'training', 'running', 'exercise', 'discipline', 'mental energy', 'books', 'free time'
+    ],
+  },
+
+  {
+    id: 'personal-learning-loop',
+    category: 'personal',
+    title: 'The Learning Loop & Avoiding Tutorial Hell',
+    content: JSON.stringify({
+      step_1_mental_model: "Understand WHY the technology exists and WHAT problem it solves. Compare it to known technologies to avoid learning APIs in isolation.",
+      step_2_documentation: "Move to official documentation for core concepts. Deliberately avoid staying in 'tutorial mode' for too long.",
+      step_3_build_to_break: "Start building immediately to expose real gaps in understanding. The real test is if I can think in the technology's own concepts.",
+      step_4_llm_assist: "Use LLMs (ChatGPT/Gemini) to clarify concepts, compare approaches, or understand errors—never as a replacement for understanding. Step away before blindly searching for answers.",
+      core_rule: "Learn enough to build, build enough to expose gaps, then learn specifically to close those gaps."
+    }, null, 2),
+    keywords: [
+      'learning', 'framework', 'tutorial hell', 'methodology', 'documentation', 
+      'llms', 'chatgpt', 'gemini', 'mental model', 'building', 'how to learn'
+    ],
+  },
+
+  {
+    id: 'personal-handling-pressure',
+    category: 'personal',
+    title: 'Handling High-Pressure Deadlines',
+    content: JSON.stringify({
+      rule_1: "Accept reality and stay calm. Do not pretend we have unlimited time or try to maintain the original scope at any cost.",
+      rule_2: "Prioritize by impact. Critical logical/functional bugs take precedence over new features. Low-impact edge cases are deferred or documented.",
+      rule_3: "Communicate early. Do not hide delays from stakeholders until the deadline; ensure everyone understands what is realistically deliverable.",
+      rule_4: "Drop perfectionism. Focus shifts from the original ideal version to the best reliable version that can be shipped with the resources available."
+    }, null, 2),
+    keywords: [
+      'pressure', 'deadline', 'stress', 'triage', 'prioritize', 
+      'perfectionism', 'shipping', 'communication', 'edge cases', 'bugs'
+    ],
+  },
+
+  {
+    id: 'personal-handling-pushback',
+    category: 'personal',
+    title: 'Handling Non-Technical Pushback',
+    content: JSON.stringify({
+      situation: "A non-technical stakeholder requests a feature or architectural approach that is technically infeasible or introduces unacceptable trade-offs.",
+      behavior_1_separate: "Separate the technical disagreement from the person. Understand their underlying outcome, as their requested feature is just one way to achieve it.",
+      behavior_2_explain_impact: "Avoid technical jargon. Translate the limitation into business impact (e.g., 'This will increase response time or maintenance cost').",
+      behavior_3_explicit_tradeoff: "Make the trade-off explicit: 'We can do this, but we give up X.' If unacceptable, propose an alternative that reaches the same goal.",
+      impact: "Maintains confidence in technical reasoning while treating disagreement as a healthy test of assumptions. Ensures the final solution is based on evidence, not ego."
+    }, null, 2),
+    keywords: [
+      'pushback', 'disagreement', 'stakeholders', 'non-technical', 'communication', 
+      'conflict resolution', 'trade-offs', 'assumptions', 'impact', 'sbi'
+    ],
+  }
 ];

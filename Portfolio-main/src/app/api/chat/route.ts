@@ -1,6 +1,7 @@
 import { createGoogleGenerativeAI } from '@ai-sdk/google';
-import { streamText, generateText } from "ai";
+import { streamText, generateText, StreamData } from "ai";
 import { checkRateLimit } from '@/lib/ratelimit';
+import { getHealthyKey, getKeysHealthyFirst, reportKeyFailure, isRateLimitError } from '@/lib/gemini-keys';
 import { SYSTEM_PROMPT } from './prompt';
 import { getProjects } from './tools/getProjects';
 import { getPresentation } from './tools/getPresentation';
@@ -9,37 +10,70 @@ import { getContact } from './tools/getContact';
 import { getSkills } from './tools/getSkills';
 import { getInterests } from './tools/getInterests';
 import { getCrazy } from './tools/getCrazy';
+import { executeUiAction } from './tools/executeUiAction';
+import { analyzeJobFit } from './tools/analyzeJobFit';
+import { generateCoverLetter } from './tools/generateCoverLetter';
+import { submitContactRequest } from './tools/submitContactRequest';
 import { retrieve, formatContext } from '@/lib/rag/retriever';
 
+export const runtime = 'edge';
 export const maxDuration = 60;
+export const preferredRegion = 'iad1'; // Deploy close to Pinecone (us-east-1) to reduce latency
 
-function getRandomApiKey() {
-  const keys = Object.keys(process.env)
-    .filter(key => key.startsWith('GEMINI_API_KEY') || key.startsWith('GOOGLE_API_KEY'))
-    .map(key => process.env[key])
-    .filter(Boolean) as string[];
-  
-  if (keys.length === 0) {
-    throw new Error("No Gemini/Google API keys found in environment variables");
+// IMPORTANT: always pin an explicit, currently-supported model version here,
+// never a rolling "-latest" alias. Google moves "-latest" forward to whatever
+// its newest GA model is without warning, and the newest generation can ship
+// with a far stricter free-tier quota than older ones (gemini-3.8-flash's
+// free tier is 20 requests/DAY total — https://discuss.ai.google.dev/t/180609
+// — which silently broke this app when "gemini-flash-latest" rolled onto it).
+// Also: Google can cut off a stable model to *new* API keys well before its
+// announced shutdown date (gemini-2.5-flash did this), so if key rotation
+// starts throwing "no longer available to new users" errors, that's the
+// signal to re-check ai.google.dev/gemini-api/docs/deprecations and move to
+// whatever model that error message itself names as the replacement.
+
+/**
+ * Rewrite a follow-up query into a standalone one for retrieval, retrying
+ * across a couple of healthy keys since this is a small non-streaming call
+ * (unlike the main chat stream, we can safely retry it before anything has
+ * been sent to the client).
+ */
+async function rewriteQueryForRetrieval(rewritePrompt: string): Promise<string | null> {
+  const candidateKeys = getKeysHealthyFirst().slice(0, 2);
+
+  for (const key of candidateKeys) {
+    try {
+      const google = createGoogleGenerativeAI({ apiKey: key });
+      const { text } = await generateText({
+        model: google("gemini-3.5-flash-lite"),
+        prompt: rewritePrompt,
+      });
+      return text?.trim() || null;
+    } catch (err) {
+      if (isRateLimitError(err)) reportKeyFailure(key);
+      console.error('[RAG] Query rewrite attempt failed, trying next key if available:', err);
+    }
   }
-  
-  const randomIndex = Math.floor(Math.random() * keys.length);
-  return keys[randomIndex];
+
+  return null;
 }
-function errorHandler(error: unknown) {
-  if (error == null) {
-    return 'Unknown error';
-  }
-  if (typeof error === 'string') {
-    return error;
-  }
-  if (error instanceof Error) {
-    return error.message;
-  }
-  return JSON.stringify(error);
+
+/** Builds the error-message extractor passed to toDataStreamResponse, closing
+ *  over the key used for this request so a rate-limit failure feeds back
+ *  into the shared cooldown pool for future requests. */
+function makeErrorHandler(apiKey: string) {
+  return (error: unknown) => {
+    if (isRateLimitError(error)) reportKeyFailure(apiKey);
+
+    if (error == null) return 'Unknown error';
+    if (typeof error === 'string') return error;
+    if (error instanceof Error) return error.message;
+    return JSON.stringify(error);
+  };
 }
 
 export async function POST(req: Request) {
+  const errorHandler = makeErrorHandler(''); // fallback handler if we fail before picking a key
   try {
     // 1. Rate Limit Check (Early Guard)
     const rateLimit = await checkRateLimit(req);
@@ -69,8 +103,9 @@ export async function POST(req: Request) {
 
     const { messages } = await req.json();
 
-    const apiKey = getRandomApiKey();
+    const apiKey = getHealthyKey();
     const google = createGoogleGenerativeAI({ apiKey });
+    const requestErrorHandler = makeErrorHandler(apiKey);
 
     // ── RAG: Retrieve relevant context ───────────────────────
     // Extract the latest user message for retrieval
@@ -78,9 +113,17 @@ export async function POST(req: Request) {
       .reverse()
       .find((m: { role: string }) => m.role === 'user');
 
+    const streamData = new StreamData();
     let ragContext = '';
+    let retrievalDiagnostics: {
+      rewrittenQuery: string | null;
+      sources: { id: string; title: string; score: number; url?: string }[];
+      retrievalLatencyMs: number;
+      model: string;
+    } | null = null;
+
     if (lastUserMessage) {
-      let userQuery =
+      const originalQuery =
         typeof lastUserMessage.content === 'string'
           ? lastUserMessage.content
           : Array.isArray(lastUserMessage.content)
@@ -89,8 +132,10 @@ export async function POST(req: Request) {
                 .map((p: { text: string }) => p.text)
                 .join(' ')
             : '';
+      let userQuery = originalQuery;
 
       if (userQuery.trim()) {
+        const retrievalStart = Date.now();
         try {
           // If there's conversation history, rewrite the query for better RAG retrieval
           if (messages.length > 1) {
@@ -101,7 +146,7 @@ export async function POST(req: Request) {
               }`)
               .join('\n');
 
-            const rewritePrompt = `Given the following conversation history, rewrite the user's latest query into a standalone search query. 
+            const rewritePrompt = `Given the following conversation history, rewrite the user's latest query into a standalone search query.
 If the user says 'How long did it take?', and the history is about Floq, output 'How long did the Floq project take?'.
 Output ONLY the rewritten query, without any quotes or preamble.
 
@@ -111,28 +156,41 @@ ${historyText}
 Latest Query:
 ${userQuery}`;
 
-            try {
-              const { text: rewrittenQuery } = await generateText({
-                model: google("gemini-1.5-flash"), // fast flash model
-                prompt: rewritePrompt,
-              });
-              
-              if (rewrittenQuery && rewrittenQuery.trim()) {
-                console.log(`[RAG] Rewrote query: "${userQuery}" -> "${rewrittenQuery.trim()}"`);
-                userQuery = rewrittenQuery.trim();
-              }
-            } catch (rewriteErr) {
-              console.error('[RAG] Query rewrite failed, falling back to original query:', rewriteErr);
+            const rewrittenQuery = await rewriteQueryForRetrieval(rewritePrompt);
+            if (rewrittenQuery) {
+              console.log(`[RAG] Rewrote query: "${userQuery}" -> "${rewrittenQuery}"`);
+              userQuery = rewrittenQuery;
+            } else {
+              console.warn('[RAG] Query rewrite failed on all candidate keys, falling back to original query.');
             }
           }
 
           const retrievalResults = await retrieve(userQuery);
           ragContext = formatContext(retrievalResults);
+
+          retrievalDiagnostics = {
+            rewrittenQuery: userQuery !== originalQuery ? userQuery : null,
+            sources: retrievalResults.map((r) => ({
+              id: r.document.id,
+              title: r.document.title,
+              score: Math.round(r.score * 1000) / 1000,
+              ...(r.document.url ? { url: r.document.url } : {}),
+            })),
+            retrievalLatencyMs: Date.now() - retrievalStart,
+            model: 'gemini-3.6-flash',
+          };
         } catch (err) {
           console.error('[RAG] Retrieval error:', err);
           // Fall through — chatbot will still work, just without RAG context
         }
       }
+    }
+
+    if (retrievalDiagnostics) {
+      streamData.appendMessageAnnotation({
+        type: 'retrieval-diagnostics',
+        ...retrievalDiagnostics,
+      });
     }
 
     // ── Build a single merged system message ─────────────────
@@ -154,20 +212,28 @@ ${userQuery}`;
       getSkills,
       getInterests,
       getCrazy,
+      executeUiAction,
+      analyzeJobFit,
+      generateCoverLetter,
+      submitContactRequest,
     };
 
     const result = streamText({
-      model: google("gemini-flash-latest"),
+      model: google("gemini-3.6-flash"),
       messages: augmentedMessages,
       toolCallStreaming: true,
       tools,
       // maxSteps: 1 avoids a second internal round-trip that requires
       // replaying the model's own function-call message back to Gemini.
       maxSteps: 1,
+      onFinish: () => {
+        streamData.close();
+      },
     });
 
     return result.toDataStreamResponse({
-      getErrorMessage: errorHandler,
+      data: streamData,
+      getErrorMessage: requestErrorHandler,
       headers: {
         'X-RateLimit-Limit': String(rateLimit.limit),
         'X-RateLimit-Remaining': String(rateLimit.remaining),

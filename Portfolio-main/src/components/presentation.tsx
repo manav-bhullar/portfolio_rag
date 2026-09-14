@@ -39,14 +39,14 @@ export function Presentation() {
   } as const;
 
   return (
-    <div className="mx-auto w-full max-w-2xl py-6 font-sans">
+    <div className="mx-auto w-full max-w-2xl py-4 font-sans sm:py-6">
       <div className="flex flex-col">
           <motion.div
             initial="hidden"
             animate="visible"
             variants={textVariants}
           >
-            <h1 className="font-display text-3xl font-extrabold text-foreground md:text-4xl">
+            <h1 className="font-display text-2xl font-extrabold text-foreground sm:text-3xl md:text-4xl">
               {profile.name}
             </h1>
             <div className="mt-1 flex flex-col gap-1 md:flex-row md:items-center md:gap-4">
@@ -60,7 +60,7 @@ export function Presentation() {
             initial="hidden"
             animate="visible"
             variants={paragraphAnimation}
-            className="text-foreground mt-6 leading-relaxed whitespace-pre-line"
+            className="text-foreground mt-5 text-[15px] leading-relaxed whitespace-pre-line sm:mt-6 sm:text-base"
           >
             {profile.description}
           </motion.p>

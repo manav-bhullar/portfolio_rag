@@ -149,10 +149,14 @@ export async function runIngestion(): Promise<void> {
   }
 
   // 4. Check for Gemini credentials for embedding generation
-  const geminiApiKey = process.env.GEMINI_API_KEY;
+  const geminiApiKey = Object.keys(process.env)
+    .filter(key => key.startsWith('GEMINI_API_KEY') || key.startsWith('GOOGLE_API_KEY'))
+    .map(key => process.env[key])
+    .filter(Boolean)[0] || undefined;
+    
   if (!geminiApiKey) {
     console.warn(
-      '[RAG Ingestion] Warning: GEMINI_API_KEY is not set in environment. Cannot generate embeddings. Skipping Pinecone upsert. Updating local cache.'
+      '[RAG Ingestion] Warning: No GEMINI_API_KEY or GOOGLE_API_KEY found in environment. Cannot generate embeddings. Skipping Pinecone upsert. Updating local cache.'
     );
     writeRagCache(currentHash, KNOWLEDGE_BASE.length, INDEX_NAME);
     process.exit(0);

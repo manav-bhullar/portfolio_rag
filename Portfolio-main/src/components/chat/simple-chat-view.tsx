@@ -80,14 +80,19 @@ export function SimplifiedChatView({
     getSkills: 'Loading skills...',
     getInterests: 'Loading interests...',
     getCrazy: 'Loading something crazy...',
+    executeUiAction: 'Executing system action...',
+    analyzeJobFit: 'Analyzing job fit...',
+    generateCoverLetter: 'Drafting cover letter...',
+    submitContactRequest: 'Loading contact form...',
   };
 
   const loadingText = activeToolName ? (TOOL_LABELS[activeToolName] || `Executing ${activeToolName}...`) : 'Thinking...';
 
   return (
-    <motion.div {...MOTION_CONFIG} className="flex h-full w-full flex-col px-4">
-      {/* Single scrollable container for both tool and text content */}
-      <div className="custom-scrollbar flex h-full w-full flex-col overflow-y-auto">
+    <motion.div {...MOTION_CONFIG} className="flex w-full flex-col md:px-4">
+      {/* Single container for both tool and text content — sized to its
+          own content since the thread's outer container owns scrolling */}
+      <div className="flex w-full flex-col">
         {/* Tool invocation result - displayed at the top */}
         {hasTools && (
           <div className="mb-4 w-full">

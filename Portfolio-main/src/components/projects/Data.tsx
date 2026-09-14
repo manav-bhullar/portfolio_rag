@@ -4,9 +4,11 @@ import { Car, MonitorCheck, BarChart3, MapPinned, Bot } from 'lucide-react';
 import type { ProjectCardData } from './ProjectCard';
 import FloqSandbox from './FloqSandbox';
 import ScalesSandbox from './ScalesSandbox';
+import OlistSandbox from './OlistSandbox';
+import NYCTaxiSandbox from './NYCTaxiSandbox';
 
 // Full detail content shown when a card is expanded
-const PROJECT_CONTENT = [
+export const PROJECT_CONTENT = [
   {
     title: 'Floq',
     description:
@@ -66,19 +68,21 @@ export const ProjectContent = ({ project }: { project: ProjectProps }) => {
   }
 
   return (
-    <div className="space-y-8">
-      <div className="rounded-2xl bg-secondary p-6">
+    <div className="space-y-6 pb-2 md:space-y-8">
+      <div className="rounded-2xl bg-secondary p-4 sm:p-6">
         <div className="space-y-5">
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <span>{projectData.date}</span>
           </div>
 
-          <p className="text-foreground leading-relaxed">
+          <p className="text-[15px] leading-relaxed text-foreground sm:text-base">
             {projectData.description}
           </p>
           
           {projectData.title === 'Floq' && <FloqSandbox />}
           {projectData.title === 'SCALES v3.0' && <ScalesSandbox />}
+          {projectData.title === 'Olist Analytics' && <OlistSandbox />}
+          {projectData.title === 'NYC Taxi Analytics' && <NYCTaxiSandbox />}
 
           <div className="pt-2">
             <h3 className="mb-3 text-xs font-bold tracking-wide text-muted-foreground uppercase">

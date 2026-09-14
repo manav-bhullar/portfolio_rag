@@ -51,12 +51,12 @@ const Skills = () => {
 
   return (
     <div className="mx-auto w-full max-w-5xl">
-      <h2 className="font-display mb-5 text-2xl font-bold text-foreground md:text-3xl">
+      <h2 className="font-display mb-4 text-xl font-bold text-foreground sm:mb-5 sm:text-2xl md:text-3xl">
         Technical Stack
       </h2>
 
       <motion.div
-        className="grid grid-cols-1 gap-4 sm:grid-cols-2"
+        className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4"
         variants={containerVariants}
         initial="hidden"
         animate="visible"
@@ -66,15 +66,18 @@ const Skills = () => {
             key={section.category}
             variants={itemVariants}
             style={{ backgroundColor: section.bg }}
-            className="rounded-2xl p-5 text-white"
+            className="rounded-2xl p-4 text-white sm:p-5"
           >
             <div className="mb-3 flex items-center gap-2">
               {section.icon}
               <h3 className="text-base font-bold">{section.category}</h3>
             </div>
-            <ul className="space-y-1 text-sm text-white/90">
+            {/* Chips instead of a vertical list: 5 one-word rows waste height on a phone */}
+            <ul className="flex flex-wrap gap-1.5 text-sm">
               {section.skills.map((skill) => (
-                <li key={skill}>{skill}</li>
+                <li key={skill} className="rounded-full bg-white/15 px-2.5 py-1 font-medium text-white">
+                  {skill}
+                </li>
               ))}
             </ul>
           </motion.div>

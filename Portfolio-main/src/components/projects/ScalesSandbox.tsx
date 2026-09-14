@@ -25,12 +25,12 @@ export default function ScalesSandbox() {
 
   return (
     <div className="w-full rounded-xl border bg-card p-4 shadow-sm mt-6">
-      <div className="mb-4 flex items-center justify-between">
-        <h4 className="font-semibold tracking-tight">CBTE Grading Pipeline (Simplified)</h4>
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
+        <h4 className="min-w-0 text-[15px] font-semibold tracking-tight sm:text-base">CBTE Grading Pipeline (Simplified)</h4>
         <button
           onClick={step === 4 ? handleReset : handleRun}
           disabled={step > 0 && step < 4}
-          className="flex items-center gap-2 rounded-full bg-[#F0954A]/10 px-3 py-1 text-sm font-medium text-[#F0954A] hover:bg-[#F0954A]/20 cursor-pointer disabled:opacity-50"
+          className="flex items-center gap-2 pressable min-h-10 shrink-0 rounded-full bg-[#F0954A]/10 px-4 py-2 text-sm font-medium text-[#F0954A] hover:bg-[#F0954A]/20 cursor-pointer disabled:opacity-50"
         >
           {step === 4 ? 'Reset' : step > 0 ? 'Processing...' : 'Run Pipeline'}
         </button>

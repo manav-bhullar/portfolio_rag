@@ -501,7 +501,7 @@ def build() -> PDF:
     pdf.h3("Content drift")
     pdf.bullet("Carousel replaced PIP-RAG with AI Portfolio RAG; knowledge base still indexes PIP-RAG")
     pdf.bullet("Knowledge base still claims this site is in-memory RAG; it is Pinecone now")
-    pdf.bullet("Emails disagree: contact.tsx uses manavbhullar341@gmail.com; RAG uses manavbhullar2004@gmail.com")
+    pdf.bullet("Emails have been fixed and agree on manavbhullar341@gmail.com")
     pdf.h3("Leftovers from the original fork")
     pdf.bullet("French Chargement du chat... on the /chat suspense fallback")
     pdf.bullet("Unused getWeather tool and unused photos.tsx")

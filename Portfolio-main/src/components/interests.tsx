@@ -22,23 +22,23 @@ const Interests = () => {
 
   return (
     <div className="mx-auto w-full">
-      <div className="mb-8">
-        <h2 className="font-display text-foreground text-3xl font-extrabold md:text-4xl">
+      <div className="mb-5 sm:mb-8">
+        <h2 className="font-display text-foreground text-2xl font-extrabold sm:text-3xl md:text-4xl">
           Outside of Code
         </h2>
-        <p className="mt-4 text-muted-foreground">
+        <p className="mt-2 text-muted-foreground sm:mt-4">
           What keeps me sharp between builds.
         </p>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
         {interests.map((interest, index) => (
           <motion.div
             key={interest.title}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4, delay: index * 0.1, ease: 'easeOut' }}
-            className="rounded-organic bg-accent p-6"
+            className="rounded-organic bg-accent p-5 sm:p-6"
           >
             <div
               className="shape-card-accent mb-3 flex h-11 w-11 items-center justify-center rounded-full"

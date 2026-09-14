@@ -2,9 +2,9 @@
 'use client';
 
 import { ChatRequestOptions } from 'ai';
-import { motion } from 'framer-motion';
-import { ArrowRight, Square } from 'lucide-react';
+import { ArrowUp, Square } from 'lucide-react';
 import React, { useEffect } from 'react';
+import { useIsTouch } from '@/hooks/use-media-query';
 
 interface ChatBottombarProps {
   handleInputChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
@@ -27,6 +27,7 @@ export default function ChatBottombar({
   isToolInProgress,
 }: ChatBottombarProps) {
   const inputRef = React.useRef<HTMLInputElement>(null);
+  const isTouch = useIsTouch();
 
   const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (
@@ -40,54 +41,56 @@ export default function ChatBottombar({
     }
   };
 
+  // Autofocus only with a real keyboard. On a phone, focusing on mount pops
+  // the on-screen keyboard over half the screen before the visitor has read
+  // anything — they should tap the field when they're ready to type.
   useEffect(() => {
-    if (inputRef.current) {
-      inputRef.current.focus();
-    }
-  }, [inputRef]);
+    if (!isTouch) inputRef.current?.focus();
+  }, [isTouch]);
+
+  const canSend = !!input.trim() && !isToolInProgress && !isLoading;
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="w-full pb-2 sm:pb-6 md:pb-8"
-    >
-      <form onSubmit={handleSubmit} className="relative w-full md:px-4">
-        <div className="mx-auto flex items-center rounded-full border border-border/50 bg-card py-2 pr-2 pl-4 sm:pl-6 shadow-[0_4px_14px_rgba(0,0,0,0.05)] transition-all focus-within:border-[#3FB37F] focus-within:shadow-[0_4px_20px_rgba(63,179,127,0.15)]">
-          <input
-            ref={inputRef}
-            type="text"
-            value={input}
-            onChange={handleInputChange}
-            onKeyDown={handleKeyPress}
-            aria-label="Ask me anything"
-            placeholder={
-              isToolInProgress ? 'Tool is in progress...' : 'Ask me anything'
-            }
-            className="text-md w-full border-none bg-transparent text-foreground placeholder:text-muted-foreground focus:outline-none"
-            disabled={isToolInProgress || isLoading}
-          />
+    <form onSubmit={handleSubmit} className="w-full md:px-4">
+      <div className="mx-auto flex min-h-12 items-center gap-2 rounded-full border border-border/50 bg-card py-1.5 pr-1.5 pl-4 shadow-[0_4px_14px_rgba(0,0,0,0.05)] transition-[border-color,box-shadow] focus-within:border-[#3FB37F] focus-within:shadow-[0_4px_20px_rgba(63,179,127,0.15)] sm:pl-5">
+        <input
+          ref={inputRef}
+          type="text"
+          value={input}
+          onChange={handleInputChange}
+          onKeyDown={handleKeyPress}
+          aria-label="Ask me anything"
+          placeholder={isToolInProgress ? 'Tool is in progress...' : 'Ask me anything'}
+          // 16px on phones: anything smaller makes iOS Safari zoom in on focus
+          className="min-w-0 flex-1 border-none bg-transparent text-base text-foreground placeholder:text-muted-foreground focus:outline-none"
+          disabled={isToolInProgress}
+          enterKeyHint="send"
+          autoComplete="off"
+          autoCorrect="on"
+          autoCapitalize="sentences"
+          spellCheck
+        />
 
+        {isLoading ? (
           <button
-            type={isLoading ? "button" : "submit"}
-            aria-label={isLoading ? "Stop generating" : "Send message"}
-            disabled={(!isLoading && !input.trim()) || isToolInProgress}
-            className="flex items-center justify-center rounded-full bg-foreground p-2 text-primary-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#3FB37F] disabled:opacity-50"
-            onClick={(e) => {
-              if (isLoading) {
-                e.preventDefault();
-                stop();
-              }
-            }}
+            type="button"
+            onClick={stop}
+            aria-label="Stop generating"
+            className="pressable flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-foreground text-primary-foreground"
           >
-            {isLoading ? (
-              <Square className="h-5 w-5 fill-current" />
-            ) : (
-              <ArrowRight className="h-6 w-6" />
-            )}
+            <Square className="h-4 w-4 fill-current" />
           </button>
-        </div>
-      </form>
-    </motion.div>
+        ) : (
+          <button
+            type="submit"
+            aria-label="Send message"
+            disabled={!canSend}
+            className="pressable flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-foreground text-primary-foreground transition-opacity disabled:opacity-40"
+          >
+            <ArrowUp className="h-5 w-5" strokeWidth={2.5} />
+          </button>
+        )}
+      </div>
+    </form>
   );
 }

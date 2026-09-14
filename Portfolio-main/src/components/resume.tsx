@@ -33,21 +33,25 @@ export function Resume() {
   };
 
   return (
-    <div className="mx-auto w-full space-y-3 py-8 font-sans">
+    <div className="mx-auto w-full space-y-3 py-4 font-sans sm:py-8">
       {resumes.map((resume, index) => (
         <motion.div
           key={resume.downloadUrl}
           onClick={() => handleDownload(resume.downloadUrl)}
-          className="group relative cursor-pointer overflow-hidden rounded-xl bg-accent p-0 transition-all duration-300"
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleDownload(resume.downloadUrl); } }}
+          aria-label={`Download ${resume.title} (PDF)`}
+          className="group pressable relative cursor-pointer overflow-hidden rounded-xl bg-accent p-0 transition-all duration-300"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3, delay: index * 0.05, ease: 'easeOut' }}
           whileHover={{ scale: 1.01 }}
         >
-          <div className="p-5">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-lg font-medium text-foreground">
+          <div className="p-4 sm:p-5">
+            <div className="flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <h3 className="text-base font-medium text-foreground sm:text-lg">
                   {resume.title}
                 </h3>
                 <p className="text-sm text-muted-foreground">
@@ -59,7 +63,7 @@ export function Resume() {
               </div>
 
               <motion.div
-                className="flex h-10 w-10 items-center justify-center rounded-full bg-black text-primary-foreground group-hover:bg-black/80"
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-black text-primary-foreground group-hover:bg-black/80"
                 initial={{ scale: 1 }}
               >
                 <Download className="h-5 w-5" />
