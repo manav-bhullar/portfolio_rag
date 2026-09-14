@@ -277,6 +277,7 @@ Technical details:
     id: 'project-ai-portfolio-rag',
     category: 'project',
     title: "AI Portfolio RAG — This Portfolio's Own Chatbot",
+    url: 'https://github.com/manav-bhullar/portfolio_rag',
     content: `This portfolio site is itself a real RAG (Retrieval-Augmented Generation) project, not a static bio with a chat widget bolted on. Tech stack: Next.js 15, Vercel AI SDK, Google Gemini API, Pinecone (vector database).
 
 Technical details:

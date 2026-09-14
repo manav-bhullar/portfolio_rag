@@ -12,6 +12,7 @@ import { getInterests } from './tools/getInterests';
 import { getCrazy } from './tools/getCrazy';
 import { executeUiAction } from './tools/executeUiAction';
 import { analyzeJobFit } from './tools/analyzeJobFit';
+import { generateCoverLetter } from './tools/generateCoverLetter';
 import { submitContactRequest } from './tools/submitContactRequest';
 import { retrieve, formatContext } from '@/lib/rag/retriever';
 
@@ -116,7 +117,7 @@ export async function POST(req: Request) {
     let ragContext = '';
     let retrievalDiagnostics: {
       rewrittenQuery: string | null;
-      sources: { id: string; title: string; score: number }[];
+      sources: { id: string; title: string; score: number; url?: string }[];
       retrievalLatencyMs: number;
       model: string;
     } | null = null;
@@ -173,6 +174,7 @@ ${userQuery}`;
               id: r.document.id,
               title: r.document.title,
               score: Math.round(r.score * 1000) / 1000,
+              ...(r.document.url ? { url: r.document.url } : {}),
             })),
             retrievalLatencyMs: Date.now() - retrievalStart,
             model: 'gemini-3.6-flash',
@@ -212,6 +214,7 @@ ${userQuery}`;
       getCrazy,
       executeUiAction,
       analyzeJobFit,
+      generateCoverLetter,
       submitContactRequest,
     };
 

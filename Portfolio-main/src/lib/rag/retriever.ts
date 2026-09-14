@@ -124,6 +124,7 @@ export async function retrieve(
       category: (typeof metadata.category === 'string'
         ? metadata.category
         : 'background') as KnowledgeDocument['category'],
+      url: typeof metadata.url === 'string' ? metadata.url : undefined,
     };
 
     const vectorScore = match.score || 0;

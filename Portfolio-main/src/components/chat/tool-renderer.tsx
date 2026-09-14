@@ -9,6 +9,7 @@ import Crazy from '../crazy';
 import UiActionExecutor from './ui-action-executor';
 import JobFitAnalysis, { type JobFitResult } from './job-fit-analysis';
 import LeadCaptureForm from './lead-capture-form';
+import CoverLetterResult from './cover-letter-result';
 
 export interface ToolInvocationItem {
   toolCallId: string;
@@ -96,12 +97,20 @@ export default function ToolRenderer({
               parsed = null;
             }
             if (!parsed) return null;
+            const jobDescription = (tool.args as { jobDescription?: string })?.jobDescription;
             return (
               <div key={toolCallId} className="w-full rounded-lg">
-                <JobFitAnalysis result={parsed} />
+                <JobFitAnalysis result={parsed} jobDescription={jobDescription} />
               </div>
             );
           }
+
+          case 'generateCoverLetter':
+            return (
+              <div key={toolCallId} className="w-full rounded-lg">
+                <CoverLetterResult letter={String(tool.result ?? '')} />
+              </div>
+            );
 
           case 'submitContactRequest':
             return (

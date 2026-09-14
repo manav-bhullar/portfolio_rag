@@ -1,12 +1,12 @@
 'use client';
 
 import { useState } from 'react';
-import { ChevronDown, ChevronUp, Cpu } from 'lucide-react';
+import { ChevronDown, ChevronUp, Cpu, ExternalLink } from 'lucide-react';
 
 export interface RetrievalDiagnostics {
   type: 'retrieval-diagnostics';
   rewrittenQuery: string | null;
-  sources: { id: string; title: string; score: number }[];
+  sources: { id: string; title: string; score: number; url?: string }[];
   retrievalLatencyMs: number;
   model: string;
 }
@@ -44,7 +44,19 @@ export function UnderTheHood({ diagnostics }: { diagnostics: RetrievalDiagnostic
               <ul className="space-y-1">
                 {diagnostics.sources.map((s) => (
                   <li key={s.id} className="flex items-center justify-between gap-2">
-                    <span className="truncate">{s.title}</span>
+                    {s.url ? (
+                      <a
+                        href={s.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex min-w-0 items-center gap-1 truncate underline decoration-dotted hover:text-foreground"
+                      >
+                        <span className="truncate">{s.title}</span>
+                        <ExternalLink className="h-3 w-3 shrink-0" />
+                      </a>
+                    ) : (
+                      <span className="truncate">{s.title}</span>
+                    )}
                     <span className="shrink-0 font-mono">{s.score.toFixed(3)}</span>
                   </li>
                 ))}
