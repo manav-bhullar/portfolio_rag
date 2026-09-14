@@ -19,12 +19,17 @@ export const runtime = 'edge';
 export const maxDuration = 60;
 export const preferredRegion = 'iad1'; // Deploy close to Pinecone (us-east-1) to reduce latency
 
-// IMPORTANT: always pin an explicit model version here (e.g. "gemini-2.5-flash"),
+// IMPORTANT: always pin an explicit, currently-supported model version here,
 // never a rolling "-latest" alias. Google moves "-latest" forward to whatever
 // its newest GA model is without warning, and the newest generation can ship
 // with a far stricter free-tier quota than older ones (gemini-3.8-flash's
 // free tier is 20 requests/DAY total — https://discuss.ai.google.dev/t/180609
 // — which silently broke this app when "gemini-flash-latest" rolled onto it).
+// Also: Google can cut off a stable model to *new* API keys well before its
+// announced shutdown date (gemini-2.5-flash did this), so if key rotation
+// starts throwing "no longer available to new users" errors, that's the
+// signal to re-check ai.google.dev/gemini-api/docs/deprecations and move to
+// whatever model that error message itself names as the replacement.
 
 /**
  * Rewrite a follow-up query into a standalone one for retrieval, retrying
@@ -39,7 +44,7 @@ async function rewriteQueryForRetrieval(rewritePrompt: string): Promise<string |
     try {
       const google = createGoogleGenerativeAI({ apiKey: key });
       const { text } = await generateText({
-        model: google("gemini-2.5-flash-lite"),
+        model: google("gemini-3.5-flash-lite"),
         prompt: rewritePrompt,
       });
       return text?.trim() || null;
@@ -170,7 +175,7 @@ ${userQuery}`;
               score: Math.round(r.score * 1000) / 1000,
             })),
             retrievalLatencyMs: Date.now() - retrievalStart,
-            model: 'gemini-2.5-flash',
+            model: 'gemini-3.6-flash',
           };
         } catch (err) {
           console.error('[RAG] Retrieval error:', err);
@@ -211,7 +216,7 @@ ${userQuery}`;
     };
 
     const result = streamText({
-      model: google("gemini-2.5-flash"),
+      model: google("gemini-3.6-flash"),
       messages: augmentedMessages,
       toolCallStreaming: true,
       tools,

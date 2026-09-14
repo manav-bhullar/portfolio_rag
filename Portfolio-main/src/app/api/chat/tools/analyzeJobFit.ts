@@ -29,7 +29,7 @@ export const analyzeJobFit = tool({
       try {
         const google = createGoogleGenerativeAI({ apiKey });
         const { object } = await generateObject({
-          model: google('gemini-2.5-flash'),
+          model: google('gemini-3.6-flash'),
           schema: FitAnalysisSchema,
           prompt: `You are evaluating how well the following job description matches Manav Bhullar's REAL background, using ONLY the context documents below. Never invent skills or experience not present in the context. If something the job wants isn't in the context, list it as a gap.
 
