@@ -30,7 +30,7 @@ const Crazy = () => {
           <KeyRound className="h-6 w-6" />
         </div>
         <p className="text-foreground leading-relaxed">
-          Building <strong>PIP-RAG</strong>, my placement-intelligence RAG system, I hit
+          Building and scaling my RAG systems and LLM applications, I hit
           Gemini&apos;s free-tier rate limits fast once real usage kicked in - one key
           just couldn&apos;t keep up.
         </p>

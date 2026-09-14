@@ -7,6 +7,7 @@ const nextConfig = {
     // Ne bloque PAS le build en cas d'erreurs eslint
     ignoreDuringBuilds: true,
   },
+  serverExternalPackages: ['onnxruntime-node', '@xenova/transformers'],
 };
 
 module.exports = nextConfig;

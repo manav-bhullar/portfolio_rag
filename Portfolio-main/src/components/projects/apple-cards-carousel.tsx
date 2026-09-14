@@ -155,6 +155,7 @@ export const Carousel = ({
             className="relative z-40 flex h-10 w-10 items-center justify-center rounded-full bg-gray-100 disabled:opacity-50"
             onClick={scrollLeft}
             disabled={!canScrollLeft}
+            aria-label="Scroll left"
           >
             <IconArrowNarrowLeft className="h-6 w-6 text-gray-500" />
           </button>
@@ -162,6 +163,7 @@ export const Carousel = ({
             className="relative z-40 flex h-10 w-10 items-center justify-center rounded-full bg-gray-100 disabled:opacity-50"
             onClick={scrollRight}
             disabled={!canScrollRight}
+            aria-label="Scroll right"
           >
             <IconArrowNarrowRight className="h-6 w-6 text-gray-500" />
           </button>
@@ -182,7 +184,7 @@ export const Card = ({
 }) => {
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
-  const { onCardClose, currentIndex } = useContext(CarouselContext);
+  const { onCardClose } = useContext(CarouselContext);
 
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
@@ -201,7 +203,7 @@ export const Card = ({
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [open]);
 
-  //@ts-ignore
+  
   useOutsideClick(containerRef, () => handleClose());
 
   const handleOpen = () => {
@@ -217,7 +219,7 @@ export const Card = ({
     <>
       <AnimatePresence>
         {open && (
-          <div className="fixed inset-0 z-52 h-screen overflow-auto">
+          <div className="fixed inset-0 z-52 h-[100dvh] overflow-auto">
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -230,20 +232,21 @@ export const Card = ({
               exit={{ opacity: 0 }}
               ref={containerRef}
               layoutId={layout ? `card-${card.title}` : undefined}
-              className="relative z-[60] mx-auto my-10 h-fit max-w-5xl rounded-3xl bg-white font-sans dark:bg-neutral-900"
+              className="relative z-[60] mx-4 my-4 sm:mx-auto sm:my-8 md:my-10 h-fit max-w-5xl rounded-2xl sm:rounded-3xl bg-white font-sans dark:bg-neutral-900"
             >
               {/* Sticky close button */}
-              <div className="sticky top-4 z-52 flex justify-end px-8 pt-8 md:px-14 md:pt-8">
+              <div className="sticky top-4 z-52 flex justify-end px-4 pt-4 sm:px-8 sm:pt-8 md:px-14 md:pt-8">
                 <button
                   className="flex h-8 w-8 items-center justify-center rounded-full bg-black/90 shadow-md dark:bg-white/90"
                   onClick={handleClose}
+                  aria-label="Close card"
                 >
                   <IconX className="h-6 w-6 text-neutral-100 dark:text-neutral-900" />
                 </button>
               </div>
 
               {/* Header section with consistent padding */}
-              <div className="relative px-8 pt-2 pb-0 md:px-14">
+              <div className="relative px-4 pt-2 pb-0 sm:px-8 md:px-14">
                 <div>
                   <motion.p
                     layoutId={layout ? `category-${card.title}` : undefined}
@@ -261,7 +264,7 @@ export const Card = ({
               </div>
 
               {/* Content with consistent padding */}
-              <div className="px-8 pt-8 pb-14 md:px-14">{card.content}</div>
+              <div className="px-4 pt-4 pb-8 sm:px-8 sm:pt-8 sm:pb-14 md:px-14">{card.content}</div>
             </motion.div>
           </div>
         )}
@@ -269,6 +272,7 @@ export const Card = ({
       <motion.button
         layoutId={layout ? `card-${card.title}` : undefined}
         onClick={handleOpen}
+        aria-label={`Open details for ${card.title}`}
         className="relative z-10 flex h-80 w-56 flex-col items-start justify-start overflow-hidden rounded-3xl bg-gray-100 dark:bg-neutral-900"
       >
         <div className="absolute inset-x-0 top-0 z-30 h-full cursor-pointer bg-gradient-to-b from-black hover:scale-110 via-transparent to-transparent" />

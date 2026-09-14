@@ -24,7 +24,7 @@ export function ProjectsCarousel() {
 
       <AnimatePresence>
         {openProject && (
-          <div className="fixed inset-0 z-52 h-screen overflow-auto">
+          <div className="fixed inset-0 z-52 h-[100dvh] overflow-auto">
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -37,10 +37,10 @@ export function ProjectsCarousel() {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 20, scale: 0.97 }}
               transition={{ type: 'spring', stiffness: 260, damping: 24 }}
-              className="relative z-[60] mx-auto my-10 h-fit max-w-2xl rounded-3xl bg-card p-8 shadow-2xl md:p-10"
+              className="relative z-[60] mx-4 my-4 sm:mx-auto sm:my-8 md:my-10 h-fit max-w-2xl rounded-2xl sm:rounded-3xl bg-card p-5 sm:p-7 md:p-10 shadow-2xl"
             >
               <button
-                className="absolute top-6 right-6 flex h-8 w-8 items-center justify-center rounded-full bg-secondary hover:bg-secondary/70"
+                className="absolute top-4 right-4 sm:top-6 sm:right-6 flex h-8 w-8 items-center justify-center rounded-full bg-secondary hover:bg-secondary/70"
                 onClick={() => setOpenId(null)}
                 aria-label="Close"
               >

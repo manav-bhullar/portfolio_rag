@@ -140,7 +140,6 @@ const AnimatedChevron = () => {
 
 export default function HelperBoost({
   submitQuery,
-  setInput,
 }: HelperBoostProps) {
   const [isVisible, setIsVisible] = useState(true);
   const [open, setOpen] = useState(false);
@@ -176,7 +175,9 @@ export default function HelperBoost({
           >
             <button
               onClick={toggleVisibility}
-              className="flex items-center gap-1 px-3 py-1 text-xs text-muted-foreground transition-colors hover:text-foreground"
+              aria-expanded={isVisible}
+              aria-label={isVisible ? 'Hide quick questions' : 'Show quick questions'}
+              className="flex items-center gap-1 px-4 py-2 text-xs text-muted-foreground transition-colors hover:text-foreground"
             >
               {isVisible ? (
                 <>
@@ -196,7 +197,7 @@ export default function HelperBoost({
           {isVisible && (
             <div className="w-full">
               <div
-                className="flex w-full flex-wrap gap-1 md:gap-3"
+                className="flex w-full flex-nowrap overflow-x-auto gap-2 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden md:flex-wrap md:overflow-x-visible md:gap-3"
                 style={{ justifyContent: 'safe center' }}
               >
                 {questionConfig.map(({ key, color, icon: Icon }) => (
@@ -204,11 +205,11 @@ export default function HelperBoost({
                     key={key}
                     onClick={() => handleQuestionClick(key)}
                     variant="outline"
-                    className="border-border hover:bg-secondary h-auto min-w-[100px] flex-shrink-0 cursor-pointer rounded-full border bg-card px-4 py-3 shadow-none transition-none active:scale-95"
+                    className="border-border hover:bg-secondary h-auto min-w-fit flex-shrink-0 cursor-pointer rounded-full border bg-card px-3 sm:px-4 py-2.5 sm:py-3 shadow-none transition-none active:scale-95"
                   >
                     <div className="flex items-center gap-2 text-foreground">
-                      <Icon size={16} strokeWidth={2.25} color={color} />
-                      <span className="text-sm font-semibold">{key}</span>
+                      <Icon size={14} className="sm:w-4 sm:h-4" strokeWidth={2.25} color={color} />
+                      <span className="text-xs sm:text-sm font-semibold">{key}</span>
                     </div>
                   </Button>
                 ))}
@@ -219,7 +220,7 @@ export default function HelperBoost({
                     <TooltipTrigger asChild>
                       <Drawer.Trigger className="group relative flex flex-shrink-0 items-center justify-center">
                         <motion.div
-                          className="hover:bg-secondary flex h-auto cursor-pointer items-center space-x-1 rounded-full border border-border bg-card px-4 py-3 text-sm transition-all duration-200"
+                          className="hover:bg-secondary flex h-auto cursor-pointer items-center space-x-1 rounded-full border border-border bg-card px-3 sm:px-4 py-2.5 sm:py-3 text-xs sm:text-sm transition-all duration-200"
                           whileHover={{ scale: 1 }}
                           whileTap={{ scale: 0.98 }}
                         >

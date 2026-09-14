@@ -13,7 +13,7 @@ export function Resume() {
     },
     {
       title: 'AI/ML Resume',
-      description: 'SCALES v3.0, PIP-RAG, and applied ML work',
+      description: 'SCALES v3.0, Portfolio RAG, and applied ML work',
       downloadUrl: '/Manav_Bhullar_AIML_Resume.pdf',
     },
     {

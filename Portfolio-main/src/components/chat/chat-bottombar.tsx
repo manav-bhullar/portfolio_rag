@@ -50,16 +50,17 @@ export default function ChatBottombar({
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="w-full pb-2 md:pb-8"
+      className="w-full pb-2 sm:pb-6 md:pb-8"
     >
       <form onSubmit={handleSubmit} className="relative w-full md:px-4">
-        <div className="mx-auto flex items-center rounded-full border border-border bg-background py-2 pr-2 pl-6 transition-colors focus-within:border-[#3FB37F]">
+        <div className="mx-auto flex items-center rounded-full border border-border/50 bg-card py-2 pr-2 pl-4 sm:pl-6 shadow-[0_4px_14px_rgba(0,0,0,0.05)] transition-all focus-within:border-[#3FB37F] focus-within:shadow-[0_4px_20px_rgba(63,179,127,0.15)]">
           <input
             ref={inputRef}
             type="text"
             value={input}
             onChange={handleInputChange}
             onKeyDown={handleKeyPress}
+            aria-label="Ask me anything"
             placeholder={
               isToolInProgress ? 'Tool is in progress...' : 'Ask me anything'
             }
@@ -69,6 +70,7 @@ export default function ChatBottombar({
 
           <button
             type="submit"
+            aria-label="Send message"
             disabled={isLoading || !input.trim() || isToolInProgress}
             className="flex items-center justify-center rounded-full bg-foreground p-2 text-primary-foreground disabled:opacity-50"
             onClick={(e) => {

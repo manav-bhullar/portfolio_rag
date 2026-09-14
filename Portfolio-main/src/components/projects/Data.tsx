@@ -1,10 +1,14 @@
 import { ChevronRight, Link } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
-import { Car, MonitorCheck, FileSearch, BarChart3, MapPinned } from 'lucide-react';
+import { Car, MonitorCheck, BarChart3, MapPinned, Bot } from 'lucide-react';
 import type { ProjectCardData } from './ProjectCard';
+import FloqSandbox from './FloqSandbox';
+import ScalesSandbox from './ScalesSandbox';
+import OlistSandbox from './OlistSandbox';
+import NYCTaxiSandbox from './NYCTaxiSandbox';
 
 // Full detail content shown when a card is expanded
-const PROJECT_CONTENT = [
+export const PROJECT_CONTENT = [
   {
     title: 'Floq',
     description:
@@ -22,10 +26,10 @@ const PROJECT_CONTENT = [
     links: [] as { name: string; url: string }[],
   },
   {
-    title: 'PIP-RAG',
+    title: 'AI Portfolio RAG',
     description:
-      "A conversational RAG system over Thapar's placement data - real vector-based retrieval, not context-stuffing. Grounds LLM responses in retrieved interview questions and company data using Qdrant vector search and Gemini text-embedding-004 embeddings, with 226 companies indexed and metadata-grounded top-6 chunk retrieval plus hard CGPA-eligibility filters applied directly at the vector search layer. Exposes conversational Q&A, gap-analysis, and eligibility-shortlisting as separate FastAPI endpoints. Also built a custom API key rotation layer across 5-6 Gemini keys to scale free-tier throughput to ~7,500 requests/day, bypassing per-key rate limits.",
-    techStack: ['FastAPI', 'Qdrant', 'Gemini API', 'RAG'],
+      "A fully interactive portfolio featuring a conversational AI assistant grounded in my real data. Implemented a complete Retrieval-Augmented Generation (RAG) pipeline using Pinecone for vector search and Gemini's gemini-embedding-2 for text embeddings. The AI is restricted from hallucinating outside the injected context, ensuring accurate answers about my skills and experience. Built with Next.js 15, Tailwind CSS, and the Vercel AI SDK. Includes a custom rate-limiting and API key rotation layer to scale free-tier usage.",
+    techStack: ['Next.js', 'Pinecone', 'Gemini API', 'Tailwind'],
     date: '2026',
     links: [] as { name: string; url: string }[],
   },
@@ -74,6 +78,11 @@ export const ProjectContent = ({ project }: { project: ProjectProps }) => {
           <p className="text-foreground leading-relaxed">
             {projectData.description}
           </p>
+          
+          {projectData.title === 'Floq' && <FloqSandbox />}
+          {projectData.title === 'SCALES v3.0' && <ScalesSandbox />}
+          {projectData.title === 'Olist Analytics' && <OlistSandbox />}
+          {projectData.title === 'NYC Taxi Analytics' && <NYCTaxiSandbox />}
 
           <div className="pt-2">
             <h3 className="mb-3 text-xs font-bold tracking-wide text-muted-foreground uppercase">
@@ -143,12 +152,12 @@ export const projectCards: ProjectCardData[] = [
     accent: 'scales',
   },
   {
-    id: 'PIP-RAG',
-    title: 'PIP-RAG',
-    blurb: 'Real vector RAG over placement/interview data.',
-    metric: '~7,500 req/day',
-    tags: ['Qdrant', 'Gemini API', 'FastAPI'],
-    icon: FileSearch,
+    id: 'AI-Portfolio',
+    title: 'AI Portfolio RAG',
+    blurb: 'Interactive portfolio with an embedded vector RAG assistant.',
+    metric: 'Vector Search',
+    tags: ['Next.js', 'Pinecone', 'Gemini'],
+    icon: Bot,
     accent: 'piprag',
   },
   {

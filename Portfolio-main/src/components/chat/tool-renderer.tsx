@@ -6,15 +6,25 @@ import Resume from '../resume';
 import Skills from '../skills';
 import Interests from '../interests';
 import Crazy from '../crazy';
+import UiActionExecutor from './ui-action-executor';
+import JobFitAnalysis, { type JobFitResult } from './job-fit-analysis';
+import LeadCaptureForm from './lead-capture-form';
+
+export interface ToolInvocationItem {
+  toolCallId: string;
+  toolName: string;
+  args?: unknown;
+  result?: unknown;
+  state?: string;
+}
 
 interface ToolRendererProps {
-  toolInvocations: any[];
-  messageId: string;
+  toolInvocations: ToolInvocationItem[];
+  messageId?: string;
 }
 
 export default function ToolRenderer({
   toolInvocations,
-  messageId,
 }: ToolRendererProps) {
   return (
     <div className="w-full transition-all duration-300">
@@ -75,6 +85,35 @@ export default function ToolRenderer({
             return (
               <div key={toolCallId} className="w-full rounded-lg">
                 <Crazy />
+              </div>
+            );
+
+          case 'analyzeJobFit': {
+            let parsed: JobFitResult | null = null;
+            try {
+              parsed = typeof tool.result === 'string' ? JSON.parse(tool.result) : (tool.result as JobFitResult);
+            } catch {
+              parsed = null;
+            }
+            if (!parsed) return null;
+            return (
+              <div key={toolCallId} className="w-full rounded-lg">
+                <JobFitAnalysis result={parsed} />
+              </div>
+            );
+          }
+
+          case 'submitContactRequest':
+            return (
+              <div key={toolCallId} className="w-full rounded-lg">
+                <LeadCaptureForm />
+              </div>
+            );
+
+          case 'executeUiAction':
+            return (
+              <div key={toolCallId} className="w-full rounded-lg">
+                <UiActionExecutor action={(tool.args as { action: string })?.action || (tool.result as { action: string })?.action} />
               </div>
             );
 

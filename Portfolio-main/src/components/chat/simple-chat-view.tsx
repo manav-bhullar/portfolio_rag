@@ -7,8 +7,9 @@ import {
   ChatBubble,
   ChatBubbleMessage,
 } from '@/components/ui/chat/chat-bubble';
+import MessageLoading from '@/components/ui/chat/message-loading';
 import ChatMessageContent from './chat-message-content';
-import ToolRenderer from './tool-renderer';
+import ToolRenderer, { ToolInvocationItem } from './tool-renderer';
 
 interface SimplifiedChatViewProps {
   message: Message;
@@ -38,28 +39,59 @@ export function SimplifiedChatView({
   if (message.role !== 'assistant') return null;
 
   // Extract tool invocations that are in "result" state
-  const toolInvocations =
-    message.parts
-      ?.filter(
-        (part) =>
-          part.type === 'tool-invocation' &&
-          part.toolInvocation?.state === 'result'
-      )
-      .map((part) =>
-        part.type === 'tool-invocation' ? part.toolInvocation : null
-      )
-      .filter(Boolean) || [];
+  const toolInvocations: ToolInvocationItem[] = [];
+  if (message.parts) {
+    for (const part of message.parts) {
+      if (
+        part.type === 'tool-invocation' &&
+        part.toolInvocation &&
+        part.toolInvocation.state === 'result'
+      ) {
+        toolInvocations.push(part.toolInvocation as ToolInvocationItem);
+      }
+    }
+  }
 
   // Only display the first tool (if any)
   const currentTool = toolInvocations.length > 0 ? [toolInvocations[0]] : [];
 
+  // Active tool invocation in progress (state !== 'result')
+  const activeToolInvocationPart = message.parts?.find(
+    (part) =>
+      part.type === 'tool-invocation' &&
+      part.toolInvocation?.state !== 'result'
+  );
+
   const hasTextContent = message.content.trim().length > 0;
   const hasTools = currentTool.length > 0;
+  const isToolInProgress = !!activeToolInvocationPart;
+  const showLoading = isToolInProgress || (isLoading && !hasTools && !hasTextContent);
+
+  const activeToolName =
+    activeToolInvocationPart?.type === 'tool-invocation'
+      ? activeToolInvocationPart.toolInvocation?.toolName
+      : undefined;
+
+  const TOOL_LABELS: Record<string, string> = {
+    getProjects: 'Loading projects...',
+    getPresentation: 'Loading presentation...',
+    getResume: 'Loading resume...',
+    getContact: 'Loading contact information...',
+    getSkills: 'Loading skills...',
+    getInterests: 'Loading interests...',
+    getCrazy: 'Loading something crazy...',
+    executeUiAction: 'Executing system action...',
+    analyzeJobFit: 'Analyzing job fit...',
+    submitContactRequest: 'Loading contact form...',
+  };
+
+  const loadingText = activeToolName ? (TOOL_LABELS[activeToolName] || `Executing ${activeToolName}...`) : 'Thinking...';
 
   return (
-    <motion.div {...MOTION_CONFIG} className="flex h-full w-full flex-col px-4">
-      {/* Single scrollable container for both tool and text content */}
-      <div className="custom-scrollbar flex h-full w-full flex-col overflow-y-auto">
+    <motion.div {...MOTION_CONFIG} className="flex w-full flex-col px-4">
+      {/* Single container for both tool and text content — sized to its
+          own content since the thread's outer container owns scrolling */}
+      <div className="flex w-full flex-col">
         {/* Tool invocation result - displayed at the top */}
         {hasTools && (
           <div className="mb-4 w-full">
@@ -85,6 +117,20 @@ export function SimplifiedChatView({
                 />
               </ChatBubbleMessage>
             </ChatBubble>
+          </div>
+        )}
+
+        {/* Visible "Thinking..." / Tool Action Loading Indicator */}
+        {showLoading && (
+          <div
+            role="status"
+            aria-live="polite"
+            className="flex items-center gap-3 py-3 text-muted-foreground"
+          >
+            <MessageLoading />
+            <span className="text-sm font-medium animate-pulse text-foreground/80">
+              {loadingText}
+            </span>
           </div>
         )}
 
