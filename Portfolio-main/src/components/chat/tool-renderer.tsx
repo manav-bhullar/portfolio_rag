@@ -19,14 +19,6 @@ export interface ToolInvocationItem {
   state?: string;
 }
 
-export interface ToolInvocationItem {
-  toolCallId: string;
-  toolName: string;
-  args?: unknown;
-  result?: unknown;
-  state?: string;
-}
-
 interface ToolRendererProps {
   toolInvocations: ToolInvocationItem[];
   messageId?: string;
