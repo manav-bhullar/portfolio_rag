@@ -3,7 +3,7 @@ import { trackChatQuery } from '@/lib/analytics-tracker';
 import { useChat, type Message } from '@ai-sdk/react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useSearchParams, useRouter } from 'next/navigation';
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
 // Component imports
@@ -91,15 +91,19 @@ const Chat = () => {
     },
   });
 
-  const isToolInProgress = messages.some(
-    (m) =>
-      m.role === 'assistant' &&
-      m.parts?.some(
-        (part) =>
-          part.type === 'tool-invocation' &&
-          part.toolInvocation?.state !== 'result'
-      )
-  );
+  // Memoize the calculation of isToolInProgress to prevent O(N) operations on every keystroke
+  // since the Chat component re-renders every time the input changes
+  const isToolInProgress = useMemo(() => {
+    return messages.some(
+      (m) =>
+        m.role === 'assistant' &&
+        m.parts?.some(
+          (part) =>
+            part.type === 'tool-invocation' &&
+            part.toolInvocation?.state !== 'result'
+        )
+    );
+  }, [messages]);
 
   const submitQuery = useCallback((query: string) => {
     if (!query.trim() || isToolInProgress) return;
