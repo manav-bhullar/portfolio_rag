@@ -3,7 +3,7 @@
 import { Button } from '@/components/ui/button';
 import { ResponsiveSheet } from '@/components/ui/responsive-sheet';
 import { Info } from 'lucide-react';
-import { useState } from 'react';
+import React, { useState } from 'react';
 
 // Added a trigger prop to accept custom triggers
 interface WelcomeModalProps {
@@ -33,9 +33,25 @@ export default function WelcomeModal({ trigger }: WelcomeModalProps) {
   return (
     <>
       {trigger ? (
-        <div onClick={() => setIsOpen(true)} className="contents">
-          {trigger}
-        </div>
+        React.isValidElement(trigger) ? (
+          React.cloneElement(trigger as React.ReactElement<{ onClick?: (e: React.MouseEvent) => void }>, {
+            onClick: (e: React.MouseEvent) => {
+              setIsOpen(true);
+              if (
+                trigger.props &&
+                typeof trigger.props === 'object' &&
+                'onClick' in trigger.props &&
+                typeof (trigger.props as { onClick?: unknown }).onClick === 'function'
+              ) {
+                (trigger.props as { onClick: (e: React.MouseEvent) => void }).onClick(e);
+              }
+            },
+          })
+        ) : (
+          <div onClick={() => setIsOpen(true)} className="contents">
+            {trigger}
+          </div>
+        )
       ) : (
         defaultTrigger
       )}

@@ -1,0 +1,3 @@
+## 2025-02-24 - Avoid wrapping custom triggers in div elements for event handlers
+**Learning:** When creating custom accessible triggers (like `WelcomeModal` taking an optional `trigger` prop), wrapping the custom trigger in a `<div>` to attach `onClick` handlers can cause invalid HTML nesting (e.g. if the custom trigger is a `<button>`, an interactive element should not be nested in another, or `<div>` wrapper can disrupt specific layouts and keyboard accessibility expectations).
+**Action:** Use `React.isValidElement` and `React.cloneElement` to safely inject or merge `onClick` event handlers directly onto the provided custom trigger element instead of using a wrapper element.
