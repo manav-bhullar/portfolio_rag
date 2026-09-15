@@ -2,6 +2,8 @@
 
 import { motion } from 'framer-motion';
 import type { LucideIcon } from 'lucide-react';
+import { ShapeIcon } from '@/components/ui/shape-icon';
+import type { ShapeName } from 'shape-morph';
 
 export interface ProjectCardData {
   id: string;
@@ -29,6 +31,16 @@ const accentSoftVar: Record<ProjectCardData['accent'], string> = {
   nyctaxi: 'var(--accent-nyctaxi-soft)',
 };
 
+// One shape per project — M3's own "use a variety of shapes" tactic
+// (expressive-tactics.md: "mix round and square shapes for tension").
+const accentShape: Record<ProjectCardData['accent'], ShapeName> = {
+  floq: 'Cookie9Sided',
+  scales: 'Clover4Leaf',
+  piprag: 'Burst',
+  olist: 'Pentagon',
+  nyctaxi: 'Sunny',
+};
+
 interface ProjectCardProps {
   project: ProjectCardData;
   onOpen: () => void;
@@ -46,12 +58,14 @@ export function ProjectCard({ project, onOpen }: ProjectCardProps) {
       className="shape-card-accent pressable flex h-full w-[min(78vw,20rem)] shrink-0 flex-col items-start rounded-2xl border border-border bg-card p-5 text-left shadow-[0_10px_25px_-12px_rgba(25,25,25,0.15)] md:w-64"
       aria-label={`Open ${title} details`}
     >
-      <div
-        className="mb-4 flex h-11 w-11 items-center justify-center rounded-xl"
-        style={{ backgroundColor: accentSoftVar[accent], color: accentVar[accent] }}
+      <ShapeIcon
+        restShape={accentShape[accent]}
+        className="mb-4"
+        background={accentSoftVar[accent]}
+        color={accentVar[accent]}
       >
         <Icon className="h-5 w-5" strokeWidth={2.2} />
-      </div>
+      </ShapeIcon>
 
       <h3 className="font-display text-lg font-bold text-foreground">
         {title}

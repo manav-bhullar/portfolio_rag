@@ -1,0 +1,227 @@
+/* M3 Expressive type scale — 30 real styles (15 baseline + 15 emphasized),
+ * from tokens.md (source: androidx.compose.material3.tokens.TypeScaleTokens).
+ * sp -> rem via /16, the same convention tokens.md itself documents
+ * (24sp = 1.5rem, 60sp = 3.75rem, etc). em tracking -> rem via px/font-size.
+ *
+ * Typeface slots per spec: "Brand" (var(--font-display), Google Sans Flex —
+ * already self-hosted in this project) for display/headline/title-large;
+ * "Plain" (var(--font-inter), ui-sans-serif, system-ui, sans-serif, Inter) for body/label/title-medium/title-small.
+ *
+ * Tailwind v4 @utility generates real `text-*` classes usable directly in
+ * className, composable with color/other utilities — not a separate class
+ * system to remember to wire in later. */
+
+@utility text-display-lg {
+  font-family: var(--font-display);
+  font-size: 3.5625rem; /* 57sp */
+  line-height: 4rem; /* 64sp */
+  letter-spacing: -0.0125rem; /* -0.2sp */
+  font-weight: 400;
+}
+@utility text-display-lg-emphasized {
+  font-family: var(--font-display);
+  font-size: 3.5625rem;
+  line-height: 4rem;
+  letter-spacing: 0;
+  font-weight: 500;
+}
+@utility text-display-md {
+  font-family: var(--font-display);
+  font-size: 2.8125rem; /* 45sp */
+  line-height: 3.25rem; /* 52sp */
+  letter-spacing: 0;
+  font-weight: 400;
+}
+@utility text-display-md-emphasized {
+  font-family: var(--font-display);
+  font-size: 2.8125rem;
+  line-height: 3.25rem;
+  letter-spacing: 0;
+  font-weight: 500;
+}
+@utility text-display-sm {
+  font-family: var(--font-display);
+  font-size: 2.25rem; /* 36sp */
+  line-height: 2.75rem; /* 44sp */
+  letter-spacing: 0;
+  font-weight: 400;
+}
+@utility text-display-sm-emphasized {
+  font-family: var(--font-display);
+  font-size: 2.25rem;
+  line-height: 2.75rem;
+  letter-spacing: 0;
+  font-weight: 500;
+}
+
+@utility text-headline-lg {
+  font-family: var(--font-display);
+  font-size: 2rem; /* 32sp */
+  line-height: 2.5rem; /* 40sp */
+  letter-spacing: 0;
+  font-weight: 400;
+}
+@utility text-headline-lg-emphasized {
+  font-family: var(--font-display);
+  font-size: 2rem;
+  line-height: 2.5rem;
+  letter-spacing: 0;
+  font-weight: 500;
+}
+@utility text-headline-md {
+  font-family: var(--font-display);
+  font-size: 1.75rem; /* 28sp */
+  line-height: 2.25rem; /* 36sp */
+  letter-spacing: 0;
+  font-weight: 400;
+}
+@utility text-headline-md-emphasized {
+  font-family: var(--font-display);
+  font-size: 1.75rem;
+  line-height: 2.25rem;
+  letter-spacing: 0;
+  font-weight: 500;
+}
+@utility text-headline-sm {
+  font-family: var(--font-display);
+  font-size: 1.5rem; /* 24sp */
+  line-height: 2rem; /* 32sp */
+  letter-spacing: 0;
+  font-weight: 400;
+}
+@utility text-headline-sm-emphasized {
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  line-height: 2rem;
+  letter-spacing: 0;
+  font-weight: 500;
+}
+
+@utility text-title-lg {
+  font-family: var(--font-display);
+  font-size: 1.375rem; /* 22sp */
+  line-height: 1.75rem; /* 28sp */
+  letter-spacing: 0;
+  font-weight: 400;
+}
+@utility text-title-lg-emphasized {
+  font-family: var(--font-display);
+  font-size: 1.375rem;
+  line-height: 1.75rem;
+  letter-spacing: 0;
+  font-weight: 500;
+}
+@utility text-title-md {
+  font-family: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  font-size: 1rem; /* 16sp */
+  line-height: 1.5rem; /* 24sp */
+  letter-spacing: 0.0125rem; /* 0.2sp */
+  font-weight: 500;
+}
+@utility text-title-md-emphasized {
+  font-family: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  font-size: 1rem;
+  line-height: 1.5rem;
+  letter-spacing: 0.009375rem; /* 0.15sp */
+  font-weight: 700;
+}
+@utility text-title-sm {
+  font-family: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.875rem; /* 14sp */
+  line-height: 1.25rem; /* 20sp */
+  letter-spacing: 0.00625rem; /* 0.1sp */
+  font-weight: 500;
+}
+@utility text-title-sm-emphasized {
+  font-family: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  letter-spacing: 0.00625rem;
+  font-weight: 700;
+}
+
+@utility text-body-lg {
+  font-family: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  font-size: 1rem; /* 16sp */
+  line-height: 1.5rem; /* 24sp */
+  letter-spacing: 0.03125rem; /* 0.5sp */
+  font-weight: 400;
+}
+@utility text-body-lg-emphasized {
+  font-family: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  font-size: 1rem;
+  line-height: 1.5rem;
+  letter-spacing: 0.009375rem; /* 0.15sp */
+  font-weight: 500;
+}
+@utility text-body-md {
+  font-family: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.875rem; /* 14sp */
+  line-height: 1.25rem; /* 20sp */
+  letter-spacing: 0.0125rem; /* 0.2sp */
+  font-weight: 400;
+}
+@utility text-body-md-emphasized {
+  font-family: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  letter-spacing: 0.015625rem; /* 0.25sp */
+  font-weight: 500;
+}
+@utility text-body-sm {
+  font-family: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.75rem; /* 12sp */
+  line-height: 1rem; /* 16sp */
+  letter-spacing: 0.025rem; /* 0.4sp */
+  font-weight: 400;
+}
+@utility text-body-sm-emphasized {
+  font-family: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.75rem;
+  line-height: 1rem;
+  letter-spacing: 0.025rem;
+  font-weight: 500;
+}
+
+@utility text-label-lg {
+  font-family: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.875rem; /* 14sp */
+  line-height: 1.25rem; /* 20sp */
+  letter-spacing: 0.00625rem; /* 0.1sp */
+  font-weight: 500;
+}
+@utility text-label-lg-emphasized {
+  font-family: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  letter-spacing: 0.00625rem;
+  font-weight: 700;
+}
+@utility text-label-md {
+  font-family: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.75rem; /* 12sp */
+  line-height: 1rem; /* 16sp */
+  letter-spacing: 0.03125rem; /* 0.5sp */
+  font-weight: 500;
+}
+@utility text-label-md-emphasized {
+  font-family: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.75rem;
+  line-height: 1rem;
+  letter-spacing: 0.03125rem;
+  font-weight: 700;
+}
+@utility text-label-sm {
+  font-family: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.6875rem; /* 11sp */
+  line-height: 1rem; /* 16sp */
+  letter-spacing: 0.03125rem; /* 0.5sp */
+  font-weight: 500;
+}
+@utility text-label-sm-emphasized {
+  font-family: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.6875rem;
+  line-height: 1rem;
+  letter-spacing: 0.03125rem;
+  font-weight: 700;
+}

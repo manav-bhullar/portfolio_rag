@@ -3,12 +3,13 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { KeyRound } from 'lucide-react';
+import { ShapeIcon } from '@/components/ui/shape-icon';
 
 const Crazy = () => {
   return (
     <div className="mx-auto w-full">
       <div className="mb-5 sm:mb-8">
-        <h2 className="font-display text-foreground text-2xl font-extrabold sm:text-3xl md:text-4xl">
+        <h2 className="text-headline-sm-emphasized text-foreground">
           The Key Rotation Hack
         </h2>
       </div>
@@ -19,16 +20,14 @@ const Crazy = () => {
         transition={{ duration: 0.4, ease: 'easeOut' }}
         className="rounded-organic bg-accent p-6 sm:p-8"
       >
-        <div
-          className="shape-card-accent mb-4 flex h-11 w-11 items-center justify-center rounded-full"
-          style={{
-            ['--card-accent-color' as string]: 'var(--accent-piprag)',
-            backgroundColor: 'var(--background)',
-            color: 'var(--foreground)',
-          }}
+        <ShapeIcon
+          restShape="Burst"
+          className="mb-4"
+          background="var(--background)"
+          color="var(--accent-piprag)"
         >
           <KeyRound className="h-6 w-6" />
-        </div>
+        </ShapeIcon>
         <p className="text-[15px] leading-relaxed text-foreground sm:text-base">
           Building and scaling my RAG systems and LLM applications, I hit
           Gemini&apos;s free-tier rate limits fast once real usage kicked in - one key
