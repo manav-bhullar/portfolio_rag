@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @import "tw-animate-css";
+@import "./type-scale.css";
 
 @custom-variant dark (&:is(.dark *));
 
@@ -37,10 +38,29 @@
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
+  /* M3 corner-radius scale (tokens.md "Corner radius scale — 10 steps"),
+     mapped onto Tailwind's rounded-{sm..3xl} vocabulary so every existing
+     rounded-* class site in the codebase picks up real dp values with no
+     per-component edits. rounded-none and rounded-full are already correct
+     as Tailwind's built-ins (0 / fully circular = M3 "None" / "Full").
+     dp -> rem via /16, same convention tokens.md uses for sp -> rem. */
+  --radius-sm: 0.5rem;   /* 8dp  – Small */
+  --radius-md: 0.75rem;  /* 12dp – Medium (M3 Cards default) */
+  --radius-lg: 1rem;     /* 16dp – Large */
+  --radius-xl: 1.25rem;  /* 20dp – Large increased */
+  --radius-2xl: 1.75rem; /* 28dp – Extra large (M3 basic dialog / carousel items) */
+  --radius-3xl: 2rem;    /* 32dp – Extra large increased */
+  /* Full 10-step scale by name, for spots that need an exact step Tailwind's
+     6-bucket vocabulary can't address (e.g. optical-roundness nesting). */
+  --radius-shape-none: 0px;
+  --radius-shape-xs: 0.25rem;   /* 4dp */
+  --radius-shape-sm: 0.5rem;    /* 8dp */
+  --radius-shape-md: 0.75rem;   /* 12dp */
+  --radius-shape-lg: 1rem;      /* 16dp */
+  --radius-shape-lg-plus: 1.25rem; /* 20dp – Large increased */
+  --radius-shape-xl: 1.75rem;   /* 28dp – Extra large */
+  --radius-shape-xl-plus: 2rem; /* 32dp – Extra large increased */
+  --radius-shape-xxl: 3rem;     /* 48dp – Extra extra large */
   --color-accent-floq: var(--accent-floq);
   --color-accent-floq-soft: var(--accent-floq-soft);
   --color-accent-scales: var(--accent-scales);

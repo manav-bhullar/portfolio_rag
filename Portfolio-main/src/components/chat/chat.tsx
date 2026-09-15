@@ -20,16 +20,7 @@ import { ArrowDown, House, Info, RotateCcw } from 'lucide-react';
 import GitHubButton from 'react-github-btn';
 import HelperBoost from './HelperBoost';
 import { useVisualViewport } from '@/hooks/use-visual-viewport';
-
-const MOTION_CONFIG = {
-  initial: { opacity: 0, y: 20 },
-  animate: { opacity: 1, y: 0 },
-  exit: { opacity: 0, y: 20 },
-  transition: {
-    duration: 0.3,
-    ease: 'easeOut',
-  },
-} as const;
+import { messageEntranceMotion } from '@/lib/motion';
 
 // Persist the conversation thread across page reloads (session memory) —
 // keyed in localStorage, not synced anywhere, so it's purely per-browser.
@@ -366,7 +357,7 @@ const Chat = () => {
             <motion.div
               key="landing"
               className="flex flex-1 items-center justify-center"
-              {...MOTION_CONFIG}
+              {...messageEntranceMotion}
             >
               <ChatLanding submitQuery={submitQuery} />
             </motion.div>
@@ -377,7 +368,7 @@ const Chat = () => {
                   message.role === 'user' ? (
                     <motion.div
                       key={message.id}
-                      {...MOTION_CONFIG}
+                      {...messageEntranceMotion}
                       className="flex justify-end md:px-2"
                     >
                       <ChatBubble variant="sent" className="max-w-[88%] sm:max-w-[80%]">
@@ -392,7 +383,7 @@ const Chat = () => {
                       </ChatBubble>
                     </motion.div>
                   ) : (
-                    <motion.div key={message.id} {...MOTION_CONFIG}>
+                    <motion.div key={message.id} {...messageEntranceMotion}>
                       <SimplifiedChatView
                         message={message}
                         isLoading={isLoading && message.id === lastMessageId}
@@ -406,7 +397,7 @@ const Chat = () => {
                 {/* "Thinking..." shown after the user's message, before the
                     assistant message has arrived yet */}
                 {loadingSubmit && lastRole === 'user' && (
-                  <motion.div key="loading" {...MOTION_CONFIG} className="md:px-4">
+                  <motion.div key="loading" {...messageEntranceMotion} className="md:px-4">
                     <ChatBubble variant="received">
                       <ChatBubbleMessage isLoading />
                     </ChatBubble>
@@ -417,7 +408,7 @@ const Chat = () => {
                     phone (and it lands on top of the composer); the thread
                     itself should say what happened and offer a retry. */}
                 {showInlineError && (
-                  <motion.div key="error" {...MOTION_CONFIG} className="md:px-4">
+                  <motion.div key="error" {...messageEntranceMotion} className="md:px-4">
                     <div
                       role="alert"
                       className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-2xl bg-secondary px-4 py-3 text-sm text-foreground"

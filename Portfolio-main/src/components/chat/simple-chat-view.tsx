@@ -8,6 +8,7 @@ import {
   ChatBubbleMessage,
 } from '@/components/ui/chat/chat-bubble';
 import MessageLoading from '@/components/ui/chat/message-loading';
+import { messageEntranceMotion } from '@/lib/motion';
 import ChatMessageContent from './chat-message-content';
 import ToolRenderer, { ToolInvocationItem } from './tool-renderer';
 
@@ -19,16 +20,6 @@ interface SimplifiedChatViewProps {
   ) => Promise<string | null | undefined>;
   addToolResult?: (args: { toolCallId: string; result: string }) => void;
 }
-
-const MOTION_CONFIG = {
-  initial: { opacity: 0, y: 20 },
-  animate: { opacity: 1, y: 0 },
-  exit: { opacity: 0, y: 20 },
-  transition: {
-    duration: 0.3,
-    ease: 'easeOut',
-  },
-} as const;
 
 export function SimplifiedChatView({
   message,
@@ -89,7 +80,7 @@ export function SimplifiedChatView({
   const loadingText = activeToolName ? (TOOL_LABELS[activeToolName] || `Executing ${activeToolName}...`) : 'Thinking...';
 
   return (
-    <motion.div {...MOTION_CONFIG} className="flex w-full flex-col md:px-4">
+    <motion.div {...messageEntranceMotion} className="flex w-full flex-col md:px-4">
       {/* Single container for both tool and text content — sized to its
           own content since the thread's outer container owns scrolling */}
       <div className="flex w-full flex-col">

@@ -1,47 +1,30 @@
 // @hidden
+'use client';
+
+import { useShapeLoop } from '@/hooks/use-shape-loop';
+
+/**
+ * M3 Expressive "Loading indicator" component — the real Android/Pixel one.
+ * Per spec (components/feedback.md § Loading indicator): "a looping shape
+ * morph sequence composed of seven unique Material 3 shapes," uncontained
+ * default color role is Primary, flexible 24-240dp (24dp used here — the
+ * spec's minimum — since this sits inline next to the "Thinking..." label
+ * rather than standing alone). Replaces the previous hand-drawn animated
+ * SVG wave, which wasn't a real M3 component.
+ */
 export default function MessageLoading() {
+  const { clipPath } = useShapeLoop();
+
   return (
-    <svg
-      width="48"
-      height="20"
-      viewBox="0 0 48 20"
-      xmlns="http://www.w3.org/2000/svg"
-      fill="none"
-    >
-      <defs>
-        <linearGradient id="wave-gradient" x1="0" y1="0" x2="48" y2="0">
-          <stop offset="0%" stopColor="#3FB37F" />
-          <stop offset="50%" stopColor="#8B5FE0" />
-          <stop offset="100%" stopColor="#F0954A" />
-        </linearGradient>
-      </defs>
-      <path
-        d="M2,10 Q8,10 10,4 T18,10 T26,10 T34,10 T46,10"
-        stroke="url(#wave-gradient)"
-        strokeWidth="3"
-        strokeLinecap="round"
-        strokeDasharray="4 6"
-      >
-        <animate
-          attributeName="d"
-          dur="1s"
-          repeatCount="indefinite"
-          calcMode="spline"
-          keySplines="0.45,0,0.55,1;0.45,0,0.55,1"
-          values="
-            M2,10 Q8,10 10,4 T18,10 T26,10 T34,10 T46,10;
-            M2,10 Q8,10 10,16 T18,10 T26,10 T34,10 T46,10;
-            M2,10 Q8,10 10,4 T18,10 T26,10 T34,10 T46,10
-          "
-        />
-        <animate
-          attributeName="stroke-dashoffset"
-          from="0"
-          to="-20"
-          dur="0.8s"
-          repeatCount="indefinite"
-        />
-      </path>
-    </svg>
+    <div
+      aria-hidden="true"
+      style={{
+        width: 24,
+        height: 24,
+        flexShrink: 0,
+        clipPath,
+        background: 'var(--primary)',
+      }}
+    />
   );
 }

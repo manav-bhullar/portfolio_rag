@@ -23,7 +23,7 @@ export function Contact() {
       <div className="rounded-organic bg-accent w-full overflow-hidden px-5 py-7 font-sans sm:px-10 sm:py-8 md:px-16 md:py-12">
         {/* Header Section */}
         <div className="mb-6 flex flex-col sm:mb-8 sm:flex-row sm:items-center sm:justify-between">
-          <h2 className="font-display text-foreground text-2xl font-extrabold sm:text-3xl md:text-4xl">
+          <h2 className="text-headline-sm-emphasized text-foreground">
             Contacts
           </h2>
           <span className="mt-1 text-sm text-muted-foreground sm:mt-0 sm:text-base">
