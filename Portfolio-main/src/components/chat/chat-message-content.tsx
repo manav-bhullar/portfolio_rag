@@ -8,8 +8,9 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from '@/components/ui/collapsible';
-import { ChevronDown, ChevronUp } from 'lucide-react';
+import { ChevronDown, ChevronRight, ChevronUp } from 'lucide-react';
 import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import UnderTheHood, { type RetrievalDiagnostics } from './under-the-hood';
 import { cn } from '@/lib/utils';
 
@@ -75,6 +76,8 @@ const CodeBlock = ({ content }: { content: string }) => {
 
 export default function ChatMessageContent({
   message,
+  isLast = false,
+  isLoading = false,
 }: ChatMessageContentProps) {
   const diagnostics = (message.annotations as unknown[] | undefined)?.find(
     (a): a is RetrievalDiagnostics =>
@@ -88,6 +91,9 @@ export default function ChatMessageContent({
     diagnostics?.sources.filter((s) => s.url).map((s) => [s.id, s.url as string]) ?? []
   );
 
+  // Follow-up chips should only appear on the last message and only once streaming is done
+  const showFollowUps = isLast && !isLoading;
+
   // Only handle text parts
   const renderContent = () => {
     return message.parts?.map((part, partIndex) => {
@@ -96,15 +102,18 @@ export default function ChatMessageContent({
       let processedText = part.text;
       let followUps: string[] = [];
       
-      // Extract follow-up questions
+      // Extract follow-up questions — strip the block from rendered text regardless,
+      // but only render chips when showFollowUps is true (last, non-loading message)
       const followUpMatch = processedText.match(/FOLLOW_UP_QUESTIONS:[\s\S]*/);
       if (followUpMatch) {
         const followUpBlock = followUpMatch[0];
         processedText = processedText.replace(followUpBlock, '').trim();
         
-        const items = followUpBlock.match(/- (.*)/g);
-        if (items) {
-          followUps = items.map(i => i.replace(/^- \[?/, '').replace(/\]?$/, '').trim());
+        if (showFollowUps) {
+          const items = followUpBlock.match(/- (.*)/g);
+          if (items) {
+            followUps = items.map(i => i.replace(/^- \[?/, '').replace(/\]?$/, '').trim()).filter(Boolean);
+          }
         }
       }
 
@@ -216,28 +225,47 @@ export default function ChatMessageContent({
             )
           )}
           
-          {/* Render follow-up questions at the end of the text part */}
-          {followUps.length > 0 && (
-            <div className="mt-4 flex flex-col gap-2 border-t pt-4">
-              <span className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">Suggested Follow-ups</span>
-              <div className="flex flex-wrap gap-2">
-                {followUps.map((q, idx) => (
-                  <button
-                    key={idx}
-                    onClick={() => {
-                      // We need to trigger a chat submission here
-                      // But since submitQuery isn't passed down to ChatMessageContent easily,
-                      // we can dispatch a custom event that chat.tsx can listen for
-                      window.dispatchEvent(new CustomEvent('chat:submit', { detail: q }));
-                    }}
-                    className="pressable min-h-10 rounded-full border bg-secondary/50 px-4 py-2 text-left text-sm text-foreground transition-colors hover:bg-secondary"
-                  >
-                    {q}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
+          {/* Follow-up suggestion chips — M3 style, spring-animated, last message only */}
+          <AnimatePresence>
+            {followUps.length > 0 && (
+              <motion.div
+                key="follow-ups"
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 8 }}
+                transition={{ type: 'spring', stiffness: 300, damping: 28, delay: 0.1 }}
+                className="mt-4 flex flex-col gap-2.5 border-t border-border/50 pt-4"
+              >
+                <span className="text-[11px] font-bold tracking-[0.1em] text-muted-foreground uppercase">
+                  Ask next
+                </span>
+                <div className="flex flex-wrap gap-2">
+                  {followUps.map((q, idx) => (
+                    <motion.button
+                      key={idx}
+                      initial={{ opacity: 0, scale: 0.92 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{
+                        type: 'spring',
+                        stiffness: 380,
+                        damping: 28,
+                        delay: 0.12 + idx * 0.06,
+                      }}
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.96 }}
+                      onClick={() => {
+                        window.dispatchEvent(new CustomEvent('chat:submit', { detail: q }));
+                      }}
+                      className="pressable group flex min-h-10 items-center gap-2 rounded-full border border-border bg-card px-4 py-2 text-left text-sm font-medium text-foreground transition-colors hover:border-[#3FB37F]/40 hover:bg-secondary"
+                    >
+                      <span className="flex-1">{q}</span>
+                      <ChevronRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-[#3FB37F]" />
+                    </motion.button>
+                  ))}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       );
     });

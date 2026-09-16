@@ -3,12 +3,33 @@
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
+import { useEasterEggs } from '@/hooks/use-easter-eggs';
 
 export default function UiActionExecutor({ action }: { action: string }) {
   const [showFixButton, setShowFixButton] = useState(false);
   const [showScriptKiddie, setShowScriptKiddie] = useState(false);
+  const { addEgg, isFullyUnlocked } = useEasterEggs();
 
   useEffect(() => {
+    // Register the egg discovery
+    const { isNew, total, max } = addEgg(action);
+    if (isNew) {
+      toast.success(`Easter Egg Found! (${total}/${max}) 🥚`, {
+        description: total === max ? "You've unlocked the secret message!" : "Keep exploring to find them all.",
+        duration: 4000,
+      });
+      
+      if (total === max) {
+        setTimeout(() => {
+          toast('🎉 You found them all!', {
+            description: "Here's my secret Spotify playlist for deep work: https://open.spotify.com/playlist/37i9dQZF1DWZeKCadgRdKQ",
+            duration: 10000,
+            style: { background: '#8B5FE0', color: 'white' },
+          });
+        }, 4500);
+      }
+    }
+
     switch (action) {
       case 'sudo_rm_rf':
         // Screen shake

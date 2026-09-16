@@ -4,6 +4,8 @@ import { checkRateLimit } from '@/lib/ratelimit';
 import { getHealthyKey, getKeysHealthyFirst, reportKeyFailure, isRateLimitError } from '@/lib/gemini-keys';
 import { SYSTEM_PROMPT } from './prompt';
 import { getProjects } from './tools/getProjects';
+import { exploreProject } from './tools/exploreProject';
+import { compareWithRole } from './tools/compareWithRole';
 import { getPresentation } from './tools/getPresentation';
 import { getResume } from './tools/getResume';
 import { getContact } from './tools/getContact';
@@ -15,6 +17,7 @@ import { analyzeJobFit } from './tools/analyzeJobFit';
 import { generateCoverLetter } from './tools/generateCoverLetter';
 import { submitContactRequest } from './tools/submitContactRequest';
 import { retrieve, formatContext } from '@/lib/rag/retriever';
+import { Redis } from '@upstash/redis';
 
 export const runtime = 'edge';
 export const maxDuration = 60;
@@ -72,10 +75,19 @@ function makeErrorHandler(apiKey: string) {
   };
 }
 
+const getRedis = () => {
+  const url = process.env.UPSTASH_REDIS_REST_URL;
+  const token = process.env.UPSTASH_REDIS_REST_TOKEN;
+  if (!url || !token) return null;
+  return new Redis({ url, token });
+};
+
 export async function POST(req: Request) {
   const errorHandler = makeErrorHandler(''); // fallback handler if we fail before picking a key
   try {
-    // 1. Rate Limit Check (Early Guard)
+    const { messages, visitorType } = await req.json();
+
+    // Enforce rate limiting
     const rateLimit = await checkRateLimit(req);
     if (!rateLimit.success) {
       const retryAfter =
@@ -101,18 +113,23 @@ export async function POST(req: Request) {
       );
     }
 
-    const { messages } = await req.json();
+    // 1.5. Log Query for Trending Ticker
+    const lastUserMessage = messages.filter((m: any) => m.role === 'user').pop();
+    if (lastUserMessage && lastUserMessage.content) {
+      // Run async without blocking the response
+      const redis = getRedis();
+      if (redis) {
+        redis.lpush('portfolio_recent_queries', lastUserMessage.content).then(() => {
+          redis.ltrim('portfolio_recent_queries', 0, 49); // Keep only last 50
+        }).catch(console.error);
+      }
+    }
 
     const apiKey = getHealthyKey();
     const google = createGoogleGenerativeAI({ apiKey });
     const requestErrorHandler = makeErrorHandler(apiKey);
 
     // ── RAG: Retrieve relevant context ───────────────────────
-    // Extract the latest user message for retrieval
-    const lastUserMessage = [...messages]
-      .reverse()
-      .find((m: { role: string }) => m.role === 'user');
-
     const streamData = new StreamData();
     let ragContext = '';
     let retrievalDiagnostics: {
@@ -193,11 +210,20 @@ ${userQuery}`;
       });
     }
 
+    let toneInstruction = '';
+    if (visitorType === 'recruiter') {
+      toneInstruction = '\n\n**TONE CALIBRATION**: The user is a Recruiter or Hiring Manager. Be highly professional, concise, and metrics-first. Emphasize Manav\'s experience, job fit, and provide the downloadable resume when relevant.';
+    } else if (visitorType === 'developer') {
+      toneInstruction = '\n\n**TONE CALIBRATION**: The user is a Developer. Be technical, direct, and show the code. Emphasize architecture, algorithms, and provide GitHub links.';
+    } else if (visitorType === 'curious') {
+      toneInstruction = '\n\n**TONE CALIBRATION**: The user is just curious. Be casual, engaging, and use storytelling. Emphasize background, interests, and fun facts.';
+    }
+
     // ── Build a single merged system message ─────────────────
-    // Gemini only supports one system message, so merge persona + RAG context
+    // Gemini only supports one system message, so merge persona + tone + RAG context
     const systemContent = ragContext
-      ? `${SYSTEM_PROMPT.content}\n\n## Retrieved Context (use ALL of this information to answer the user's question — do NOT truncate or summarize):\n\n${ragContext}`
-      : SYSTEM_PROMPT.content;
+      ? `${SYSTEM_PROMPT.content}${toneInstruction}\n\n## Retrieved Context (use ALL of this information to answer the user's question — do NOT truncate or summarize):\n\n${ragContext}`
+      : `${SYSTEM_PROMPT.content}${toneInstruction}`;
 
     const augmentedMessages = [
       { role: 'system', content: systemContent },
@@ -206,6 +232,8 @@ ${userQuery}`;
 
     const tools = {
       getProjects,
+      exploreProject,
+      compareWithRole,
       getPresentation,
       getResume,
       getContact,
