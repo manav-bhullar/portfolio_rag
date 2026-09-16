@@ -51,7 +51,7 @@ const Skills = () => {
 
   return (
     <div className="mx-auto w-full max-w-5xl">
-      <h2 className="font-display mb-4 text-xl font-bold text-foreground sm:mb-5 sm:text-2xl md:text-3xl">
+      <h2 className="text-headline-sm-emphasized mb-4 text-foreground sm:mb-5">
         Technical Stack
       </h2>
 

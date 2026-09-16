@@ -3,6 +3,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Download } from 'lucide-react';
+import { ShapeIcon } from '@/components/ui/shape-icon';
 
 export function Resume() {
   const resumes = [
@@ -62,12 +63,14 @@ export function Resume() {
                 </div>
               </div>
 
-              <motion.div
-                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-black text-primary-foreground group-hover:bg-black/80"
-                initial={{ scale: 1 }}
+              <ShapeIcon
+                restShape="Pill"
+                activeShape="Cookie9Sided"
+                background="var(--foreground)"
+                color="var(--background)"
               >
                 <Download className="h-5 w-5" />
-              </motion.div>
+              </ShapeIcon>
             </div>
           </div>
         </motion.div>
