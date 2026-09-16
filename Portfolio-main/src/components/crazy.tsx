@@ -21,7 +21,7 @@ const Crazy = () => {
         className="rounded-organic bg-accent p-6 sm:p-8"
       >
         <ShapeIcon
-          restShape="Hexagon"
+          restShape="Pentagon"
           className="mb-4"
           background="var(--background)"
           color="var(--accent-piprag)"
