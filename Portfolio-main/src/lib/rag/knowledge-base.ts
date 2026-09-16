@@ -402,6 +402,25 @@ This exact technique is running live right now: this portfolio's own chatbot rot
     ],
   },
 
+  {
+    id: 'crazy-hack-remote-workspace',
+    category: 'personal',
+    title: 'Craziest Engineering Hack — The Hybrid Interrupt Remote Workspace',
+    content: JSON.stringify({
+      the_local_execution_trap: "When building on Antigravity 2.0 (which lacked native SSH remote environment support), Manav mounted his Ubuntu server locally onto his Mac using SMB over a Tailscale mesh network. However, executing builds (npm, cargo) locally on the SMB drive forced the Mac's CPU to do heavy compilation, causing overheating and massive I/O overhead on Tailscale.",
+      the_hybrid_protocol: "He architected a strict hybrid workflow: file reads and edits happen instantly over the local SMB mount, but 100% of actual compute (builds, git operations) is securely routed through remote SSH terminal commands directly to the Ubuntu server.",
+      the_brittle_connection: "The SMB connection dropped frequently. A cron-style polling script with Exponential Backoff safely remounted it, but caused sluggishness—waiting minutes for the backoff polling loop to reconnect after opening the laptop.",
+      the_aha_moment: "Frustrated by software polling lag, Manav drew inspiration from low-level OS hardware interrupts: if a keyboard doesn't poll the CPU to say a key was pressed, a script shouldn't poll the network.",
+      the_zero_latency_deep_dive: "He engineered a bidirectional, event-driven bridge. On the Mac, native macOS kernel interrupts (launchd WatchPaths) instantly trigger a remount the millisecond the Wi-Fi state changes. On the Ubuntu side, a systemd daemon monitors kernel routing tables. The exact second the server regains internet, it shoots a microscopic TCP ping over Tailscale back to a custom, 0-CPU Swift socket listener on the Mac.",
+      impact: "A flawless remote workspace that protects the Mac's CPU from heavy compilation, yet reconnects instantly the exact millisecond the laptop opens or the server boots up. Zero polling, zero wasted CPU, pure event-driven engineering."
+    }, null, 2),
+    keywords: [
+      'crazy', 'craziest', 'hack', 'antigravity', 'ssh', 'remote workspace', 'smb', 'tailscale',
+      'polling', 'interrupts', 'launchd', 'macOS', 'ubuntu', 'systemd', 'tcp', 'socket', 'creative',
+      'event-driven', 'exponential backoff', 'cron', 'engineering', 'zero-latency'
+    ],
+  },
+
   // ── Deep Personal Context & Behavioral Grit (Structured) ─────────
   {
     id: 'personal-origin-story',
@@ -502,6 +521,25 @@ This exact technique is running live right now: this portfolio's own chatbot rot
     keywords: [
       'pushback', 'disagreement', 'stakeholders', 'non-technical', 'communication', 
       'conflict resolution', 'trade-offs', 'assumptions', 'impact', 'sbi'
+    ],
+  },
+
+  {
+    id: 'ai-ux-principles',
+    category: 'personal',
+    title: 'Bridging AI and UX (The Agentic Future)',
+    content: JSON.stringify({
+      philosophy: "Artificial intelligence is useless if the user experience is alienating or introduces too much friction. A great AI product must deeply understand the broader product ecosystem and respect user psychology.",
+      ux_principles: [
+        "Latency Masking: Users hate waiting. Design UI states that feel instantly responsive even while backend inference is running.",
+        "Streaming Responses: Always stream LLM outputs to provide immediate visual feedback rather than blocking on full generation.",
+        "Maintaining Determinism: AI is naturally non-deterministic, but UI interactions must remain predictable and deterministic so the user feels in control.",
+        "Clear Escape Hatches: Always provide users with manual fallbacks or 'escape hatches' to bypass AI features entirely when the AI inevitably fails or hallucinates."
+      ]
+    }, null, 2),
+    keywords: [
+      'ai', 'ux', 'user experience', 'design', 'agentic future', 'latency masking', 
+      'streaming', 'determinism', 'escape hatches', 'product', 'friction', 'philosophy'
     ],
   }
 ];
