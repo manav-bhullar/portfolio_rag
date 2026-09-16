@@ -6,6 +6,9 @@ import { ArrowRight, Search, Laugh, BriefcaseBusiness, Layers, PartyPopper, User
 import { useRouter } from 'next/navigation';
 import { useRef, useState } from 'react';
 import GitHubButton from 'react-github-btn';
+import { useVisitorContext } from '@/hooks/use-visitor-context';
+import WelcomeToneSelector from '@/components/welcome-tone-selector';
+import TrendingTicker from '@/components/trending-ticker';
 
 /* ---------- quick-question data ---------- */
 const questions: Record<string, string> = {
@@ -25,11 +28,15 @@ const questionConfig = [
   { key: 'Contact', color: '#8B5FE0', icon: UserRoundSearch },
 ] as const;
 
+// Lookup map for quick access by key
+const questionConfigByKey = Object.fromEntries(questionConfig.map((q) => [q.key, q]));
+
 /* ---------- component ---------- */
 export default function Home() {
   const [input, setInput] = useState('');
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
+  const visitorContext = useVisitorContext();
 
   const goToChat = (query: string) =>
     router.push(`/chat?query=${encodeURIComponent(query)}`);
@@ -111,9 +118,13 @@ export default function Home() {
           <h1 className="font-display mt-2 text-5xl leading-[0.95] font-black tracking-tight text-foreground sm:text-6xl md:text-7xl lg:text-8xl">
             Manav Bhullar.
           </h1>
+          {/* Context-aware subtitle — adapts based on visitor source */}
           <p className="mt-3 sm:mt-4 text-base sm:text-lg font-medium text-muted-foreground md:text-xl">
-            Full-Stack Software Engineer &amp; Data Analyst.
+            {visitorContext.subtitleOverride ?? 'Full-Stack Software Engineer & Data Analyst.'}
           </p>
+          <div className="mt-4 w-full">
+            <TrendingTicker />
+          </div>
         </div>
 
         {/* free-form question */}
@@ -156,28 +167,34 @@ export default function Home() {
           </div>
         </motion.form>
 
-        {/* quick-question chips */}
+        {/* quick-question chips — order adapts to visitor source */}
         <motion.div
           variants={bottomElementVariants}
           initial="hidden"
           animate="visible"
           className="flex flex-wrap items-center justify-center gap-2"
         >
-          {questionConfig.map(({ key, color, icon: Icon }) => (
-            <motion.button
-              key={key}
-              onClick={() => goToChat(questions[key])}
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.95 }}
-              className="flex min-h-11 cursor-pointer items-center gap-2 rounded-full border border-border bg-card px-4 text-sm font-semibold text-foreground transition-colors hover:bg-secondary"
-            >
-              <Icon size={16} strokeWidth={2.25} color={color} />
-              <span>{key}</span>
-            </motion.button>
-          ))}
+          {visitorContext.chipOrder.map((chipKey) => {
+            const config = questionConfigByKey[chipKey];
+            if (!config) return null;
+            const { key, color, icon: Icon } = config;
+            return (
+              <motion.button
+                key={key}
+                onClick={() => goToChat(questions[key])}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.95 }}
+                className="flex min-h-11 cursor-pointer items-center gap-2 rounded-full border border-border bg-card px-4 text-sm font-semibold text-foreground transition-colors hover:bg-secondary"
+              >
+                <Icon size={16} strokeWidth={2.25} color={color} />
+                <span>{key}</span>
+              </motion.button>
+            );
+          })}
         </motion.div>
         </div>
       </motion.div>
+      <WelcomeToneSelector />
     </div>
   );
 }

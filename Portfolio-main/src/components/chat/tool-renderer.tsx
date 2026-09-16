@@ -10,6 +10,8 @@ import UiActionExecutor from './ui-action-executor';
 import JobFitAnalysis, { type JobFitResult } from './job-fit-analysis';
 import LeadCaptureForm from './lead-capture-form';
 import CoverLetterResult from './cover-letter-result';
+import ProjectExplorer from './project-explorer';
+import CompareHeatmap from './compare-heatmap';
 
 export interface ToolInvocationItem {
   toolCallId: string;
@@ -41,6 +43,26 @@ export default function ToolRenderer({
                 className="w-full overflow-hidden rounded-lg"
               >
                 <AllProjects />
+              </div>
+            );
+
+          case 'exploreProject':
+            return (
+              <div
+                key={toolCallId}
+                className="w-full overflow-hidden rounded-lg"
+              >
+                <ProjectExplorer content={typeof tool.result === 'string' ? tool.result : JSON.stringify(tool.result)} />
+              </div>
+            );
+
+          case 'compareWithRole':
+            return (
+              <div
+                key={toolCallId}
+                className="w-full overflow-hidden rounded-lg"
+              >
+                <CompareHeatmap result={typeof tool.result === 'string' ? JSON.parse(tool.result) : tool.result} />
               </div>
             );
 

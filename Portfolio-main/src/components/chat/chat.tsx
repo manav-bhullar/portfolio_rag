@@ -16,23 +16,61 @@ import {
   ChatBubbleMessage,
 } from '@/components/ui/chat/chat-bubble';
 import WelcomeModal from '@/components/welcome-modal';
-import { ArrowDown, House, Info, RotateCcw } from 'lucide-react';
+import { ArrowDown, House, Info, RotateCcw, Brain, Share, Loader2 } from 'lucide-react';
 import GitHubButton from 'react-github-btn';
 import HelperBoost from './HelperBoost';
 import { useVisualViewport } from '@/hooks/use-visual-viewport';
+import BookmarksDrawer from './bookmarks-drawer';
+import EasterEggIndicator from './easter-egg-indicator';
 import { messageEntranceMotion } from '@/lib/motion';
 
-// Persist the conversation thread across an accidental reload — but only for
-// THIS tab. sessionStorage (not localStorage) is what makes that scoping
-// happen: it's isolated per-tab, so a genuinely new tab always starts empty
-// instead of picking up whatever the last tab was talking about.
+// Session storage: per-tab, lost when the tab closes. Always used.
 const STORAGE_KEY = 'portfolio-chat-history';
+// Persistent storage: cross-session, opt-in only. Stored in localStorage.
+const PERSISTENT_KEY = 'portfolio-chat-history-persistent';
+// User preference: whether they've opted into persistent memory.
+const PERSIST_PREF_KEY = 'portfolio-remember-me';
 
-function loadStoredMessages(): Message[] {
+/** Read the "remember me" preference (localStorage, client-only). */
+function getRememberMePref(): boolean {
+  if (typeof window === 'undefined') return false;
+  try {
+    return window.localStorage.getItem(PERSIST_PREF_KEY) === 'true';
+  } catch {
+    return false;
+  }
+}
+
+/** Detect whether the user is a returning visitor with stored history. */
+function getReturnVisitorTopic(): string | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = window.localStorage.getItem(PERSISTENT_KEY);
+    if (!raw) return null;
+    const msgs = JSON.parse(raw) as Message[];
+    // Find last user message to extract topic context
+    const lastUser = [...msgs].reverse().find((m) => m.role === 'user');
+    if (!lastUser) return null;
+    const text = typeof lastUser.content === 'string' ? lastUser.content : '';
+    // Return the first 60 chars as a hint
+    return text.slice(0, 60) + (text.length > 60 ? '…' : '');
+  } catch {
+    return null;
+  }
+}
+
+function loadStoredMessages(persistent: boolean): Message[] {
   if (typeof window === 'undefined') return [];
   try {
-    const raw = window.sessionStorage.getItem(STORAGE_KEY);
-    return raw ? (JSON.parse(raw) as Message[]) : [];
+    // Always check sessionStorage first (reload resilience within the same tab)
+    const sessionRaw = window.sessionStorage.getItem(STORAGE_KEY);
+    if (sessionRaw) return JSON.parse(sessionRaw) as Message[];
+    // If persistent memory is enabled, also check localStorage
+    if (persistent) {
+      const persistRaw = window.localStorage.getItem(PERSISTENT_KEY);
+      if (persistRaw) return JSON.parse(persistRaw) as Message[];
+    }
+    return [];
   } catch {
     return [];
   }
@@ -51,6 +89,8 @@ const Chat = () => {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [isAtBottom, setIsAtBottom] = useState(true);
   const { keyboardOpen } = useVisualViewport();
+  // Cross-session memory: opt-in toggle state
+  const [persistMemory, setPersistMemory] = useState(false);
 
   const {
     messages,
@@ -65,6 +105,9 @@ const Chat = () => {
     append,
     error,
   } = useChat({
+    body: {
+      visitorType: typeof window !== 'undefined' ? window.localStorage.getItem('portfolio_visitor_type') : null,
+    },
     onResponse: (response) => {
       if (response) {
         setLoadingSubmit(false);
@@ -93,6 +136,29 @@ const Chat = () => {
           part.toolInvocation?.state !== 'result'
       )
   );
+
+  const [isSharing, setIsSharing] = useState(false);
+
+  const handleShare = useCallback(async () => {
+    if (messages.length === 0) return;
+    setIsSharing(true);
+    try {
+      const res = await fetch('/api/share', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messages }),
+      });
+      if (!res.ok) throw new Error('Failed to share');
+      const { token } = await res.json();
+      const shareUrl = `${window.location.origin}/share/${token}`;
+      await navigator.clipboard.writeText(shareUrl);
+      toast.success('Link copied! Anyone with the link can view this chat.');
+    } catch (err) {
+      toast.error('Failed to create share link.');
+    } finally {
+      setIsSharing(false);
+    }
+  }, [messages]);
 
   const submitQuery = useCallback((query: string) => {
     if (!query.trim() || isToolInProgress) return;
@@ -195,10 +261,42 @@ const Chat = () => {
 
   // Restore the persisted thread once, on the client, after mount.
   useEffect(() => {
-    const stored = loadStoredMessages();
+    const isPersistent = getRememberMePref();
+    setPersistMemory(isPersistent);
+
+    // If persistent and there's stored history, show warm re-entry greeting
+    if (isPersistent) {
+      const topic = getReturnVisitorTopic();
+      if (topic) {
+        // Show greeting in a toast rather than custom UI for simplicity
+        toast.success(`Welcome back! Last time you were asking: "${topic}"`);
+      }
+    }
+
+    const stored = loadStoredMessages(isPersistent);
     if (stored.length > 0) setMessages(stored);
     setHydrated(true);
   }, [setMessages]);
+
+  // Toggle persistent memory preference
+  const togglePersistMemory = useCallback(() => {
+    setPersistMemory((prev) => {
+      const next = !prev;
+      try {
+        if (next) {
+          window.localStorage.setItem(PERSIST_PREF_KEY, 'true');
+          toast.success('Memory enabled — I\'ll remember our conversations across sessions.');
+        } else {
+          window.localStorage.setItem(PERSIST_PREF_KEY, 'false');
+          window.localStorage.removeItem(PERSISTENT_KEY);
+          toast('Memory cleared — conversations will reset on new tabs.');
+        }
+      } catch {
+        // localStorage unavailable
+      }
+      return next;
+    });
+  }, []);
 
   useEffect(() => {
     // Don't replay the landing page's query param over a restored thread —
@@ -211,18 +309,23 @@ const Chat = () => {
   }, [hydrated, initialQuery, autoSubmitted, submitQuery, setInput, messages.length]);
 
   // Session memory: persist the full thread so a reload doesn't lose it.
+  // Also write to localStorage when persistent memory is opted in.
   useEffect(() => {
     if (typeof window === 'undefined' || !hydrated) return;
     try {
       if (messages.length > 0) {
         window.sessionStorage.setItem(STORAGE_KEY, JSON.stringify(messages));
+        // Also persist to localStorage if the user opted in
+        if (persistMemory) {
+          window.localStorage.setItem(PERSISTENT_KEY, JSON.stringify(messages));
+        }
       } else {
         window.sessionStorage.removeItem(STORAGE_KEY);
       }
     } catch {
       // sessionStorage unavailable (private mode, quota) — degrade silently
     }
-  }, [messages, hydrated]);
+  }, [messages, hydrated, persistMemory]);
 
   // Track whether the reader is pinned to the bottom of the thread. We only
   // auto-follow streaming output while pinned — yanking someone back down
@@ -313,6 +416,37 @@ const Chat = () => {
         }}
       >
         <div className="mx-auto flex h-14 max-w-3xl items-center justify-end gap-1 px-2 sm:h-16 sm:px-4">
+          {messages.length > 0 && (
+            <button
+              type="button"
+              onClick={handleShare}
+              disabled={isSharing}
+              aria-label="Share conversation"
+              title="Share"
+              className="pressable pointer-events-auto flex h-11 w-11 items-center justify-center rounded-full text-foreground hover:bg-accent disabled:opacity-50"
+            >
+              {isSharing ? (
+                <Loader2 className="h-5 w-5 animate-spin" strokeWidth={2} />
+              ) : (
+                <Share className="h-5 w-5" strokeWidth={2} />
+              )}
+            </button>
+          )}
+          <EasterEggIndicator />
+          <BookmarksDrawer />
+          <button
+            type="button"
+            onClick={togglePersistMemory}
+            aria-label={persistMemory ? "Forget me" : "Remember me"}
+            title="Cross-Session Memory"
+            className={`pressable pointer-events-auto flex h-11 w-11 items-center justify-center rounded-full transition-colors ${
+              persistMemory 
+                ? 'bg-[#3FB37F]/20 text-[#3FB37F] hover:bg-[#3FB37F]/30' 
+                : 'text-foreground hover:bg-accent'
+            }`}
+          >
+            <Brain className="h-5 w-5" strokeWidth={2} />
+          </button>
           <button
             type="button"
             onClick={handleReset}
@@ -389,6 +523,7 @@ const Chat = () => {
                       <SimplifiedChatView
                         message={message}
                         isLoading={isLoading && message.id === lastMessageId}
+                        isLast={message.id === lastMessageId}
                         reload={reload}
                         addToolResult={addToolResult}
                       />

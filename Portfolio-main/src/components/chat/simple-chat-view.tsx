@@ -6,15 +6,34 @@ import { ChatRequestOptions } from 'ai';
 import {
   ChatBubble,
   ChatBubbleMessage,
+  ChatBubbleActionWrapper,
+  ChatBubbleAction,
 } from '@/components/ui/chat/chat-bubble';
 import MessageLoading from '@/components/ui/chat/message-loading';
 import { messageEntranceMotion } from '@/lib/motion';
 import ChatMessageContent from './chat-message-content';
 import ToolRenderer, { ToolInvocationItem } from './tool-renderer';
+import { BookmarkIcon, BookmarkCheck } from 'lucide-react';
+import { useBookmarks } from '@/hooks/use-bookmarks';
+
+function BookmarkButton({ message }: { message: Message }) {
+  const { addBookmark, removeBookmark, isBookmarked } = useBookmarks();
+  const saved = isBookmarked(message.id);
+
+  return (
+    <ChatBubbleAction
+      icon={saved ? <BookmarkCheck className="h-4 w-4 text-primary" /> : <BookmarkIcon className="h-4 w-4" />}
+      onClick={() => saved ? removeBookmark(message.id) : addBookmark(message)}
+      title={saved ? "Remove bookmark" : "Save answer"}
+      className="ml-2"
+    />
+  );
+}
 
 interface SimplifiedChatViewProps {
   message: Message;
   isLoading: boolean;
+  isLast?: boolean;
   reload: (
     chatRequestOptions?: ChatRequestOptions
   ) => Promise<string | null | undefined>;
@@ -24,6 +43,7 @@ interface SimplifiedChatViewProps {
 export function SimplifiedChatView({
   message,
   isLoading,
+  isLast = false,
   reload,
   addToolResult,
 }: SimplifiedChatViewProps) {
@@ -97,17 +117,20 @@ export function SimplifiedChatView({
         {/* Text content */}
         {hasTextContent && (
           <div className="w-full">
-            <ChatBubble variant="received" className="w-full">
+            <ChatBubble variant="received" className="w-full relative group">
               <ChatBubbleMessage className="w-full">
                 <ChatMessageContent
                   message={message}
-                  isLast={true}
+                  isLast={isLast}
                   isLoading={isLoading}
                   reload={reload}
                   addToolResult={addToolResult}
                   skipToolRendering={true}
                 />
               </ChatBubbleMessage>
+              <ChatBubbleActionWrapper variant="received" className="opacity-0 group-hover:opacity-100 transition-opacity">
+                <BookmarkButton message={message} />
+              </ChatBubbleActionWrapper>
             </ChatBubble>
           </div>
         )}
