@@ -1,0 +1,3 @@
+## 2023-11-20 - [O(N) bottlenecks in Next.js input re-renders]
+ **Learning:** In Next.js, when a component manages a frequently updating controlled input (like `useChat`), using array iterations (like `.some()` or `.filter()`) to compute derived state over unbounded arrays (like the chat history `messages`) directly in the render body causes an O(N) performance bottleneck on every keystroke, which can cause significant input lag for large message histories.
+ **Action:** Always wrap derived state calculations that iterate over unbounded arrays in `useMemo` when colocated with high-frequency state updates like keystrokes.
