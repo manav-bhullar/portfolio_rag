@@ -22,14 +22,16 @@ import HelperBoost from './HelperBoost';
 import { useVisualViewport } from '@/hooks/use-visual-viewport';
 import { messageEntranceMotion } from '@/lib/motion';
 
-// Persist the conversation thread across page reloads (session memory) —
-// keyed in localStorage, not synced anywhere, so it's purely per-browser.
+// Persist the conversation thread across an accidental reload — but only for
+// THIS tab. sessionStorage (not localStorage) is what makes that scoping
+// happen: it's isolated per-tab, so a genuinely new tab always starts empty
+// instead of picking up whatever the last tab was talking about.
 const STORAGE_KEY = 'portfolio-chat-history';
 
 function loadStoredMessages(): Message[] {
   if (typeof window === 'undefined') return [];
   try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
+    const raw = window.sessionStorage.getItem(STORAGE_KEY);
     return raw ? (JSON.parse(raw) as Message[]) : [];
   } catch {
     return [];
@@ -130,7 +132,7 @@ const Chat = () => {
         textContent = "I've worked with a wide range of technologies across web development, data engineering, and AI. Here is my tech stack!";
       } else if (isFun) {
         toolName = 'getCrazy';
-        textContent = "Outside of coding, I'm really into fitness and reading! But since you asked for a crazy story, let me tell you about how I rate-limited myself out of my own portfolio...";
+        textContent = "Outside of coding, I'm really into fitness and reading! But since you asked for crazy stories, let me tell you about how I built a zero-polling hardware-interrupt remote workspace, and how I rate-limited my own portfolio...";
       } else if (isContact) {
         toolName = 'getContact';
         textContent = "You can find me on GitHub, LinkedIn, or shoot me an email. Let's build something cool together!";
@@ -213,12 +215,12 @@ const Chat = () => {
     if (typeof window === 'undefined' || !hydrated) return;
     try {
       if (messages.length > 0) {
-        window.localStorage.setItem(STORAGE_KEY, JSON.stringify(messages));
+        window.sessionStorage.setItem(STORAGE_KEY, JSON.stringify(messages));
       } else {
-        window.localStorage.removeItem(STORAGE_KEY);
+        window.sessionStorage.removeItem(STORAGE_KEY);
       }
     } catch {
-      // localStorage unavailable (private mode, quota) — degrade silently
+      // sessionStorage unavailable (private mode, quota) — degrade silently
     }
   }, [messages, hydrated]);
 
@@ -284,7 +286,7 @@ const Chat = () => {
     setInput('');
     if (typeof window !== 'undefined') {
       try {
-        window.localStorage.removeItem(STORAGE_KEY);
+        window.sessionStorage.removeItem(STORAGE_KEY);
       } catch {
         // ignore
       }
