@@ -20,25 +20,18 @@ import { ArrowDown, House, Info, RotateCcw } from 'lucide-react';
 import GitHubButton from 'react-github-btn';
 import HelperBoost from './HelperBoost';
 import { useVisualViewport } from '@/hooks/use-visual-viewport';
+import { messageEntranceMotion } from '@/lib/motion';
 
-const MOTION_CONFIG = {
-  initial: { opacity: 0, y: 20 },
-  animate: { opacity: 1, y: 0 },
-  exit: { opacity: 0, y: 20 },
-  transition: {
-    duration: 0.3,
-    ease: 'easeOut',
-  },
-} as const;
-
-// Persist the conversation thread across page reloads (session memory) —
-// keyed in localStorage, not synced anywhere, so it's purely per-browser.
+// Persist the conversation thread across an accidental reload — but only for
+// THIS tab. sessionStorage (not localStorage) is what makes that scoping
+// happen: it's isolated per-tab, so a genuinely new tab always starts empty
+// instead of picking up whatever the last tab was talking about.
 const STORAGE_KEY = 'portfolio-chat-history';
 
 function loadStoredMessages(): Message[] {
   if (typeof window === 'undefined') return [];
   try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
+    const raw = window.sessionStorage.getItem(STORAGE_KEY);
     return raw ? (JSON.parse(raw) as Message[]) : [];
   } catch {
     return [];
@@ -139,7 +132,7 @@ const Chat = () => {
         textContent = "I've worked with a wide range of technologies across web development, data engineering, and AI. Here is my tech stack!";
       } else if (isFun) {
         toolName = 'getCrazy';
-        textContent = "Outside of coding, I'm really into fitness and reading! But since you asked for a crazy story, let me tell you about how I rate-limited myself out of my own portfolio...";
+        textContent = "Outside of coding, I'm really into fitness and reading! But since you asked for crazy stories, let me tell you about how I built a zero-polling hardware-interrupt remote workspace, and how I rate-limited my own portfolio...";
       } else if (isContact) {
         toolName = 'getContact';
         textContent = "You can find me on GitHub, LinkedIn, or shoot me an email. Let's build something cool together!";
@@ -222,12 +215,12 @@ const Chat = () => {
     if (typeof window === 'undefined' || !hydrated) return;
     try {
       if (messages.length > 0) {
-        window.localStorage.setItem(STORAGE_KEY, JSON.stringify(messages));
+        window.sessionStorage.setItem(STORAGE_KEY, JSON.stringify(messages));
       } else {
-        window.localStorage.removeItem(STORAGE_KEY);
+        window.sessionStorage.removeItem(STORAGE_KEY);
       }
     } catch {
-      // localStorage unavailable (private mode, quota) — degrade silently
+      // sessionStorage unavailable (private mode, quota) — degrade silently
     }
   }, [messages, hydrated]);
 
@@ -293,7 +286,7 @@ const Chat = () => {
     setInput('');
     if (typeof window !== 'undefined') {
       try {
-        window.localStorage.removeItem(STORAGE_KEY);
+        window.sessionStorage.removeItem(STORAGE_KEY);
       } catch {
         // ignore
       }
@@ -366,7 +359,7 @@ const Chat = () => {
             <motion.div
               key="landing"
               className="flex flex-1 items-center justify-center"
-              {...MOTION_CONFIG}
+              {...messageEntranceMotion}
             >
               <ChatLanding submitQuery={submitQuery} />
             </motion.div>
@@ -377,7 +370,7 @@ const Chat = () => {
                   message.role === 'user' ? (
                     <motion.div
                       key={message.id}
-                      {...MOTION_CONFIG}
+                      {...messageEntranceMotion}
                       className="flex justify-end md:px-2"
                     >
                       <ChatBubble variant="sent" className="max-w-[88%] sm:max-w-[80%]">
@@ -392,7 +385,7 @@ const Chat = () => {
                       </ChatBubble>
                     </motion.div>
                   ) : (
-                    <motion.div key={message.id} {...MOTION_CONFIG}>
+                    <motion.div key={message.id} {...messageEntranceMotion}>
                       <SimplifiedChatView
                         message={message}
                         isLoading={isLoading && message.id === lastMessageId}
@@ -406,7 +399,7 @@ const Chat = () => {
                 {/* "Thinking..." shown after the user's message, before the
                     assistant message has arrived yet */}
                 {loadingSubmit && lastRole === 'user' && (
-                  <motion.div key="loading" {...MOTION_CONFIG} className="md:px-4">
+                  <motion.div key="loading" {...messageEntranceMotion} className="md:px-4">
                     <ChatBubble variant="received">
                       <ChatBubbleMessage isLoading />
                     </ChatBubble>
@@ -417,7 +410,7 @@ const Chat = () => {
                     phone (and it lands on top of the composer); the thread
                     itself should say what happened and offer a retry. */}
                 {showInlineError && (
-                  <motion.div key="error" {...MOTION_CONFIG} className="md:px-4">
+                  <motion.div key="error" {...messageEntranceMotion} className="md:px-4">
                     <div
                       role="alert"
                       className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-2xl bg-secondary px-4 py-3 text-sm text-foreground"
