@@ -3,7 +3,13 @@ import { trackChatQuery } from '@/lib/analytics-tracker';
 import { useChat, type Message } from '@ai-sdk/react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useSearchParams, useRouter } from 'next/navigation';
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  useMemo,
+} from 'react';
 import { toast } from 'sonner';
 
 // Component imports
@@ -16,7 +22,15 @@ import {
   ChatBubbleMessage,
 } from '@/components/ui/chat/chat-bubble';
 import WelcomeModal from '@/components/welcome-modal';
-import { ArrowDown, House, Info, RotateCcw, Brain, Share, Loader2 } from 'lucide-react';
+import {
+  ArrowDown,
+  House,
+  Info,
+  RotateCcw,
+  Brain,
+  Share,
+  Loader2,
+} from 'lucide-react';
 import GitHubButton from 'react-github-btn';
 import HelperBoost from './HelperBoost';
 import { useVisualViewport } from '@/hooks/use-visual-viewport';
@@ -106,7 +120,10 @@ const Chat = () => {
     error,
   } = useChat({
     body: {
-      visitorType: typeof window !== 'undefined' ? window.localStorage.getItem('portfolio_visitor_type') : null,
+      visitorType:
+        typeof window !== 'undefined'
+          ? window.localStorage.getItem('portfolio_visitor_type')
+          : null,
     },
     onResponse: (response) => {
       if (response) {
@@ -127,15 +144,21 @@ const Chat = () => {
     },
   });
 
-  const isToolInProgress = messages.some(
-    (m) =>
-      m.role === 'assistant' &&
-      m.parts?.some(
-        (part) =>
-          part.type === 'tool-invocation' &&
-          part.toolInvocation?.state !== 'result'
-      )
-  );
+  // ⚡ Bolt Performance Optimization:
+  // Memoize the expensive O(N) array scan for tool status.
+  // This prevents recalculating on every keystroke render since `messages`
+  // only changes when a new message or tool status update occurs.
+  const isToolInProgress = useMemo(() => {
+    return messages.some(
+      (m) =>
+        m.role === 'assistant' &&
+        m.parts?.some(
+          (part) =>
+            part.type === 'tool-invocation' &&
+            part.toolInvocation?.state !== 'result'
+        )
+    );
+  }, [messages]);
 
   const [isSharing, setIsSharing] = useState(false);
 
@@ -160,104 +183,117 @@ const Chat = () => {
     }
   }, [messages]);
 
-  const submitQuery = useCallback((query: string) => {
-    if (!query.trim() || isToolInProgress) return;
+  const submitQuery = useCallback(
+    (query: string) => {
+      if (!query.trim() || isToolInProgress) return;
 
-    // Keep URL in sync with latest active query
-    if (typeof window !== 'undefined') {
-      try {
-        const url = new URL(window.location.href);
-        url.searchParams.set('query', query.trim());
-        window.history.replaceState(null, '', url.pathname + url.search);
-      } catch (e) {
-        console.error('Failed to update URL search params:', e);
-      }
-    }
-
-    // Pre-process default questions to save API quota with robust matching
-    const normalizedQuery = query.toLowerCase().replace(/\s+/g, ' ').trim();
-    
-    const isMe = normalizedQuery.includes('who are you and what do you do');
-    const isProjects = normalizedQuery.includes('what are your projects');
-    const isSkills = normalizedQuery.includes('technical skills and tech stack');
-    const isFun = normalizedQuery.includes('what do you do for fun');
-    const isContact = normalizedQuery.includes('how can i contact you');
-
-    if (isMe || isProjects || isSkills || isFun || isContact) {
-      let toolName = '';
-      let textContent = '';
-      
-      if (isMe) {
-        toolName = 'getPresentation';
-        textContent = "Hey 👋 I'm Manav Bhullar. I build across three domains - full-stack web dev, data analytics, and AI/ML. Here is my background!";
-      } else if (isProjects) {
-        toolName = 'getProjects';
-        textContent = "Here are some of the projects I've been working on! I love building full-stack distributed systems, data pipelines, and RAG applications.";
-      } else if (isSkills) {
-        toolName = 'getSkills';
-        textContent = "I've worked with a wide range of technologies across web development, data engineering, and AI. Here is my tech stack!";
-      } else if (isFun) {
-        toolName = 'getCrazy';
-        textContent = "Outside of coding, I'm really into fitness and reading! But since you asked for crazy stories, let me tell you about how I built a zero-polling hardware-interrupt remote workspace, and how I rate-limited my own portfolio...";
-      } else if (isContact) {
-        toolName = 'getContact';
-        textContent = "You can find me on GitHub, LinkedIn, or shoot me an email. Let's build something cool together!";
+      // Keep URL in sync with latest active query
+      if (typeof window !== 'undefined') {
+        try {
+          const url = new URL(window.location.href);
+          url.searchParams.set('query', query.trim());
+          window.history.replaceState(null, '', url.pathname + url.search);
+        } catch (e) {
+          console.error('Failed to update URL search params:', e);
+        }
       }
 
-      const userMessage = {
-        id: Date.now().toString(),
-        role: 'user',
-        content: query,
-      };
+      // Pre-process default questions to save API quota with robust matching
+      const normalizedQuery = query.toLowerCase().replace(/\s+/g, ' ').trim();
 
-      const assistantMessage = {
-        id: (Date.now() + 1).toString(),
-        role: 'assistant',
-        content: textContent,
-        parts: [
-          { type: 'text', text: textContent },
-          {
-            type: 'tool-invocation',
-            toolInvocation: {
-              toolCallId: 'mock_' + Date.now(),
-              toolName: toolName,
-              args: {},
-              state: 'result',
-              result: { success: true },
-            }
-          }
-        ]
-      };
+      const isMe = normalizedQuery.includes('who are you and what do you do');
+      const isProjects = normalizedQuery.includes('what are your projects');
+      const isSkills = normalizedQuery.includes(
+        'technical skills and tech stack'
+      );
+      const isFun = normalizedQuery.includes('what do you do for fun');
+      const isContact = normalizedQuery.includes('how can i contact you');
 
-      // Echo the user's message immediately so the thread responds to the tap
-      // at once; the canned answer lands after a short "Thinking..." beat.
-      setMessages([...messages, userMessage as unknown as Message]);
+      if (isMe || isProjects || isSkills || isFun || isContact) {
+        let toolName = '';
+        let textContent = '';
+
+        if (isMe) {
+          toolName = 'getPresentation';
+          textContent =
+            "Hey 👋 I'm Manav Bhullar. I build across three domains - full-stack web dev, data analytics, and AI/ML. Here is my background!";
+        } else if (isProjects) {
+          toolName = 'getProjects';
+          textContent =
+            "Here are some of the projects I've been working on! I love building full-stack distributed systems, data pipelines, and RAG applications.";
+        } else if (isSkills) {
+          toolName = 'getSkills';
+          textContent =
+            "I've worked with a wide range of technologies across web development, data engineering, and AI. Here is my tech stack!";
+        } else if (isFun) {
+          toolName = 'getCrazy';
+          textContent =
+            "Outside of coding, I'm really into fitness and reading! But since you asked for crazy stories, let me tell you about how I built a zero-polling hardware-interrupt remote workspace, and how I rate-limited my own portfolio...";
+        } else if (isContact) {
+          toolName = 'getContact';
+          textContent =
+            "You can find me on GitHub, LinkedIn, or shoot me an email. Let's build something cool together!";
+        }
+
+        const userMessage = {
+          id: Date.now().toString(),
+          role: 'user',
+          content: query,
+        };
+
+        const assistantMessage = {
+          id: (Date.now() + 1).toString(),
+          role: 'assistant',
+          content: textContent,
+          parts: [
+            { type: 'text', text: textContent },
+            {
+              type: 'tool-invocation',
+              toolInvocation: {
+                toolCallId: 'mock_' + Date.now(),
+                toolName: toolName,
+                args: {},
+                state: 'result',
+                result: { success: true },
+              },
+            },
+          ],
+        };
+
+        // Echo the user's message immediately so the thread responds to the tap
+        // at once; the canned answer lands after a short "Thinking..." beat.
+        setMessages([...messages, userMessage as unknown as Message]);
+        setLoadingSubmit(true);
+        setTimeout(() => {
+          setMessages((prev) => [
+            ...prev,
+            assistantMessage as unknown as Message,
+          ]);
+          setLoadingSubmit(false);
+        }, 500);
+
+        // Track chat message sent event in PostHog
+        if (typeof window !== 'undefined') {
+          trackChatQuery(query);
+        }
+
+        return;
+      }
+
       setLoadingSubmit(true);
-      setTimeout(() => {
-        setMessages((prev) => [...prev, assistantMessage as unknown as Message]);
-        setLoadingSubmit(false);
-      }, 500);
 
       // Track chat message sent event in PostHog
       if (typeof window !== 'undefined') {
         trackChatQuery(query);
       }
 
-      return;
-    }
-
-    setLoadingSubmit(true);
-
-    // Track chat message sent event in PostHog
-    if (typeof window !== 'undefined') {
-      trackChatQuery(query);
-    }
-
-    append({
-      role: 'user',
-      content: query,
-    });
-  }, [isToolInProgress, messages, setMessages, append]);
+      append({
+        role: 'user',
+        content: query,
+      });
+    },
+    [isToolInProgress, messages, setMessages, append]
+  );
 
   // Restore the persisted thread once, on the client, after mount.
   useEffect(() => {
@@ -285,7 +321,9 @@ const Chat = () => {
       try {
         if (next) {
           window.localStorage.setItem(PERSIST_PREF_KEY, 'true');
-          toast.success('Memory enabled — I\'ll remember our conversations across sessions.');
+          toast.success(
+            "Memory enabled — I'll remember our conversations across sessions."
+          );
         } else {
           window.localStorage.setItem(PERSIST_PREF_KEY, 'false');
           window.localStorage.removeItem(PERSISTENT_KEY);
@@ -306,7 +344,14 @@ const Chat = () => {
       setInput('');
       submitQuery(initialQuery);
     }
-  }, [hydrated, initialQuery, autoSubmitted, submitQuery, setInput, messages.length]);
+  }, [
+    hydrated,
+    initialQuery,
+    autoSubmitted,
+    submitQuery,
+    setInput,
+    messages.length,
+  ]);
 
   // Session memory: persist the full thread so a reload doesn't lose it.
   // Also write to localStorage when persistent memory is opted in.
@@ -351,7 +396,8 @@ const Chat = () => {
   const lastRole = messages[messages.length - 1]?.role;
   useEffect(() => {
     // Always follow our own just-sent message; otherwise only follow while pinned.
-    if (lastRole === 'user' || isAtBottom) scrollToBottom(lastRole === 'user' ? 'smooth' : 'auto');
+    if (lastRole === 'user' || isAtBottom)
+      scrollToBottom(lastRole === 'user' ? 'smooth' : 'auto');
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [messages, isLoading, lastRole]);
 
@@ -400,9 +446,11 @@ const Chat = () => {
   // Check if this is the initial empty state (no messages)
   const isEmptyState = messages.length === 0 && !loadingSubmit;
 
-  const lastMessageId = messages.length > 0 ? messages[messages.length - 1].id : null;
+  const lastMessageId =
+    messages.length > 0 ? messages[messages.length - 1].id : null;
 
-  const showInlineError = !!error && !isLoading && !loadingSubmit && lastRole === 'user';
+  const showInlineError =
+    !!error && !isLoading && !loadingSubmit && lastRole === 'user';
 
   return (
     <div className="app-shell relative flex flex-col overflow-hidden">
@@ -423,7 +471,7 @@ const Chat = () => {
               disabled={isSharing}
               aria-label="Share conversation"
               title="Share"
-              className="pressable pointer-events-auto flex h-11 w-11 items-center justify-center rounded-full text-foreground hover:bg-accent disabled:opacity-50"
+              className="pressable text-foreground hover:bg-accent pointer-events-auto flex h-11 w-11 items-center justify-center rounded-full disabled:opacity-50"
             >
               {isSharing ? (
                 <Loader2 className="h-5 w-5 animate-spin" strokeWidth={2} />
@@ -437,11 +485,11 @@ const Chat = () => {
           <button
             type="button"
             onClick={togglePersistMemory}
-            aria-label={persistMemory ? "Forget me" : "Remember me"}
+            aria-label={persistMemory ? 'Forget me' : 'Remember me'}
             title="Cross-Session Memory"
             className={`pressable pointer-events-auto flex h-11 w-11 items-center justify-center rounded-full transition-colors ${
-              persistMemory 
-                ? 'bg-[#3FB37F]/20 text-[#3FB37F] hover:bg-[#3FB37F]/30' 
+              persistMemory
+                ? 'bg-[#3FB37F]/20 text-[#3FB37F] hover:bg-[#3FB37F]/30'
                 : 'text-foreground hover:bg-accent'
             }`}
           >
@@ -452,7 +500,7 @@ const Chat = () => {
             onClick={handleReset}
             aria-label="Start over"
             title="Home"
-            className="pressable pointer-events-auto flex h-11 w-11 items-center justify-center rounded-full text-foreground hover:bg-accent"
+            className="pressable text-foreground hover:bg-accent pointer-events-auto flex h-11 w-11 items-center justify-center rounded-full"
           >
             <House className="h-6 w-6" strokeWidth={2} />
           </button>
@@ -461,14 +509,14 @@ const Chat = () => {
               <button
                 type="button"
                 aria-label="About this portfolio"
-                className="pressable pointer-events-auto flex h-11 w-11 items-center justify-center rounded-full text-foreground hover:bg-accent"
+                className="pressable text-foreground hover:bg-accent pointer-events-auto flex h-11 w-11 items-center justify-center rounded-full"
               >
                 <Info className="h-6 w-6" strokeWidth={2} />
               </button>
             }
           />
           {/* GitHub star — hidden on phones to keep the header to two clear targets */}
-          <div className="pointer-events-auto hidden pl-2 pt-1 sm:block">
+          <div className="pointer-events-auto hidden pt-1 pl-2 sm:block">
             <GitHubButton
               href="https://github.com/manav-bhullar"
               data-color-scheme="no-preference: light; light: light; dark: light_high_contrast;"
@@ -507,7 +555,10 @@ const Chat = () => {
                       {...messageEntranceMotion}
                       className="flex justify-end md:px-2"
                     >
-                      <ChatBubble variant="sent" className="max-w-[88%] sm:max-w-[80%]">
+                      <ChatBubble
+                        variant="sent"
+                        className="max-w-[88%] sm:max-w-[80%]"
+                      >
                         <ChatBubbleMessage>
                           <ChatMessageContent
                             message={message}
@@ -534,7 +585,11 @@ const Chat = () => {
                 {/* "Thinking..." shown after the user's message, before the
                     assistant message has arrived yet */}
                 {loadingSubmit && lastRole === 'user' && (
-                  <motion.div key="loading" {...messageEntranceMotion} className="md:px-4">
+                  <motion.div
+                    key="loading"
+                    {...messageEntranceMotion}
+                    className="md:px-4"
+                  >
                     <ChatBubble variant="received">
                       <ChatBubbleMessage isLoading />
                     </ChatBubble>
@@ -545,13 +600,18 @@ const Chat = () => {
                     phone (and it lands on top of the composer); the thread
                     itself should say what happened and offer a retry. */}
                 {showInlineError && (
-                  <motion.div key="error" {...messageEntranceMotion} className="md:px-4">
+                  <motion.div
+                    key="error"
+                    {...messageEntranceMotion}
+                    className="md:px-4"
+                  >
                     <div
                       role="alert"
-                      className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-2xl bg-secondary px-4 py-3 text-sm text-foreground"
+                      className="bg-secondary text-foreground flex flex-wrap items-center gap-x-3 gap-y-2 rounded-2xl px-4 py-3 text-sm"
                     >
                       <span className="min-w-0 flex-1">
-                        I couldn&apos;t get a reply just now — the model is busy.
+                        I couldn&apos;t get a reply just now — the model is
+                        busy.
                       </span>
                       <button
                         type="button"
@@ -559,7 +619,7 @@ const Chat = () => {
                           setLoadingSubmit(true);
                           reload();
                         }}
-                        className="pressable flex min-h-10 items-center gap-1.5 rounded-full bg-foreground px-4 text-sm font-semibold text-primary-foreground"
+                        className="pressable bg-foreground text-primary-foreground flex min-h-10 items-center gap-1.5 rounded-full px-4 text-sm font-semibold"
                       >
                         <RotateCcw className="h-4 w-4" />
                         Retry
@@ -575,7 +635,7 @@ const Chat = () => {
 
       {/* Composer — chips + input. Sits inside the keyboard-aware shell so it
           rides up with the keyboard instead of disappearing behind it. */}
-      <div className="relative shrink-0 border-t border-border/40 bg-background/95 backdrop-blur-sm">
+      <div className="border-border/40 bg-background/95 relative shrink-0 border-t backdrop-blur-sm">
         {/* Scroll-to-latest — appears once the reader has scrolled up */}
         <AnimatePresence>
           {!isEmptyState && !isAtBottom && (
@@ -588,7 +648,7 @@ const Chat = () => {
               transition={{ type: 'spring', stiffness: 400, damping: 28 }}
               onClick={() => scrollToBottom()}
               aria-label="Scroll to latest message"
-              className="pressable absolute -top-12 left-1/2 z-10 flex h-10 w-10 items-center justify-center rounded-full border border-border bg-card text-foreground shadow-[0_6px_20px_-6px_rgba(25,25,25,0.3)]"
+              className="pressable border-border bg-card text-foreground absolute -top-12 left-1/2 z-10 flex h-10 w-10 items-center justify-center rounded-full border shadow-[0_6px_20px_-6px_rgba(25,25,25,0.3)]"
             >
               <ArrowDown className="h-5 w-5" />
             </motion.button>
@@ -597,7 +657,9 @@ const Chat = () => {
 
         <div
           className="mx-auto flex max-w-3xl flex-col items-center px-3 pt-2 sm:px-2 sm:pt-3 md:px-0"
-          style={{ paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 10px)' }}
+          style={{
+            paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 10px)',
+          }}
         >
           <HelperBoost
             submitQuery={submitQuery}
