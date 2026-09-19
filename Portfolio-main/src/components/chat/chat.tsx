@@ -3,7 +3,7 @@ import { trackChatQuery } from '@/lib/analytics-tracker';
 import { useChat, type Message } from '@ai-sdk/react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useSearchParams, useRouter } from 'next/navigation';
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState, useMemo } from 'react';
 import { toast } from 'sonner';
 
 // Component imports
@@ -127,14 +127,18 @@ const Chat = () => {
     },
   });
 
-  const isToolInProgress = messages.some(
-    (m) =>
-      m.role === 'assistant' &&
-      m.parts?.some(
-        (part) =>
-          part.type === 'tool-invocation' &&
-          part.toolInvocation?.state !== 'result'
-      )
+  const isToolInProgress = useMemo(
+    () =>
+      messages.some(
+        (m) =>
+          m.role === 'assistant' &&
+          m.parts?.some(
+            (part) =>
+              part.type === 'tool-invocation' &&
+              part.toolInvocation?.state !== 'result'
+          )
+      ),
+    [messages]
   );
 
   const [isSharing, setIsSharing] = useState(false);
@@ -153,7 +157,7 @@ const Chat = () => {
       const shareUrl = `${window.location.origin}/share/${token}`;
       await navigator.clipboard.writeText(shareUrl);
       toast.success('Link copied! Anyone with the link can view this chat.');
-    } catch (err) {
+    } catch {
       toast.error('Failed to create share link.');
     } finally {
       setIsSharing(false);
