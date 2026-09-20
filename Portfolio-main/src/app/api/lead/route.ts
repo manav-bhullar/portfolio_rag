@@ -36,10 +36,38 @@ export async function POST(req: Request) {
 
   const { name, email, message } = parsed.data;
 
-  // No email/CRM service is configured yet (no RESEND/SENDGRID key, no lead
-  // storage backend) — this logs to server logs as a first pass so nothing
-  // is silently dropped. Wire in real delivery once a service is chosen.
+  // Log to server logs as a backup so nothing is silently dropped
   console.log('[Lead]', JSON.stringify({ name, email, message, at: new Date().toISOString() }));
+
+  const RESEND_API_KEY = process.env.RESEND_API_KEY;
+  const CONTACT_EMAIL = process.env.CONTACT_EMAIL || 'onboarding@resend.dev'; // Fallback to Resend default
+
+  if (RESEND_API_KEY) {
+    try {
+      const res = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${RESEND_API_KEY}`,
+        },
+        body: JSON.stringify({
+          from: 'Portfolio Contact Form <onboarding@resend.dev>', // You can change this to a verified domain
+          to: CONTACT_EMAIL, 
+          subject: `New Portfolio Lead from ${name}`,
+          text: `Name: ${name}\nEmail: ${email}\n\nMessage:\n${message}`,
+        }),
+      });
+
+      if (!res.ok) {
+        const errorText = await res.text();
+        console.error('[Lead] Resend error:', errorText);
+      }
+    } catch (error) {
+      console.error('[Lead] Failed to send email via Resend:', error);
+    }
+  } else {
+    console.warn('[Lead] RESEND_API_KEY is not configured. Email was not sent (only logged).');
+  }
 
   return new Response(JSON.stringify({ success: true }), {
     status: 200,
