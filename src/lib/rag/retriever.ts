@@ -117,7 +117,7 @@ export async function retrieve(
         : [];
 
     const doc: KnowledgeDocument = {
-      id: match.id,
+      id: match.id || 'unknown',
       title: typeof metadata.title === 'string' ? metadata.title : 'Untitled',
       content: typeof metadata.content === 'string' ? metadata.content : '',
       keywords: keywords,
