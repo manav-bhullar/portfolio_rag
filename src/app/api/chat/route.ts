@@ -157,7 +157,7 @@ export async function POST(req: Request) {
       throw new Error('All candidate keys exhausted');
     };
 
-    const google = createGoogleGenerativeAI({ fetch: customFetch });
+    const google = createGoogleGenerativeAI({ apiKey, fetch: customFetch });
     const requestErrorHandler = makeErrorHandler(apiKey);
 
     // ── RAG: Retrieve relevant context ───────────────────────
