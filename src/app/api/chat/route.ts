@@ -129,7 +129,7 @@ export async function POST(req: Request) {
     
     // Custom fetch wrapper that automatically rotates keys on rate limits
     const customFetch = async (url: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
-      const candidateKeys = getKeysHealthyFirst().slice(0, 3);
+      const candidateKeys = getKeysHealthyFirst(); // Try ALL keys in the pool before giving up
       let lastResponse: Response | undefined;
       let attempt = 0;
       
@@ -140,7 +140,8 @@ export async function POST(req: Request) {
         
         try {
           const response = await fetch(url, { ...init, headers });
-          if ((response.status === 429 || response.status === 403) && attempt < candidateKeys.length) {
+          // Rotate on 429 (Rate Limit), 403 (Quota), or 5xx (Server Error / Overloaded)
+          if ((response.status === 429 || response.status === 403 || response.status >= 500) && attempt < candidateKeys.length) {
             reportKeyFailure(key);
             lastResponse = response;
             console.warn(`[Key Rotation] Key failed with status ${response.status}. Rotating...`);

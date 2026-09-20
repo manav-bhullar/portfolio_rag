@@ -27,7 +27,14 @@ export default function UiActionExecutor({ action }: { action: string }) {
       if (total === max) {
         setTimeout(() => {
           toast('🎉 You found them all!', {
-            description: "Here's my secret Spotify playlist for deep work: https://open.spotify.com/playlist/37i9dQZF1DWZeKCadgRdKQ",
+            description: (
+            <div className="flex flex-col gap-2 mt-1">
+              <span>Here's my secret Spotify playlist for deep work:</span>
+              <a href="https://open.spotify.com/playlist/37i9dQZF1DWZeKCadgRdKQ" target="_blank" rel="noopener noreferrer" className="underline text-blue-300 hover:text-white font-medium">
+                Open Spotify Playlist 🎵
+              </a>
+            </div>
+          ),
             duration: 10000,
             style: { background: '#8B5FE0', color: 'white' },
           });

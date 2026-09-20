@@ -24,12 +24,20 @@ export function useChatScroll(messages: Message[], isLoading: boolean) {
     if (el) el.scrollTo({ top: el.scrollHeight, behavior });
   }, []);
 
+  const previousMessageCount = useRef(messages.length);
   const lastRole = messages[messages.length - 1]?.role;
+  
   useEffect(() => {
-    if (lastRole === 'user' || isAtBottom) {
-      scrollToBottom(lastRole === 'user' ? 'smooth' : 'auto');
+    const isNewMessage = messages.length > previousMessageCount.current;
+    previousMessageCount.current = messages.length;
+
+    // Only force scroll if the user just sent a message, OR if they are actively sitting at the bottom of the chat.
+    if (lastRole === 'user' && isNewMessage) {
+      scrollToBottom('smooth');
+    } else if (isAtBottom) {
+      scrollToBottom('auto');
     }
-  }, [messages, isLoading, lastRole, isAtBottom, scrollToBottom]);
+  }, [messages, isAtBottom, lastRole, scrollToBottom]);
 
   useEffect(() => {
     if (keyboardOpen && isAtBottom) scrollToBottom('auto');
