@@ -1,7 +1,8 @@
-import { NextResponse } from 'next/server';
+import { checkRateLimit } from '@/lib/ratelimit';
 import { Redis } from '@upstash/redis';
 
-// Initialize Redis only if env vars are present
+export const runtime = 'edge';
+
 const getRedis = () => {
   const url = process.env.UPSTASH_REDIS_REST_URL;
   const token = process.env.UPSTASH_REDIS_REST_TOKEN;
@@ -11,30 +12,43 @@ const getRedis = () => {
 
 export async function POST(req: Request) {
   try {
+    // 1. Check rate limit to prevent spamming the share endpoint
+    const rateLimit = await checkRateLimit(req);
+    if (!rateLimit.success) {
+      const retryAfter = rateLimit.retryAfter ?? Math.max(1, Math.ceil((rateLimit.reset - Date.now()) / 1000));
+      return new Response(
+        JSON.stringify({ error: `Too many requests. Try again in ${retryAfter}s.` }),
+        { status: 429, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+
     const { messages } = await req.json();
-    
-    if (!messages || !Array.isArray(messages) || messages.length === 0) {
-      return NextResponse.json({ error: 'No messages provided' }, { status: 400 });
+
+    if (!messages || !Array.isArray(messages)) {
+      return new Response(JSON.stringify({ error: 'Invalid messages payload' }), { status: 400 });
     }
 
     const redis = getRedis();
     if (!redis) {
-      return NextResponse.json(
-        { error: 'Redis is not configured in this environment.' },
+      return new Response(
+        JSON.stringify({ error: 'Redis is not configured in this environment' }),
         { status: 501 }
       );
     }
 
-    // Generate a unique token
-    const token = crypto.randomUUID().replace(/-/g, '').slice(0, 16);
-    
-    // Save to Redis with a 7-day expiration (604800 seconds)
+    // 2. Generate a random token
+    const token = crypto.randomUUID().replace(/-/g, '');
     const key = `portfolio_share_${token}`;
-    await redis.set(key, JSON.stringify(messages), { ex: 604800 });
 
-    return NextResponse.json({ token });
+    // 3. Store messages in Redis with a 30-day TTL (2592000 seconds)
+    await redis.setex(key, 2592000, JSON.stringify(messages));
+
+    return new Response(JSON.stringify({ token }), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+    });
   } catch (error) {
-    console.error('[Share API] Error saving conversation:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    console.error('Share API error:', error);
+    return new Response(JSON.stringify({ error: 'Internal Server Error' }), { status: 500 });
   }
 }
