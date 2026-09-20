@@ -1,0 +1,47 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./Portfolio-main
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: './Portfolio-main/package-lock.json'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run ESLint
+        run: npm run lint
+
+      - name: Type Check
+        run: npx tsc --noEmit
+
+      - name: Run Tests
+        run: npm run test
+
+      # Optional: Test the build (can take longer)
+      - name: Test Build
+        run: npm run build
+        env:
+          # Dummy variables to allow build to complete if required
+          PINECONE_API_KEY: 'dummy'
+          PINECONE_INDEX: 'dummy'
+          UPSTASH_REDIS_REST_URL: 'https://dummy.upstash.io'
+          UPSTASH_REDIS_REST_TOKEN: 'dummy'

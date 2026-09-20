@@ -2,95 +2,30 @@
 import { trackChatQuery } from '@/lib/analytics-tracker';
 import { useChat, type Message } from '@ai-sdk/react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { useSearchParams, useRouter } from 'next/navigation';
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
+import React, { useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
-// Component imports
 import ChatBottombar from '@/components/chat/chat-bottombar';
 import ChatLanding from '@/components/chat/chat-landing';
 import ChatMessageContent from '@/components/chat/chat-message-content';
 import { SimplifiedChatView } from '@/components/chat/simple-chat-view';
-import {
-  ChatBubble,
-  ChatBubbleMessage,
-} from '@/components/ui/chat/chat-bubble';
-import WelcomeModal from '@/components/welcome-modal';
-import { ArrowDown, House, Info, RotateCcw, Brain, Share, Loader2 } from 'lucide-react';
-import GitHubButton from 'react-github-btn';
+import { ChatBubble, ChatBubbleMessage } from '@/components/ui/chat/chat-bubble';
 import HelperBoost from './HelperBoost';
+import { ArrowDown, RotateCcw } from 'lucide-react';
 import { useVisualViewport } from '@/hooks/use-visual-viewport';
-import BookmarksDrawer from './bookmarks-drawer';
-import EasterEggIndicator from './easter-egg-indicator';
 import { messageEntranceMotion } from '@/lib/motion';
 
-// Session storage: per-tab, lost when the tab closes. Always used.
-const STORAGE_KEY = 'portfolio-chat-history';
-// Persistent storage: cross-session, opt-in only. Stored in localStorage.
-const PERSISTENT_KEY = 'portfolio-chat-history-persistent';
-// User preference: whether they've opted into persistent memory.
-const PERSIST_PREF_KEY = 'portfolio-remember-me';
+import { useChatPersistence } from '@/hooks/use-chat-persistence';
+import { useChatScroll } from '@/hooks/use-chat-scroll';
+import { ChatHeader } from '@/components/chat/chat-header';
 
-/** Read the "remember me" preference (localStorage, client-only). */
-function getRememberMePref(): boolean {
-  if (typeof window === 'undefined') return false;
-  try {
-    return window.localStorage.getItem(PERSIST_PREF_KEY) === 'true';
-  } catch {
-    return false;
-  }
-}
-
-/** Detect whether the user is a returning visitor with stored history. */
-function getReturnVisitorTopic(): string | null {
-  if (typeof window === 'undefined') return null;
-  try {
-    const raw = window.localStorage.getItem(PERSISTENT_KEY);
-    if (!raw) return null;
-    const msgs = JSON.parse(raw) as Message[];
-    // Find last user message to extract topic context
-    const lastUser = [...msgs].reverse().find((m) => m.role === 'user');
-    if (!lastUser) return null;
-    const text = typeof lastUser.content === 'string' ? lastUser.content : '';
-    // Return the first 60 chars as a hint
-    return text.slice(0, 60) + (text.length > 60 ? '…' : '');
-  } catch {
-    return null;
-  }
-}
-
-function loadStoredMessages(persistent: boolean): Message[] {
-  if (typeof window === 'undefined') return [];
-  try {
-    // Always check sessionStorage first (reload resilience within the same tab)
-    const sessionRaw = window.sessionStorage.getItem(STORAGE_KEY);
-    if (sessionRaw) return JSON.parse(sessionRaw) as Message[];
-    // If persistent memory is enabled, also check localStorage
-    if (persistent) {
-      const persistRaw = window.localStorage.getItem(PERSISTENT_KEY);
-      if (persistRaw) return JSON.parse(persistRaw) as Message[];
-    }
-    return [];
-  } catch {
-    return [];
-  }
-}
-
-const Chat = () => {
+export default function Chat() {
   const searchParams = useSearchParams();
-  const router = useRouter();
   const initialQuery = searchParams.get('query');
   const [autoSubmitted, setAutoSubmitted] = useState(false);
   const [loadingSubmit, setLoadingSubmit] = useState(false);
-  // Stored history is read *after* mount (see effect below) so the server
-  // and first client render agree — reading localStorage inside useState's
-  // initializer caused a hydration mismatch on every reload with history.
-  const [hydrated, setHydrated] = useState(false);
-  const scrollContainerRef = useRef<HTMLDivElement>(null);
-  const [isAtBottom, setIsAtBottom] = useState(true);
   const { keyboardOpen } = useVisualViewport();
-  // Cross-session memory: opt-in toggle state
-  const [persistMemory, setPersistMemory] = useState(false);
 
   const {
     messages,
@@ -109,61 +44,31 @@ const Chat = () => {
       visitorType: typeof window !== 'undefined' ? window.localStorage.getItem('portfolio_visitor_type') : null,
     },
     onResponse: (response) => {
-      if (response) {
-        setLoadingSubmit(false);
-      }
+      if (response) setLoadingSubmit(false);
     },
-    onFinish: () => {
-      setLoadingSubmit(false);
-    },
+    onFinish: () => setLoadingSubmit(false),
     onError: (error) => {
       setLoadingSubmit(false);
       console.error('Chat error:', error.message, error.cause);
       toast.error(`Error: ${error.message}`);
     },
     onToolCall: (tool) => {
-      const toolName = tool.toolCall.toolName;
-      console.log('Tool call:', toolName);
+      console.log('Tool call:', tool.toolCall.toolName);
     },
   });
 
+  const { hydrated, persistMemory, togglePersistMemory } = useChatPersistence(messages, setMessages);
+  const { scrollContainerRef, isAtBottom, scrollToBottom } = useChatScroll(messages, isLoading);
+
   const isToolInProgress = messages.some(
-    (m) =>
-      m.role === 'assistant' &&
-      m.parts?.some(
-        (part) =>
-          part.type === 'tool-invocation' &&
-          part.toolInvocation?.state !== 'result'
-      )
+    (m) => m.role === 'assistant' && m.parts?.some(
+      (part) => part.type === 'tool-invocation' && part.toolInvocation?.state !== 'result'
+    )
   );
-
-  const [isSharing, setIsSharing] = useState(false);
-
-  const handleShare = useCallback(async () => {
-    if (messages.length === 0) return;
-    setIsSharing(true);
-    try {
-      const res = await fetch('/api/share', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages }),
-      });
-      if (!res.ok) throw new Error('Failed to share');
-      const { token } = await res.json();
-      const shareUrl = `${window.location.origin}/share/${token}`;
-      await navigator.clipboard.writeText(shareUrl);
-      toast.success('Link copied! Anyone with the link can view this chat.');
-    } catch (err) {
-      toast.error('Failed to create share link.');
-    } finally {
-      setIsSharing(false);
-    }
-  }, [messages]);
 
   const submitQuery = useCallback((query: string) => {
     if (!query.trim() || isToolInProgress) return;
 
-    // Keep URL in sync with latest active query
     if (typeof window !== 'undefined') {
       try {
         const url = new URL(window.location.href);
@@ -174,9 +79,7 @@ const Chat = () => {
       }
     }
 
-    // Pre-process default questions to save API quota with robust matching
     const normalizedQuery = query.toLowerCase().replace(/\s+/g, ' ').trim();
-    
     const isMe = normalizedQuery.includes('who are you and what do you do');
     const isProjects = normalizedQuery.includes('what are your projects');
     const isSkills = normalizedQuery.includes('technical skills and tech stack');
@@ -204,12 +107,7 @@ const Chat = () => {
         textContent = "You can find me on GitHub, LinkedIn, or shoot me an email. Let's build something cool together!";
       }
 
-      const userMessage = {
-        id: Date.now().toString(),
-        role: 'user',
-        content: query,
-      };
-
+      const userMessage = { id: Date.now().toString(), role: 'user', content: query };
       const assistantMessage = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
@@ -229,78 +127,23 @@ const Chat = () => {
         ]
       };
 
-      // Echo the user's message immediately so the thread responds to the tap
-      // at once; the canned answer lands after a short "Thinking..." beat.
-      setMessages([...messages, userMessage as unknown as Message]);
+      setMessages([...messages, userMessage as Message]);
       setLoadingSubmit(true);
       setTimeout(() => {
-        setMessages((prev) => [...prev, assistantMessage as unknown as Message]);
+        setMessages((prev) => [...prev, assistantMessage as Message]);
         setLoadingSubmit(false);
       }, 500);
 
-      // Track chat message sent event in PostHog
-      if (typeof window !== 'undefined') {
-        trackChatQuery(query);
-      }
-
+      if (typeof window !== 'undefined') trackChatQuery(query);
       return;
     }
 
     setLoadingSubmit(true);
-
-    // Track chat message sent event in PostHog
-    if (typeof window !== 'undefined') {
-      trackChatQuery(query);
-    }
-
-    append({
-      role: 'user',
-      content: query,
-    });
+    if (typeof window !== 'undefined') trackChatQuery(query);
+    append({ role: 'user', content: query });
   }, [isToolInProgress, messages, setMessages, append]);
 
-  // Restore the persisted thread once, on the client, after mount.
   useEffect(() => {
-    const isPersistent = getRememberMePref();
-    setPersistMemory(isPersistent);
-
-    // If persistent and there's stored history, show warm re-entry greeting
-    if (isPersistent) {
-      const topic = getReturnVisitorTopic();
-      if (topic) {
-        // Show greeting in a toast rather than custom UI for simplicity
-        toast.success(`Welcome back! Last time you were asking: "${topic}"`);
-      }
-    }
-
-    const stored = loadStoredMessages(isPersistent);
-    if (stored.length > 0) setMessages(stored);
-    setHydrated(true);
-  }, [setMessages]);
-
-  // Toggle persistent memory preference
-  const togglePersistMemory = useCallback(() => {
-    setPersistMemory((prev) => {
-      const next = !prev;
-      try {
-        if (next) {
-          window.localStorage.setItem(PERSIST_PREF_KEY, 'true');
-          toast.success('Memory enabled — I\'ll remember our conversations across sessions.');
-        } else {
-          window.localStorage.setItem(PERSIST_PREF_KEY, 'false');
-          window.localStorage.removeItem(PERSISTENT_KEY);
-          toast('Memory cleared — conversations will reset on new tabs.');
-        }
-      } catch {
-        // localStorage unavailable
-      }
-      return next;
-    });
-  }, []);
-
-  useEffect(() => {
-    // Don't replay the landing page's query param over a restored thread —
-    // only auto-submit it into a genuinely fresh (empty) session.
     if (hydrated && initialQuery && !autoSubmitted && messages.length === 0) {
       setAutoSubmitted(true);
       setInput('');
@@ -308,65 +151,10 @@ const Chat = () => {
     }
   }, [hydrated, initialQuery, autoSubmitted, submitQuery, setInput, messages.length]);
 
-  // Session memory: persist the full thread so a reload doesn't lose it.
-  // Also write to localStorage when persistent memory is opted in.
-  useEffect(() => {
-    if (typeof window === 'undefined' || !hydrated) return;
-    try {
-      if (messages.length > 0) {
-        window.sessionStorage.setItem(STORAGE_KEY, JSON.stringify(messages));
-        // Also persist to localStorage if the user opted in
-        if (persistMemory) {
-          window.localStorage.setItem(PERSISTENT_KEY, JSON.stringify(messages));
-        }
-      } else {
-        window.sessionStorage.removeItem(STORAGE_KEY);
-      }
-    } catch {
-      // sessionStorage unavailable (private mode, quota) — degrade silently
-    }
-  }, [messages, hydrated, persistMemory]);
-
-  // Track whether the reader is pinned to the bottom of the thread. We only
-  // auto-follow streaming output while pinned — yanking someone back down
-  // while they're reading a project card mid-stream is the single most
-  // annoying thing a chat UI can do on a phone.
-  useEffect(() => {
-    const el = scrollContainerRef.current;
-    if (!el) return;
-    const onScroll = () => {
-      const distance = el.scrollHeight - el.scrollTop - el.clientHeight;
-      setIsAtBottom(distance < 96);
-    };
-    onScroll();
-    el.addEventListener('scroll', onScroll, { passive: true });
-    return () => el.removeEventListener('scroll', onScroll);
-  }, []);
-
-  const scrollToBottom = useCallback((behavior: ScrollBehavior = 'smooth') => {
-    const el = scrollContainerRef.current;
-    if (el) el.scrollTo({ top: el.scrollHeight, behavior });
-  }, []);
-
-  const lastRole = messages[messages.length - 1]?.role;
-  useEffect(() => {
-    // Always follow our own just-sent message; otherwise only follow while pinned.
-    if (lastRole === 'user' || isAtBottom) scrollToBottom(lastRole === 'user' ? 'smooth' : 'auto');
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [messages, isLoading, lastRole]);
-
-  // When the keyboard slides up the visible area shrinks; keep the latest
-  // message in view instead of leaving the reader staring at the middle.
-  useEffect(() => {
-    if (keyboardOpen && isAtBottom) scrollToBottom('auto');
-  }, [keyboardOpen, isAtBottom, scrollToBottom]);
-
   useEffect(() => {
     const handleChatSubmit = (e: Event) => {
       const customEvent = e as CustomEvent<string>;
-      if (customEvent.detail) {
-        submitQuery(customEvent.detail);
-      }
+      if (customEvent.detail) submitQuery(customEvent.detail);
     };
     window.addEventListener('chat:submit', handleChatSubmit);
     return () => window.removeEventListener('chat:submit', handleChatSubmit);
@@ -384,105 +172,21 @@ const Chat = () => {
     setLoadingSubmit(false);
   };
 
-  const handleReset = () => {
-    setMessages([]);
-    setInput('');
-    if (typeof window !== 'undefined') {
-      try {
-        window.sessionStorage.removeItem(STORAGE_KEY);
-      } catch {
-        // ignore
-      }
-    }
-    router.push('/');
-  };
-
-  // Check if this is the initial empty state (no messages)
   const isEmptyState = messages.length === 0 && !loadingSubmit;
-
   const lastMessageId = messages.length > 0 ? messages[messages.length - 1].id : null;
-
+  const lastRole = messages[messages.length - 1]?.role;
   const showInlineError = !!error && !isLoading && !loadingSubmit && lastRole === 'user';
 
   return (
     <div className="app-shell relative flex flex-col overflow-hidden">
-      {/* Header — safe-area padded, fades into the thread. Absolutely
-          positioned so the thread scrolls underneath it. */}
-      <header
-        className="pt-safe pointer-events-none absolute inset-x-0 top-0 z-50"
-        style={{
-          background:
-            'linear-gradient(to bottom, rgba(237, 230, 214, 1) 0%, rgba(237, 230, 214, 0.85) 60%, rgba(237, 230, 214, 0) 100%)',
-        }}
-      >
-        <div className="mx-auto flex h-14 max-w-3xl items-center justify-end gap-1 px-2 sm:h-16 sm:px-4">
-          {messages.length > 0 && (
-            <button
-              type="button"
-              onClick={handleShare}
-              disabled={isSharing}
-              aria-label="Share conversation"
-              title="Share"
-              className="pressable pointer-events-auto flex h-11 w-11 items-center justify-center rounded-full text-foreground hover:bg-accent disabled:opacity-50"
-            >
-              {isSharing ? (
-                <Loader2 className="h-5 w-5 animate-spin" strokeWidth={2} />
-              ) : (
-                <Share className="h-5 w-5" strokeWidth={2} />
-              )}
-            </button>
-          )}
-          <EasterEggIndicator />
-          <BookmarksDrawer />
-          <button
-            type="button"
-            onClick={togglePersistMemory}
-            aria-label={persistMemory ? "Forget me" : "Remember me"}
-            title="Cross-Session Memory"
-            className={`pressable pointer-events-auto flex h-11 w-11 items-center justify-center rounded-full transition-colors ${
-              persistMemory 
-                ? 'bg-[#3FB37F]/20 text-[#3FB37F] hover:bg-[#3FB37F]/30' 
-                : 'text-foreground hover:bg-accent'
-            }`}
-          >
-            <Brain className="h-5 w-5" strokeWidth={2} />
-          </button>
-          <button
-            type="button"
-            onClick={handleReset}
-            aria-label="Start over"
-            title="Home"
-            className="pressable pointer-events-auto flex h-11 w-11 items-center justify-center rounded-full text-foreground hover:bg-accent"
-          >
-            <House className="h-6 w-6" strokeWidth={2} />
-          </button>
-          <WelcomeModal
-            trigger={
-              <button
-                type="button"
-                aria-label="About this portfolio"
-                className="pressable pointer-events-auto flex h-11 w-11 items-center justify-center rounded-full text-foreground hover:bg-accent"
-              >
-                <Info className="h-6 w-6" strokeWidth={2} />
-              </button>
-            }
-          />
-          {/* GitHub star — hidden on phones to keep the header to two clear targets */}
-          <div className="pointer-events-auto hidden pl-2 pt-1 sm:block">
-            <GitHubButton
-              href="https://github.com/manav-bhullar"
-              data-color-scheme="no-preference: light; light: light; dark: light_high_contrast;"
-              data-size="large"
-              data-show-count="true"
-              aria-label="Visit manav-bhullar on GitHub"
-            >
-              Star
-            </GitHubButton>
-          </div>
-        </div>
-      </header>
+      <ChatHeader
+        messages={messages}
+        setMessages={setMessages}
+        setInput={setInput}
+        persistMemory={persistMemory}
+        togglePersistMemory={togglePersistMemory}
+      />
 
-      {/* Scrollable thread */}
       <div
         ref={scrollContainerRef}
         className="scroll-y min-h-0 flex-1 px-4 md:px-2"
@@ -490,11 +194,7 @@ const Chat = () => {
       >
         <div className="mx-auto flex min-h-full max-w-3xl flex-col">
           {isEmptyState ? (
-            <motion.div
-              key="landing"
-              className="flex flex-1 items-center justify-center"
-              {...messageEntranceMotion}
-            >
+            <motion.div key="landing" className="flex flex-1 items-center justify-center" {...messageEntranceMotion}>
               <ChatLanding submitQuery={submitQuery} />
             </motion.div>
           ) : (
@@ -502,67 +202,32 @@ const Chat = () => {
               <AnimatePresence initial={false}>
                 {messages.map((message) =>
                   message.role === 'user' ? (
-                    <motion.div
-                      key={message.id}
-                      {...messageEntranceMotion}
-                      className="flex justify-end md:px-2"
-                    >
+                    <motion.div key={message.id} {...messageEntranceMotion} className="flex justify-end md:px-2">
                       <ChatBubble variant="sent" className="max-w-[88%] sm:max-w-[80%]">
                         <ChatBubbleMessage>
-                          <ChatMessageContent
-                            message={message}
-                            isLast={message.id === lastMessageId}
-                            isLoading={false}
-                            reload={() => Promise.resolve(null)}
-                          />
+                          <ChatMessageContent message={message} isLast={message.id === lastMessageId} isLoading={false} reload={() => Promise.resolve(null)} />
                         </ChatBubbleMessage>
                       </ChatBubble>
                     </motion.div>
                   ) : (
                     <motion.div key={message.id} {...messageEntranceMotion}>
-                      <SimplifiedChatView
-                        message={message}
-                        isLoading={isLoading && message.id === lastMessageId}
-                        isLast={message.id === lastMessageId}
-                        reload={reload}
-                        addToolResult={addToolResult}
-                      />
+                      <SimplifiedChatView message={message} isLoading={isLoading && message.id === lastMessageId} isLast={message.id === lastMessageId} reload={reload} addToolResult={addToolResult} />
                     </motion.div>
                   )
                 )}
 
-                {/* "Thinking..." shown after the user's message, before the
-                    assistant message has arrived yet */}
                 {loadingSubmit && lastRole === 'user' && (
                   <motion.div key="loading" {...messageEntranceMotion} className="md:px-4">
-                    <ChatBubble variant="received">
-                      <ChatBubbleMessage isLoading />
-                    </ChatBubble>
+                    <ChatBubble variant="received"><ChatBubbleMessage isLoading /></ChatBubble>
                   </motion.div>
                 )}
 
-                {/* Inline failure state. A toast alone is easy to miss on a
-                    phone (and it lands on top of the composer); the thread
-                    itself should say what happened and offer a retry. */}
                 {showInlineError && (
                   <motion.div key="error" {...messageEntranceMotion} className="md:px-4">
-                    <div
-                      role="alert"
-                      className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-2xl bg-secondary px-4 py-3 text-sm text-foreground"
-                    >
-                      <span className="min-w-0 flex-1">
-                        I couldn&apos;t get a reply just now — the model is busy.
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setLoadingSubmit(true);
-                          reload();
-                        }}
-                        className="pressable flex min-h-10 items-center gap-1.5 rounded-full bg-foreground px-4 text-sm font-semibold text-primary-foreground"
-                      >
-                        <RotateCcw className="h-4 w-4" />
-                        Retry
+                    <div role="alert" className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-2xl bg-secondary px-4 py-3 text-sm text-foreground">
+                      <span className="min-w-0 flex-1">I couldn&apos;t get a reply just now — the model is busy.</span>
+                      <button type="button" onClick={() => { setLoadingSubmit(true); reload(); }} className="pressable flex min-h-10 items-center gap-1.5 rounded-full bg-foreground px-4 text-sm font-semibold text-primary-foreground">
+                        <RotateCcw className="h-4 w-4" />Retry
                       </button>
                     </div>
                   </motion.div>
@@ -573,10 +238,7 @@ const Chat = () => {
         </div>
       </div>
 
-      {/* Composer — chips + input. Sits inside the keyboard-aware shell so it
-          rides up with the keyboard instead of disappearing behind it. */}
       <div className="relative shrink-0 border-t border-border/40 bg-background/95 backdrop-blur-sm">
-        {/* Scroll-to-latest — appears once the reader has scrolled up */}
         <AnimatePresence>
           {!isEmptyState && !isAtBottom && (
             <motion.button
@@ -595,27 +257,11 @@ const Chat = () => {
           )}
         </AnimatePresence>
 
-        <div
-          className="mx-auto flex max-w-3xl flex-col items-center px-3 pt-2 sm:px-2 sm:pt-3 md:px-0"
-          style={{ paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 10px)' }}
-        >
-          <HelperBoost
-            submitQuery={submitQuery}
-            setInput={setInput}
-            collapsed={keyboardOpen}
-          />
-          <ChatBottombar
-            input={input}
-            handleInputChange={handleInputChange}
-            handleSubmit={onSubmit}
-            isLoading={isLoading}
-            stop={handleStop}
-            isToolInProgress={isToolInProgress}
-          />
+        <div className="mx-auto flex max-w-3xl flex-col items-center px-3 pt-2 sm:px-2 sm:pt-3 md:px-0" style={{ paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 10px)' }}>
+          <HelperBoost submitQuery={submitQuery} setInput={setInput} collapsed={keyboardOpen} />
+          <ChatBottombar input={input} handleInputChange={handleInputChange} handleSubmit={onSubmit} isLoading={isLoading} stop={handleStop} isToolInProgress={isToolInProgress} />
         </div>
       </div>
     </div>
   );
-};
-
-export default Chat;
+}

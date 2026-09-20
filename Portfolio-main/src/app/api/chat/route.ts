@@ -114,7 +114,7 @@ export async function POST(req: Request) {
     }
 
     // 1.5. Log Query for Trending Ticker
-    const lastUserMessage = messages.filter((m: any) => m.role === 'user').pop();
+    const lastUserMessage = messages.filter((m: { role: string; content: string }) => m.role === 'user').pop();
     if (lastUserMessage && lastUserMessage.content) {
       // Run async without blocking the response
       const redis = getRedis();

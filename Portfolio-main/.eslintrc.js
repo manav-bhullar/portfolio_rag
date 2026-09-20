@@ -8,10 +8,10 @@ module.exports = {
   plugins: ["prettier"],
   rules: {
     "prettier/prettier": "error",
-    "@typescript-eslint/no-unused-vars": "off",
-    "@typescript-eslint/no-explicit-any": "off",
-    "react-hooks/exhaustive-deps": "off",
-    "react/no-unescaped-entities": "off"
+    "@typescript-eslint/no-unused-vars": "warn",
+    "@typescript-eslint/no-explicit-any": "warn",
+    "react-hooks/exhaustive-deps": "warn",
+    "react/no-unescaped-entities": "warn"
   },
   overrides: [
     {
@@ -21,13 +21,13 @@ module.exports = {
   ],
   settings: {
     tailwindcss: {
-      // Configuration par défaut, vous pouvez personnaliser selon vos besoins
+      // Default configuration, you can customize according to your needs
       callees: ["classnames", "clsx", "ctl"],
       config: "tailwind.config.js",
       removeDuplicates: true,
       skipClassAttribute: false,
       whitelist: [],
-      // Si vous utilisez des composants Shadcn, vous pourriez vouloir ajouter leurs classes à la whitelist
+      // If using Shadcn components, you might want to add their classes to the whitelist
     },
   },
 };

@@ -4,8 +4,8 @@ const nextConfig = {
     domains: ['images.unsplash.com', 'assets.aceternity.com'],
   },
   eslint: {
-    // Ne bloque PAS le build en cas d'erreurs eslint
-    ignoreDuringBuilds: true,
+    // DO block the build if there are eslint errors
+    ignoreDuringBuilds: false,
   },
   serverExternalPackages: ['onnxruntime-node', '@xenova/transformers'],
 };

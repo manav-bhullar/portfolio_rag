@@ -36,7 +36,7 @@ export function useBookmarks() {
     const cleanContent = textContent.replace(/FOLLOW_UP_QUESTIONS:[\s\S]*/, '').trim();
 
     const newBookmark: Bookmark = {
-      id: crypto.randomUUID(),
+      id: Math.random().toString(36).substring(2) + Date.now().toString(36),
       messageId: message.id,
       content: cleanContent,
       timestamp: Date.now(),
