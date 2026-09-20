@@ -126,7 +126,6 @@ export async function POST(req: Request) {
     }
 
     const apiKey = getHealthyKey();
-    const apiKey = getHealthyKey();
     
     // Custom fetch wrapper that automatically rotates keys on rate limits
     const customFetch = async (url: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
