@@ -7,7 +7,7 @@
     "build": "npx tsx scripts/ingest.ts && next build",
     "start": "next start",
     "lint": "next lint",
-    "test": "vitest run"
+    "test": "npx tsx tests/run-all.ts"
   },
   "dependencies": {
     "@ai-sdk/google": "^1.2.22",
