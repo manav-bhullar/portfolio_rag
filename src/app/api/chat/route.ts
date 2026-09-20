@@ -126,7 +126,39 @@ export async function POST(req: Request) {
     }
 
     const apiKey = getHealthyKey();
-    const google = createGoogleGenerativeAI({ apiKey });
+    const apiKey = getHealthyKey();
+    
+    // Custom fetch wrapper that automatically rotates keys on rate limits
+    const customFetch = async (url: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
+      const candidateKeys = getKeysHealthyFirst().slice(0, 3);
+      let lastResponse: Response | undefined;
+      let attempt = 0;
+      
+      for (const key of candidateKeys) {
+        attempt++;
+        const headers = new Headers(init?.headers);
+        headers.set('x-goog-api-key', key);
+        
+        try {
+          const response = await fetch(url, { ...init, headers });
+          if ((response.status === 429 || response.status === 403) && attempt < candidateKeys.length) {
+            reportKeyFailure(key);
+            lastResponse = response;
+            console.warn(`[Key Rotation] Key failed with status ${response.status}. Rotating...`);
+            continue;
+          }
+          return response;
+        } catch (err) {
+          reportKeyFailure(key);
+          if (attempt === candidateKeys.length) throw err;
+        }
+      }
+      
+      if (lastResponse) return lastResponse;
+      throw new Error('All candidate keys exhausted');
+    };
+
+    const google = createGoogleGenerativeAI({ fetch: customFetch });
     const requestErrorHandler = makeErrorHandler(apiKey);
 
     // ── RAG: Retrieve relevant context ───────────────────────
