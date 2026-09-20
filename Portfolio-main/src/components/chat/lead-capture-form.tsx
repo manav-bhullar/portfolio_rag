@@ -70,6 +70,7 @@ export function LeadCaptureForm() {
           autoComplete="name"
           autoCapitalize="words"
           required
+          aria-label="Your name"
           placeholder="Your name"
           value={name}
           onChange={(e) => setName(e.target.value)}
@@ -82,6 +83,7 @@ export function LeadCaptureForm() {
           inputMode="email"
           autoCapitalize="none"
           required
+          aria-label="Your email"
           placeholder="Your email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
@@ -89,6 +91,7 @@ export function LeadCaptureForm() {
         />
         <textarea
           required
+          aria-label="What's this about?"
           placeholder="What's this about?"
           value={message}
           onChange={(e) => setMessage(e.target.value)}
