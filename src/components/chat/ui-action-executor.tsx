@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import { useEasterEggs } from '@/hooks/use-easter-eggs';
@@ -9,8 +9,13 @@ export default function UiActionExecutor({ action }: { action: string }) {
   const [showFixButton, setShowFixButton] = useState(false);
   const [showScriptKiddie, setShowScriptKiddie] = useState(false);
   const { addEgg } = useEasterEggs();
+  const hasFired = useRef(false);
 
   useEffect(() => {
+    // Only fire the action once per mount/history
+    if (hasFired.current) return;
+    hasFired.current = true;
+
     // Register the egg discovery
     const { isNew, total, max } = addEgg(action);
     if (isNew) {
