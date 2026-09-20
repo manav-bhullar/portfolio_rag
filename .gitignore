@@ -39,3 +39,4 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+\n# AI Agent Folders\n.agents/\n.claude/\n.gemini/
