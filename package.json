@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "npx tsx scripts/ingest.ts && next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "test": "vitest run"
   },
   "dependencies": {
     "@ai-sdk/google": "^1.2.22",
