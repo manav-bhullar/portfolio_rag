@@ -14,6 +14,7 @@ export default function BookmarksDrawer() {
   return (
     <>
       <button
+        type="button"
         onClick={() => setOpen(true)}
         aria-label="View Saved Answers"
         title="Saved Answers"
@@ -39,7 +40,7 @@ export default function BookmarksDrawer() {
                   <Drawer.Title className="text-2xl font-bold font-display">
                     Saved Answers
                   </Drawer.Title>
-                  <Drawer.Close className="rounded-full bg-accent p-2 hover:bg-accent/80 transition-colors">
+                  <Drawer.Close aria-label="Close saved answers" className="rounded-full bg-accent p-2 hover:bg-accent/80 transition-colors">
                     <X className="h-5 w-5" />
                   </Drawer.Close>
                 </div>
@@ -55,9 +56,11 @@ export default function BookmarksDrawer() {
                     {bookmarks.map((bookmark) => (
                       <div key={bookmark.id} className="relative rounded-2xl border border-border bg-card p-5 shadow-sm">
                         <button
+                          type="button"
                           onClick={() => removeBookmark(bookmark.messageId)}
                           className="absolute right-3 top-3 rounded-full p-2 text-muted-foreground hover:bg-accent hover:text-destructive transition-colors"
                           title="Remove bookmark"
+                          aria-label="Remove bookmark"
                         >
                           <BookmarkMinus className="h-4 w-4" />
                         </button>
