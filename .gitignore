@@ -40,3 +40,4 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 \n# AI Agent Folders\n.agents/\n.claude/\n.gemini/
+\n# Temporary Scratch Files\nhello.cpp\nhello.cpp.bak\nfix.js
