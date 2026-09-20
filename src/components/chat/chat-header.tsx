@@ -41,7 +41,7 @@ export function ChatHeader({
       const shareUrl = `${window.location.origin}/share/${token}`;
       await navigator.clipboard.writeText(shareUrl);
       toast.success('Link copied! Anyone with the link can view this chat.');
-    } catch (err) {
+    } catch {
       toast.error('Failed to create share link.');
     } finally {
       setIsSharing(false);

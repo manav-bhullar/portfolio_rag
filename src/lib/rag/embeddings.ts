@@ -36,10 +36,11 @@ export async function getEmbedding(text: string): Promise<number[]> {
         value: text,
       });
       return embedding;
-    } catch (err: any) {
+    } catch (err: unknown) {
       if (isRateLimitError(err)) reportKeyFailure(apiKey);
-      console.warn(`[Embedding] API Key failed, trying next... Error: ${err.message}`);
-      lastError = err;
+      const msg = err instanceof Error ? err.message : String(err);
+      console.warn(`[Embedding] API Key failed, trying next... Error: ${msg}`);
+      lastError = err as Error;
     }
   }
 

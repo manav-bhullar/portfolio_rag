@@ -105,7 +105,7 @@ export async function retrieve(
   if (!queryResponse.matches) return [];
 
   // Score all retrieved documents
-  const scored: RetrievalResult[] = queryResponse.matches.map((match: any) => {
+  const scored: RetrievalResult[] = queryResponse.matches.map((match: { metadata?: Record<string, unknown>; id?: string; score?: number }) => {
     const metadata = (match.metadata ?? {}) as Record<string, unknown>;
     
     // Pinecone stores arrays natively, but just in case it's a string

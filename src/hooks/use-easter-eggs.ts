@@ -24,7 +24,7 @@ export function useEasterEggs() {
           if (parsed.length >= EGGS.length) {
             setIsFullyUnlocked(true);
           }
-        } catch (e) {}
+        } catch {}
       }
     }
   }, []);

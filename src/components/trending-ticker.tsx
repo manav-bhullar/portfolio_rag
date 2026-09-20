@@ -43,7 +43,7 @@ export default function TrendingTicker() {
             transition={{ type: 'spring', stiffness: 300, damping: 30 }}
             className="absolute inset-0 flex items-center truncate italic"
           >
-            "{queries[currentIndex]}"
+            &quot;{queries[currentIndex]}&quot;
           </motion.div>
         </AnimatePresence>
       </div>

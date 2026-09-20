@@ -44,7 +44,7 @@ export default function WelcomeToneSelector() {
               Customize your experience
             </h3>
             <p className="text-sm text-muted-foreground">
-              Who are you? I'll adjust my tone and the information I highlight.
+              Who are you? I&apos;ll adjust my tone and the information I highlight.
             </p>
           </div>
 

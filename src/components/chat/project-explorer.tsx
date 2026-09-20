@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { Layers, Rocket, Lightbulb, Code2 } from 'lucide-react';
+import { Rocket } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 

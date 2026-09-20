@@ -8,7 +8,7 @@ import { useEasterEggs } from '@/hooks/use-easter-eggs';
 export default function UiActionExecutor({ action }: { action: string }) {
   const [showFixButton, setShowFixButton] = useState(false);
   const [showScriptKiddie, setShowScriptKiddie] = useState(false);
-  const { addEgg, isFullyUnlocked } = useEasterEggs();
+  const { addEgg } = useEasterEggs();
 
   useEffect(() => {
     // Register the egg discovery
@@ -88,7 +88,7 @@ export default function UiActionExecutor({ action }: { action: string }) {
       // Cleanup if unmounted
       if (action === 'sudo_rm_rf') document.body.style.animation = '';
     };
-  }, [action]);
+  }, [action, addEgg]);
 
   const fixFormatting = () => {
     document.body.classList.remove('misaligned-text');
