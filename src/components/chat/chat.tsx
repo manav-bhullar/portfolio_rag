@@ -3,7 +3,7 @@ import { trackChatQuery } from '@/lib/analytics-tracker';
 import { useChat, type Message } from '@ai-sdk/react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useSearchParams } from 'next/navigation';
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState, useMemo } from 'react';
 import { toast } from 'sonner';
 
 import ChatBottombar from '@/components/chat/chat-bottombar';
@@ -60,11 +60,14 @@ export default function Chat() {
   const { hydrated, persistMemory, togglePersistMemory } = useChatPersistence(messages, setMessages);
   const { scrollContainerRef, isAtBottom, scrollToBottom } = useChatScroll(messages, isLoading);
 
-  const isToolInProgress = messages.some(
-    (m) => m.role === 'assistant' && m.parts?.some(
-      (part) => part.type === 'tool-invocation' && part.toolInvocation?.state !== 'result'
-    )
-  );
+  // Memoize the O(N) check over all messages so it doesn't re-run on every keystroke
+  const isToolInProgress = useMemo(() => {
+    return messages.some(
+      (m) => m.role === 'assistant' && m.parts?.some(
+        (part) => part.type === 'tool-invocation' && part.toolInvocation?.state !== 'result'
+      )
+    );
+  }, [messages]);
 
   const submitQuery = useCallback((query: string) => {
     if (!query.trim() || isToolInProgress) return;
