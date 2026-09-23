@@ -12,6 +12,13 @@ export interface KnowledgeDocument {
   title: string;
   content: string;
   keywords: string[];
+  /**
+   * For a sub-topic document, the id of its overview document (e.g. the
+   * Floq concurrency doc is part of 'project-floq-overview'). Documents with
+   * a shared overview form a family: "tell me everything about X" retrieves
+   * the whole family, and "list all projects" retrieves only overviews.
+   */
+  partOf?: string;
   tags?: string[];
   url?: string;
   date?: string;
@@ -135,6 +142,7 @@ Instead of a standard CRUD app, Floq is built like real infrastructure. It handl
   {
     id: 'project-floq-concurrency',
     category: 'project',
+    partOf: 'project-floq-overview',
     title: 'Floq — Concurrency & Distributed Locks',
     content: `Floq is a real-time ride-matching engine. This document details its concurrency and distributed locking architecture.
 
@@ -151,6 +159,7 @@ To prevent race conditions during the matching cycle (where two cron instances m
   {
     id: 'project-floq-matching-algorithm',
     category: 'project',
+    partOf: 'project-floq-overview',
     title: 'Floq — Backtracking Matching Algorithm & Route Optimization',
     content: `Floq is a real-time ride-matching engine. This document details its core matching algorithm.
 
@@ -167,6 +176,7 @@ The engine also enforces a strict \`MAX_USER_DETOUR\` ratio of 30%. It calculate
   {
     id: 'project-floq-realtime-sockets',
     category: 'project',
+    partOf: 'project-floq-overview',
     title: 'Floq — Real-Time WebSockets & Cache-Aside',
     content: `Floq is a real-time ride-matching engine. This document details its WebSocket architecture.
 
@@ -182,6 +192,7 @@ Crucially, it uses a Redis cache-aside pattern: the server caches the driver's l
   {
     id: 'project-floq-rate-limiting',
     category: 'project',
+    partOf: 'project-floq-overview',
     title: 'Floq — Redis Rate Limiting Middleware',
     content: `Floq is a real-time ride-matching engine. This document details its API rate limiting implementation.
 
@@ -201,6 +212,7 @@ If Redis is unreachable (e.g. cold start), the middleware is designed to "fail o
   {
     id: 'project-floq-testing-performance',
     category: 'project',
+    partOf: 'project-floq-overview',
     title: 'Floq — Testing & Performance Benchmarks',
     content: `Floq is a real-time ride-matching engine. This document details its testing and performance optimizations.
 
@@ -236,6 +248,7 @@ Technical details:
   {
     id: 'project-scales-cbte',
     category: 'project',
+    partOf: 'project-scales',
     title: 'SCALES v3.0 — Consistency-Based Trust Estimation (CBTE) & 3-Tier Verification',
     content: `CBTE (scales/modules/cbte.py) is SCALES v3.0's core safety engine, replacing LLM self-confidence with a 3-tier external verification cascade:
 
@@ -266,6 +279,7 @@ Cohort Absent Audit (TC-012):
   {
     id: 'project-scales-pipeline-modules',
     category: 'project',
+    partOf: 'project-scales',
     title: 'SCALES v3.0 — CERA, CGR, SHRR, Aggregator & State Persistence',
     content: `Detailed breakdown of SCALES v3.0's modular pipeline components:
 

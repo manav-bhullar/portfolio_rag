@@ -19,7 +19,7 @@ export const analyzeJobFit = tool({
     jobDescription: z.string().describe('The full job description text pasted by the user'),
   }),
   execute: async ({ jobDescription }) => {
-    const retrievalResults = await retrieve(jobDescription);
+    const retrievalResults = await retrieve(jobDescription, { mode: 'broad', applyFloor: false });
     const context = formatContext(retrievalResults);
 
     const candidateKeys = getKeysHealthyFirst().slice(0, 3);

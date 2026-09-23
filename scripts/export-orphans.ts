@@ -1,6 +1,6 @@
 /**
- * Read-only audit: finds Pinecone records whose IDs are not in KNOWLEDGE_BASE
- * ("orphans") and writes their full metadata to orphans.json for review.
+ * Read-only audit: finds Pinecone records whose parent document is not in
+ * KNOWLEDGE_BASE ("orphans"; record IDs are `<docId>#<chunk>-<hash>`) and writes their full metadata to orphans.json for review.
  *
  * Usage: npx tsx scripts/export-orphans.ts
  */
@@ -36,8 +36,10 @@ async function main(): Promise<void> {
   } while (paginationToken);
 
   const known = new Set(KNOWLEDGE_BASE.map((d) => d.id));
-  const orphanIds = ids.filter((id) => !known.has(id));
-  const missingIds = [...known].filter((id) => !ids.includes(id));
+  const parentOf = (id: string) => id.split('#')[0];
+  const indexedParents = new Set(ids.map(parentOf));
+  const orphanIds = ids.filter((id) => !known.has(parentOf(id)));
+  const missingIds = [...known].filter((id) => !indexedParents.has(id));
 
   console.log(`[Orphans] ${ids.length} records in index, ${known.size} in KNOWLEDGE_BASE.`);
   console.log(`[Orphans] Orphan IDs (${orphanIds.length}):`, orphanIds);
