@@ -28,6 +28,8 @@ async function resolveIndexHost(apiKey: string, indexName: string): Promise<stri
 export async function queryPinecone(vector: number[], topK: number) {
   const apiKey = process.env.PINECONE_API_KEY;
   const indexName = process.env.PINECONE_INDEX;
+  // Must match the namespace scripts/ingest.ts writes to (default namespace when unset)
+  const namespace = process.env.PINECONE_NAMESPACE || '';
 
   if (!apiKey) {
     throw new Error("PINECONE_API_KEY is not defined in environment variables");
@@ -48,6 +50,7 @@ export async function queryPinecone(vector: number[], topK: number) {
       vector,
       topK,
       includeMetadata: true,
+      ...(namespace ? { namespace } : {}),
     }),
   });
 

@@ -18,9 +18,14 @@ export interface RetrievalResult {
 }
 
 // ── Config ────────────────────────────────────────────────────
-const DEFAULT_TOP_K = 6;
 const PINECONE_FETCH_K = 20;           // Fetch more from Pinecone to re-rank
-const MIN_SIMILARITY_THRESHOLD = 0.3;  // include anything above this
+// Relative cutoff: keep documents scoring within RELATIVE_SCORE_WINDOW of the
+// best match, bounded to [MIN_RESULTS, MAX_RESULTS]. An absolute threshold
+// doesn't work here: Gemini embeddings put even loosely related text above
+// ~0.45 cosine, so a fixed floor like 0.3 never filtered anything out.
+const RELATIVE_SCORE_WINDOW = 0.1;
+const MIN_RESULTS = 3;
+const MAX_RESULTS = 8;
 const VECTOR_WEIGHT = 0.75;            // 75% vector, 25% keyword
 const KEYWORD_WEIGHT = 0.25;
 
@@ -82,6 +87,22 @@ function tokenize(query: string): string[] {
 }
 
 /**
+ * Select the relevant subset of results (sorted by score, descending):
+ * everything within RELATIVE_SCORE_WINDOW of the best score, but always at
+ * least MIN_RESULTS and never more than maxResults.
+ */
+export function selectRelevant(
+  sorted: RetrievalResult[],
+  maxResults: number = MAX_RESULTS
+): RetrievalResult[] {
+  if (sorted.length === 0) return [];
+  const cutoff = sorted[0].score - RELATIVE_SCORE_WINDOW;
+  return sorted
+    .filter((r, i) => i < MIN_RESULTS || r.score >= cutoff)
+    .slice(0, maxResults);
+}
+
+/**
  * Retrieve the most relevant knowledge documents for a user query.
  *
  * Uses Pinecone for vector retrieval, then re-ranks using hybrid scoring:
@@ -89,7 +110,7 @@ function tokenize(query: string): string[] {
  */
 export async function retrieve(
   query: string,
-  topK: number = DEFAULT_TOP_K
+  maxResults: number = MAX_RESULTS
 ): Promise<RetrievalResult[]> {
   const startTime = Date.now();
 
@@ -142,13 +163,7 @@ export async function retrieve(
   // Sort by combined score descending
   scored.sort((a, b) => b.score - a.score);
 
-  // Take top-K, but also include anything above the threshold
-  const topKResults = scored.slice(0, topK);
-  const additionalAboveThreshold = scored
-    .slice(topK)
-    .filter((r) => r.score >= MIN_SIMILARITY_THRESHOLD);
-
-  const results = [...topKResults, ...additionalAboveThreshold];
+  const results = selectRelevant(scored, maxResults);
 
   const elapsed = Date.now() - startTime;
   console.log(

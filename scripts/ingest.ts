@@ -21,12 +21,28 @@ const CACHE_FILE_PATH = path.resolve(process.cwd(), '.rag-cache.json');
 const INDEX_NAME = process.env.PINECONE_INDEX || 'portfolio';
 const NAMESPACE = process.env.PINECONE_NAMESPACE || '';
 
+const EMBEDDING_MODEL = 'gemini-embedding-2';
+const EMBEDDING_DIMENSION = 3072;
+// Bump whenever the shape of the upserted records changes, so the next run
+// re-ingests even though the knowledge base content itself is unchanged.
+// v2: record metadata now includes `keywords` (used by hybrid re-ranking).
+const CACHE_SCHEMA_VERSION = 2;
+
+// --dry-run: report what would be upserted and pruned, without writing anything.
+// --prune:   after upserting, delete index records whose IDs are no longer in
+//            KNOWLEDGE_BASE, so the repo stays the single source of truth.
+const CLI_ARGS = new Set(process.argv.slice(2));
+const DRY_RUN = CLI_ARGS.has('--dry-run');
+const PRUNE = CLI_ARGS.has('--prune');
+
 export interface RagCacheData {
   lastHash: string;
   lastIngestedAt: string;
   documentCount: number;
   indexName: string;
   schemaVersion: number;
+  embeddingModel?: string;
+  embeddingDimension?: number;
 }
 
 /**
@@ -92,12 +108,76 @@ export function writeRagCache(lastHash: string, documentCount: number, indexName
       lastIngestedAt: new Date().toISOString(),
       documentCount,
       indexName,
-      schemaVersion: 1,
+      schemaVersion: CACHE_SCHEMA_VERSION,
+      embeddingModel: EMBEDDING_MODEL,
+      embeddingDimension: EMBEDDING_DIMENSION,
     };
     fs.writeFileSync(CACHE_FILE_PATH, JSON.stringify(cachePayload, null, 2) + '\n', 'utf8');
   } catch (error) {
     console.warn('[RAG Ingestion] Warning: Failed to write cache file:', error);
   }
+}
+
+/**
+ * The cache is only valid if the content is unchanged AND the records were
+ * produced with the current embedding model, dimension and record schema.
+ * Otherwise a model switch would leave stale vectors in the index.
+ */
+export function isCacheCurrent(cache: RagCacheData | null, currentHash: string): boolean {
+  return (
+    cache !== null &&
+    cache.lastHash === currentHash &&
+    cache.schemaVersion === CACHE_SCHEMA_VERSION &&
+    cache.embeddingModel === EMBEDDING_MODEL &&
+    cache.embeddingDimension === EMBEDDING_DIMENSION
+  );
+}
+
+type PineconeTarget = ReturnType<Pinecone['index']>;
+
+/**
+ * Lists every record ID in the target namespace (serverless indexes only).
+ */
+export async function listAllRecordIds(target: PineconeTarget): Promise<string[]> {
+  const ids: string[] = [];
+  let paginationToken: string | undefined;
+  do {
+    const page = await target.listPaginated({ limit: 100, paginationToken });
+    for (const v of page.vectors ?? []) if (v.id) ids.push(v.id);
+    paginationToken = page.pagination?.next;
+  } while (paginationToken);
+  return ids;
+}
+
+/**
+ * Finds (and unless dryRun, deletes) index records not present in KNOWLEDGE_BASE.
+ */
+export async function pruneStaleRecords(target: PineconeTarget, dryRun: boolean): Promise<string[]> {
+  if (KNOWLEDGE_BASE.length === 0) {
+    throw new Error('Refusing to prune: KNOWLEDGE_BASE is empty.');
+  }
+  const known = new Set(KNOWLEDGE_BASE.map((doc) => doc.id));
+  const staleIds = (await listAllRecordIds(target)).filter((id) => !known.has(id));
+
+  if (staleIds.length === 0) {
+    console.log('[RAG Ingestion] Index is in sync: no stale records.');
+    return staleIds;
+  }
+
+  console.log(`[RAG Ingestion] ${staleIds.length} stale record(s) not in KNOWLEDGE_BASE:`);
+  for (const id of staleIds) console.log(`  - ${id}`);
+
+  if (dryRun) {
+    console.log('[RAG Ingestion] Dry run: nothing deleted.');
+    return staleIds;
+  }
+
+  const BATCH_SIZE = 100;
+  for (let i = 0; i < staleIds.length; i += BATCH_SIZE) {
+    await target.deleteMany({ ids: staleIds.slice(i, i + BATCH_SIZE) });
+  }
+  console.log(`[RAG Ingestion] Deleted ${staleIds.length} stale record(s).`);
+  return staleIds;
 }
 
 /**
@@ -120,23 +200,32 @@ export function sanitizeMetadata(metadata: Record<string, unknown>): Record<stri
 }
 
 export async function runIngestion(): Promise<void> {
-  console.log('[RAG Ingestion] Checking knowledge base status...');
+  console.log(
+    `[RAG Ingestion] Checking knowledge base status...${DRY_RUN ? ' (dry run)' : ''}${PRUNE ? ' (prune enabled)' : ''}`
+  );
   const currentHash = computeKnowledgeBaseHash(KNOWLEDGE_BASE);
   const cache = readRagCache();
+  const upToDate = isCacheCurrent(cache, currentHash);
 
-  // 1. Hash check for idempotency
-  if (cache !== null && cache.lastHash === currentHash) {
+  // 1. Hash check for idempotency (pruning and dry runs still need to inspect the index)
+  if (upToDate && !PRUNE && !DRY_RUN) {
     console.log(
       `[RAG Ingestion] Knowledge base content unchanged (hash: ${currentHash.slice(0, 8)}). Zero new documents were upserted on this run (due to the hash check).`
     );
     process.exit(0);
   }
 
-  // 2. Cache miss or content changed
-  const previousHashSnippet = cache?.lastHash ? cache.lastHash.slice(0, 8) : 'none';
-  console.log(
-    `[RAG Ingestion] Knowledge base content changed (previous: ${previousHashSnippet}, current: ${currentHash.slice(0, 8)}). Starting ingestion for ${KNOWLEDGE_BASE.length} documents...`
-  );
+  // 2. Cache miss, content changed, or embedding config/schema changed
+  if (upToDate) {
+    console.log(
+      `[RAG Ingestion] Knowledge base content unchanged (hash: ${currentHash.slice(0, 8)}). Zero new documents were upserted on this run (due to the hash check).`
+    );
+  } else {
+    const previousHashSnippet = cache?.lastHash ? cache.lastHash.slice(0, 8) : 'none';
+    console.log(
+      `[RAG Ingestion] Knowledge base content or embedding config changed (previous: ${previousHashSnippet}, current: ${currentHash.slice(0, 8)}, schema v${CACHE_SCHEMA_VERSION}, ${EMBEDDING_MODEL}/${EMBEDDING_DIMENSION}). ${DRY_RUN ? 'Would ingest' : 'Starting ingestion for'} ${KNOWLEDGE_BASE.length} documents...`
+    );
+  }
 
   // 3. Check for Pinecone credentials
   const pineconeApiKey = process.env.PINECONE_API_KEY;
@@ -144,7 +233,7 @@ export async function runIngestion(): Promise<void> {
     console.warn(
       '[RAG Ingestion] Warning: PINECONE_API_KEY is not set in environment. Skipping vector database upsert. Updating local cache.'
     );
-    writeRagCache(currentHash, KNOWLEDGE_BASE.length, INDEX_NAME);
+    if (!DRY_RUN) writeRagCache(currentHash, KNOWLEDGE_BASE.length, INDEX_NAME);
     process.exit(0);
   }
 
@@ -153,8 +242,8 @@ export async function runIngestion(): Promise<void> {
     .filter(key => key.startsWith('GEMINI_API_KEY') || key.startsWith('GOOGLE_API_KEY'))
     .map(key => process.env[key])
     .filter(Boolean)[0] || undefined;
-    
-  if (!geminiApiKey) {
+
+  if (!upToDate && !DRY_RUN && !geminiApiKey) {
     console.warn(
       '[RAG Ingestion] Warning: No GEMINI_API_KEY or GOOGLE_API_KEY found in environment. Cannot generate embeddings. Skipping Pinecone upsert. Updating local cache.'
     );
@@ -162,70 +251,95 @@ export async function runIngestion(): Promise<void> {
     process.exit(0);
   }
 
-  // 5. Generate embeddings and upsert to Pinecone
+  // 5. Generate embeddings, upsert to Pinecone, then optionally prune
   try {
-    console.log('[RAG Ingestion] Generating vector embeddings using Gemini gemini-embedding-2...');
-    const google = createGoogleGenerativeAI({ apiKey: geminiApiKey });
-    const textsToEmbed = KNOWLEDGE_BASE.map((doc) => `${doc.title}\n\n${doc.content}`);
-
-    const { embeddings } = await embedMany({
-      model: google.textEmbeddingModel('gemini-embedding-2'),
-      values: textsToEmbed,
-    });
-
-    console.log(`[RAG Ingestion] Generated ${embeddings.length} embeddings. Connecting to Pinecone index '${INDEX_NAME}'...`);
     const pc = new Pinecone({ apiKey: pineconeApiKey });
 
-    const indexList = await pc.listIndexes();
-    const exists = indexList.indexes?.some((idx) => idx.name === INDEX_NAME);
-    if (!exists) {
-      console.log(`[RAG Ingestion] Index '${INDEX_NAME}' does not exist. Creating serverless index...`);
-      await pc.createIndex({
-        name: INDEX_NAME,
-        dimension: 3072,
-        metric: 'cosine',
-        spec: {
-          serverless: {
-            cloud: 'aws',
-            region: 'us-east-1',
-          },
-        },
-        waitUntilReady: true,
+    if (DRY_RUN) {
+      const index = pc.index(INDEX_NAME);
+      const target = NAMESPACE ? index.namespace(NAMESPACE) : index;
+      await pruneStaleRecords(target, true);
+      process.exit(0);
+    }
+
+    if (!upToDate) {
+      console.log(`[RAG Ingestion] Generating vector embeddings using Gemini ${EMBEDDING_MODEL}...`);
+      const google = createGoogleGenerativeAI({ apiKey: geminiApiKey });
+      const textsToEmbed = KNOWLEDGE_BASE.map((doc) => `${doc.title}\n\n${doc.content}`);
+
+      const { embeddings } = await embedMany({
+        model: google.textEmbeddingModel(EMBEDDING_MODEL),
+        values: textsToEmbed,
       });
-      console.log(`[RAG Ingestion] Index '${INDEX_NAME}' created.`);
+
+      const badDimension = embeddings.find((e) => e.length !== EMBEDDING_DIMENSION);
+      if (badDimension) {
+        throw new Error(
+          `${EMBEDDING_MODEL} returned ${badDimension.length}-dim vectors, expected ${EMBEDDING_DIMENSION}. Update EMBEDDING_DIMENSION (and the index) before ingesting.`
+        );
+      }
+
+      console.log(`[RAG Ingestion] Generated ${embeddings.length} embeddings. Connecting to Pinecone index '${INDEX_NAME}'...`);
+
+      const indexList = await pc.listIndexes();
+      const exists = indexList.indexes?.some((idx) => idx.name === INDEX_NAME);
+      if (!exists) {
+        console.log(`[RAG Ingestion] Index '${INDEX_NAME}' does not exist. Creating serverless index...`);
+        await pc.createIndex({
+          name: INDEX_NAME,
+          dimension: EMBEDDING_DIMENSION,
+          metric: 'cosine',
+          spec: {
+            serverless: {
+              cloud: 'aws',
+              region: 'us-east-1',
+            },
+          },
+          waitUntilReady: true,
+        });
+        console.log(`[RAG Ingestion] Index '${INDEX_NAME}' created.`);
+      }
+
+      const index = pc.index(INDEX_NAME);
+      const target = NAMESPACE ? index.namespace(NAMESPACE) : index;
+
+      const records: PineconeRecord[] = KNOWLEDGE_BASE.map((doc, idx) => {
+        const baseMetadata: Record<string, unknown> = {
+          title: doc.title,
+          category: doc.category,
+          content: doc.content,
+          keywords: doc.keywords,
+          tags: doc.tags,
+          ...(doc.url ? { url: doc.url } : {}),
+          ...(doc.date ? { date: doc.date } : {}),
+          ...(doc.metadata || {}),
+        };
+
+        return {
+          id: doc.id,
+          values: embeddings[idx],
+          metadata: sanitizeMetadata(baseMetadata),
+        };
+      });
+
+      console.log(`[RAG Ingestion] Upserting ${records.length} records to Pinecone index '${INDEX_NAME}'...`);
+      const BATCH_SIZE = 100;
+      for (let i = 0; i < records.length; i += BATCH_SIZE) {
+        const batch = records.slice(i, i + BATCH_SIZE);
+        await target.upsert({ records: batch });
+      }
+
+      console.log(`[RAG Ingestion] Successfully upserted ${records.length} documents to Pinecone index '${INDEX_NAME}'.`);
+      writeRagCache(currentHash, KNOWLEDGE_BASE.length, INDEX_NAME);
     }
 
-    const index = pc.index(INDEX_NAME);
-    const target = NAMESPACE ? index.namespace(NAMESPACE) : index;
-
-    const records: PineconeRecord[] = KNOWLEDGE_BASE.map((doc, idx) => {
-      const baseMetadata: Record<string, unknown> = {
-        title: doc.title,
-        category: doc.category,
-        content: doc.content,
-        tags: doc.tags,
-        ...(doc.url ? { url: doc.url } : {}),
-        ...(doc.date ? { date: doc.date } : {}),
-        ...(doc.metadata || {}),
-      };
-
-      return {
-        id: doc.id,
-        values: embeddings[idx],
-        metadata: sanitizeMetadata(baseMetadata),
-      };
-    });
-
-    console.log(`[RAG Ingestion] Upserting ${records.length} records to Pinecone index '${INDEX_NAME}'...`);
-    const BATCH_SIZE = 100;
-    for (let i = 0; i < records.length; i += BATCH_SIZE) {
-      const batch = records.slice(i, i + BATCH_SIZE);
-      await target.upsert({ records: batch });
+    // Prune only after a successful upsert, so a failed run never deletes anything
+    if (PRUNE) {
+      const index = pc.index(INDEX_NAME);
+      const target = NAMESPACE ? index.namespace(NAMESPACE) : index;
+      await pruneStaleRecords(target, false);
     }
 
-    console.log(`[RAG Ingestion] Successfully upserted ${records.length} documents to Pinecone index '${INDEX_NAME}'.`);
-
-    writeRagCache(currentHash, KNOWLEDGE_BASE.length, INDEX_NAME);
     process.exit(0);
   } catch (error) {
     console.error('[RAG Ingestion] Error during Pinecone ingestion:', error);
