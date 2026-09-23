@@ -141,6 +141,7 @@ export async function POST(req: Request) {
     let noContextNote = '';
     let retrievalDiagnostics: {
       intent: QueryIntent;
+      routeSource: 'llm' | 'fallback';
       rewrittenQuery: string | null;
       sources: { id: string; title: string; score: number; url?: string }[];
       retrievalLatencyMs: number;
@@ -177,6 +178,7 @@ export async function POST(req: Request) {
           const searchQueriesText = plan.searchQueries.join(' | ');
           retrievalDiagnostics = {
             intent: plan.intent,
+            routeSource: plan.source,
             rewrittenQuery: searchQueriesText && searchQueriesText !== originalQuery ? searchQueriesText : null,
             sources: retrievalResults.map((r) => ({
               id: r.document.id,

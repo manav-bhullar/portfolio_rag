@@ -11,9 +11,11 @@
  *                   compare several things ("Floq vs SCALES")     → one focused retrieval per item
  *                   everything about a topic ("all about Floq")  → wider window + the topic's family
  *
- * The router fails open: if the call fails, it falls back to a focused lookup
- * on the original message, and the retriever's relevance floor still guards
- * against irrelevant context.
+ * The router fails open: if every key fails within the deadline (free-tier
+ * quota exhausted, model overloaded), a rule-based plan takes over. It
+ * recognizes list, comparison and "everything about" questions; anything
+ * else becomes a focused lookup, and the retriever's relevance floor still
+ * rejects off-topic questions.
  */
 
 import { generateObject } from 'ai';
@@ -30,7 +32,13 @@ const MAX_SUB_QUERIES = 4;
 // The router sits in front of every chat message, so it must never stall the
 // response: each attempt is capped, the SDK's own retries are disabled (we
 // rotate keys instead), and on failure we fall back to a plain lookup.
-const ROUTER_TIMEOUT_MS = 5000;
+// Whole routing step, across all key attempts.
+const ROUTER_DEADLINE_MS = 6000;
+// One attempt. Exhausted keys fail with a 429 in ~0.6 s, so walking past them
+// is cheap; only a slow key uses up the attempt budget.
+const ATTEMPT_TIMEOUT_MS = 4000;
+// Don't start an attempt with less than this left: it can't finish in time.
+const MIN_ATTEMPT_MS = 1000;
 
 export type QueryIntent = 'chitchat' | 'off_topic' | 'lookup' | 'broad';
 
@@ -92,8 +100,69 @@ Latest user message:
 ${query}`;
 }
 
-function fallbackPlan(query: string): RetrievalPlan {
-  return { intent: 'lookup', searchQueries: [query], category: null, source: 'fallback' };
+const COMPARE_PATTERN = /\b(compare|comparison|versus|vs\.?|difference between|differences between)\b/i;
+const COMPARE_LEAD = /\b(compare|comparison of|comparison|differences? between)\b/gi;
+const COMPARE_SEPARATOR = /\b(?:vs\.?|versus|and|with|to)\b|,|\//i;
+const SMALL_TALK_PATTERN = /^(hi|hii+|hello|hey|yo|hola|namaste|thanks|thank you|thx|ok|okay|cool|great|nice|awesome|bye|good (morning|afternoon|evening|night))\b/i;
+const EVERYTHING_PATTERN = /\b(everything|all|more) about\b|\bdeep dive\b|\bin (depth|detail)\b/i;
+const LIST_TRIGGER = /\b(what|which|list|show|name)\b/i;
+const LIST_CATEGORIES: [RegExp, KnowledgeCategory][] = [
+  [/\bprojects?\b/i, 'project'],
+  [/\b(certifications?|certificates?)\b/i, 'background'],
+  [/\b(roles?|jobs?|internships?|work experience)\b/i, 'experience'],
+];
+// Words that don't narrow a list question ("what projects have you BUILT?").
+const LIST_FILLER = new Set([
+  'what', 'which', 'list', 'show', 'name', 'are', 'were', 'is', 'have', 'has', 'had', 'you', 'your',
+  'he', 'his', 'did', 'do', 'does', 'all', 'the', 'of', 'me', 'built', 'build', 'made', 'done',
+  'worked', 'earned', 'got', 'completed', 'held', 'so', 'far', 'ever', 'manav', 'manavs', 'bhullar',
+]);
+
+function words(text: string): string[] {
+  return text.toLowerCase().replace(/[^\w\s]/g, ' ').split(/\s+/).filter(Boolean);
+}
+
+/**
+ * Rule-based plan used when the LLM router is unavailable. Deliberately
+ * conservative: it only claims list/compare/deep-dive when the wording is
+ * unambiguous, and without conversation history it can't resolve follow-ups.
+ */
+export function heuristicPlan(query: string): RetrievalPlan {
+  const fallback = (plan: Omit<RetrievalPlan, 'source'>): RetrievalPlan => ({ ...plan, source: 'fallback' });
+
+  // Short greetings/thanks with no question in them
+  if (SMALL_TALK_PATTERN.test(query.trim()) && !query.includes('?') && words(query).length <= 6) {
+    return fallback({ intent: 'chitchat', searchQueries: [], category: null });
+  }
+
+  if (COMPARE_PATTERN.test(query)) {
+    const items = query
+      .replace(COMPARE_LEAD, ' ')
+      .split(COMPARE_SEPARATOR)
+      .map((part) => part.replace(/[?.!]/g, '').trim())
+      .filter((part) => words(part).length > 0);
+    return fallback({
+      intent: 'broad',
+      searchQueries: items.length >= 2 && items.length <= MAX_SUB_QUERIES ? items : [query],
+      category: null,
+    });
+  }
+
+  if (EVERYTHING_PATTERN.test(query)) {
+    return fallback({ intent: 'broad', searchQueries: [query], category: null });
+  }
+
+  if (LIST_TRIGGER.test(query)) {
+    for (const [pattern, category] of LIST_CATEGORIES) {
+      if (!pattern.test(query)) continue;
+      const narrowing = words(query.replace(pattern, ' ')).filter((w) => !LIST_FILLER.has(w));
+      if (narrowing.length === 0) {
+        return fallback({ intent: 'broad', searchQueries: [query], category });
+      }
+    }
+  }
+
+  return fallback({ intent: 'lookup', searchQueries: [query], category: null });
 }
 
 /** Normalizes the model's output so downstream code can trust its shape. */
@@ -112,8 +181,11 @@ function normalizePlan(raw: z.infer<typeof PlanSchema>, query: string): Retrieva
 
 export async function planRetrieval(query: string, history: HistoryMessage[] = []): Promise<RetrievalPlan> {
   const prompt = buildRouterPrompt(query, history);
+  const deadline = Date.now() + ROUTER_DEADLINE_MS;
 
-  for (const key of getKeysHealthyFirst().slice(0, 2)) {
+  for (const key of getKeysHealthyFirst()) {
+    const remaining = deadline - Date.now();
+    if (remaining < MIN_ATTEMPT_MS) break;
     try {
       const google = createGoogleGenerativeAI({ apiKey: key });
       const { object } = await generateObject({
@@ -122,19 +194,19 @@ export async function planRetrieval(query: string, history: HistoryMessage[] = [
         prompt,
         temperature: 0,
         maxRetries: 0,
-        abortSignal: AbortSignal.timeout(ROUTER_TIMEOUT_MS),
+        abortSignal: AbortSignal.timeout(Math.min(ATTEMPT_TIMEOUT_MS, remaining)),
         // Classification doesn't need reasoning tokens; thinking multiplies latency.
         providerOptions: { google: { thinkingConfig: { thinkingBudget: 0 } } },
       });
       return normalizePlan(object, query);
     } catch (err) {
       if (isRateLimitError(err)) reportKeyFailure(key);
-      console.error('[RAG] Router attempt failed, trying next key if available:', err);
+      console.warn(`[RAG] Router attempt failed (${err instanceof Error ? err.message.split('\n')[0].slice(0, 120) : String(err)}), trying next key.`);
     }
   }
 
-  console.warn('[RAG] Router failed on all candidate keys, falling back to a focused lookup.');
-  return fallbackPlan(query);
+  console.warn('[RAG] Router unavailable within its deadline, using the rule-based plan.');
+  return heuristicPlan(query);
 }
 
 /**
