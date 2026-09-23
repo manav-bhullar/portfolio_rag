@@ -25,9 +25,14 @@ async function resolveIndexHost(apiKey: string, indexName: string): Promise<stri
   return cachedHost as string;
 }
 
-export async function queryPinecone(vector: number[], topK: number) {
+/** Pinecone metadata filter, e.g. { category: { $eq: 'project' } }. */
+export type PineconeFilter = Record<string, unknown>;
+
+export async function queryPinecone(vector: number[], topK: number, filter?: PineconeFilter) {
   const apiKey = process.env.PINECONE_API_KEY;
   const indexName = process.env.PINECONE_INDEX;
+  // Must match the namespace scripts/ingest.ts writes to (default namespace when unset)
+  const namespace = process.env.PINECONE_NAMESPACE || '';
 
   if (!apiKey) {
     throw new Error("PINECONE_API_KEY is not defined in environment variables");
@@ -48,6 +53,8 @@ export async function queryPinecone(vector: number[], topK: number) {
       vector,
       topK,
       includeMetadata: true,
+      ...(namespace ? { namespace } : {}),
+      ...(filter ? { filter } : {}),
     }),
   });
 

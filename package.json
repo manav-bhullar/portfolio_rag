@@ -4,7 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "npx tsx scripts/ingest.ts && next build",
+    "build": "npx tsx scripts/ingest.ts --prune && next build",
+    "ingest:dry-run": "npx tsx scripts/ingest.ts --dry-run",
     "start": "next start",
     "lint": "next lint",
     "test": "npx tsx tests/run-all.ts"

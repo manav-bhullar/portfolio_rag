@@ -54,3 +54,5 @@ next-env.d.ts
 hello.cpp
 hello.cpp.bak
 fix.js
+orphans.json
+tests/rag-eval/.plan-cache.json

@@ -1,5 +1,5 @@
 import { createGoogleGenerativeAI } from '@ai-sdk/google';
-import { streamText, generateText, StreamData } from "ai";
+import { streamText, StreamData } from "ai";
 import { checkRateLimit } from '@/lib/ratelimit';
 import { getHealthyKey, getKeysHealthyFirst, reportKeyFailure, isRateLimitError } from '@/lib/gemini-keys';
 import { SYSTEM_PROMPT } from './prompt';
@@ -16,7 +16,8 @@ import { executeUiAction } from './tools/executeUiAction';
 import { analyzeJobFit } from './tools/analyzeJobFit';
 import { generateCoverLetter } from './tools/generateCoverLetter';
 import { submitContactRequest } from './tools/submitContactRequest';
-import { retrieve, formatContext } from '@/lib/rag/retriever';
+import { formatContext } from '@/lib/rag/retriever';
+import { planRetrieval, executePlan, type QueryIntent } from '@/lib/rag/router';
 import { Redis } from '@upstash/redis';
 
 export const runtime = 'edge';
@@ -34,32 +35,6 @@ export const preferredRegion = 'iad1'; // Deploy close to Pinecone (us-east-1) t
 // starts throwing "no longer available to new users" errors, that's the
 // signal to re-check ai.google.dev/gemini-api/docs/deprecations and move to
 // whatever model that error message itself names as the replacement.
-
-/**
- * Rewrite a follow-up query into a standalone one for retrieval, retrying
- * across a couple of healthy keys since this is a small non-streaming call
- * (unlike the main chat stream, we can safely retry it before anything has
- * been sent to the client).
- */
-async function rewriteQueryForRetrieval(rewritePrompt: string): Promise<string | null> {
-  const candidateKeys = getKeysHealthyFirst().slice(0, 2);
-
-  for (const key of candidateKeys) {
-    try {
-      const google = createGoogleGenerativeAI({ apiKey: key });
-      const { text } = await generateText({
-        model: google("gemini-3.5-flash-lite"),
-        prompt: rewritePrompt,
-      });
-      return text?.trim() || null;
-    } catch (err) {
-      if (isRateLimitError(err)) reportKeyFailure(key);
-      console.error('[RAG] Query rewrite attempt failed, trying next key if available:', err);
-    }
-  }
-
-  return null;
-}
 
 /** Builds the error-message extractor passed to toDataStreamResponse, closing
  *  over the key used for this request so a rate-limit failure feeds back
@@ -163,7 +138,9 @@ export async function POST(req: Request) {
     // ── RAG: Retrieve relevant context ───────────────────────
     const streamData = new StreamData();
     let ragContext = '';
+    let noContextNote = '';
     let retrievalDiagnostics: {
+      intent: QueryIntent;
       rewrittenQuery: string | null;
       sources: { id: string; title: string; score: number; url?: string }[];
       retrievalLatencyMs: number;
@@ -180,44 +157,27 @@ export async function POST(req: Request) {
                 .map((p: { text: string }) => p.text)
                 .join(' ')
             : '';
-      let userQuery = originalQuery;
+      const userQuery = originalQuery;
 
       if (userQuery.trim()) {
         const retrievalStart = Date.now();
         try {
-          // If there's conversation history, rewrite the query for better RAG retrieval
-          if (messages.length > 1) {
-            const historyText = messages
-              .slice(-6) // Only take the last few messages to save tokens
-              .map((m: { role: string; content: unknown }) => `${m.role === 'user' ? 'User' : 'Assistant'}: ${
-                typeof m.content === 'string' ? m.content : '...'
-              }`)
-              .join('\n');
+          // Route first: decide whether to retrieve at all, and rewrite
+          // follow-ups / split comparisons into standalone search queries.
+          const plan = await planRetrieval(userQuery, messages.slice(0, -1));
+          console.log(`[RAG] Plan: ${plan.intent} (${plan.source}) queries=${JSON.stringify(plan.searchQueries)}${plan.category ? ` category=${plan.category}` : ''}`);
 
-            const rewritePrompt = `Given the following conversation history, rewrite the user's latest query into a standalone search query.
-If the user says 'How long did it take?', and the history is about Floq, output 'How long did the Floq project take?'.
-Output ONLY the rewritten query, without any quotes or preamble.
+          const retrievalResults = await executePlan(plan);
+          ragContext = retrievalResults.length > 0 ? formatContext(retrievalResults) : '';
 
-Conversation History:
-${historyText}
-
-Latest Query:
-${userQuery}`;
-
-            const rewrittenQuery = await rewriteQueryForRetrieval(rewritePrompt);
-            if (rewrittenQuery) {
-              console.log(`[RAG] Rewrote query: "${userQuery}" -> "${rewrittenQuery}"`);
-              userQuery = rewrittenQuery;
-            } else {
-              console.warn('[RAG] Query rewrite failed on all candidate keys, falling back to original query.');
-            }
+          if (retrievalResults.length === 0 && (plan.intent === 'lookup' || plan.intent === 'broad')) {
+            noContextNote = "\n\n## Retrieved Context\nNo document in the knowledge base is relevant enough to this question. Do not guess or invent facts about Manav: say you don't have that information, and suggest a related topic you can help with.";
           }
 
-          const retrievalResults = await retrieve(userQuery);
-          ragContext = formatContext(retrievalResults);
-
+          const searchQueriesText = plan.searchQueries.join(' | ');
           retrievalDiagnostics = {
-            rewrittenQuery: userQuery !== originalQuery ? userQuery : null,
+            intent: plan.intent,
+            rewrittenQuery: searchQueriesText && searchQueriesText !== originalQuery ? searchQueriesText : null,
             sources: retrievalResults.map((r) => ({
               id: r.document.id,
               title: r.document.title,
@@ -254,7 +214,7 @@ ${userQuery}`;
     // Gemini only supports one system message, so merge persona + tone + RAG context
     const systemContent = ragContext
       ? `${SYSTEM_PROMPT.content}${toneInstruction}\n\n## Retrieved Context (use ALL of this information to answer the user's question — do NOT truncate or summarize):\n\n${ragContext}`
-      : `${SYSTEM_PROMPT.content}${toneInstruction}`;
+      : `${SYSTEM_PROMPT.content}${toneInstruction}${noContextNote}`;
 
     const augmentedMessages = [
       { role: 'system', content: systemContent },

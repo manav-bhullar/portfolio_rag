@@ -12,6 +12,13 @@ export interface KnowledgeDocument {
   title: string;
   content: string;
   keywords: string[];
+  /**
+   * For a sub-topic document, the id of its overview document (e.g. the
+   * Floq concurrency doc is part of 'project-floq-overview'). Documents with
+   * a shared overview form a family: "tell me everything about X" retrieves
+   * the whole family, and "list all projects" retrieves only overviews.
+   */
+  partOf?: string;
   tags?: string[];
   url?: string;
   date?: string;
@@ -33,6 +40,25 @@ Relevant coursework: Operating Systems, Object-Oriented Programming, Database Ma
       'manav', 'bhullar', 'manavdeep', 'about', 'who', 'introduction',
       'thapar', 'tiet', 'patiala', 'computer engineering', 'student',
       'education', 'coursework', 'background',
+    ],
+  },
+
+  {
+    id: 'education-tiet',
+    category: 'background',
+    title: 'Education — Thapar Institute of Engineering and Technology (TIET)',
+    content: `Degree: Bachelor of Engineering (B.E.) in Computer Engineering
+Institution: Thapar Institute of Engineering and Technology (TIET), Patiala, Punjab, India
+Duration: 2023 – 2027
+
+Relevant Coursework & Academic Foundations:
+- Core Computer Science: Operating Systems, Object-Oriented Programming (OOP), Database Management Systems (DBMS), Computer Networks, Software Engineering, Data Structures & Algorithms.
+- Data Science & AI: Foundations of Data Science, Predictive Analytics Using Statistics, Data Science (Computer Vision & Natural Language Processing), Machine Learning.
+- Systems Engineering: Concurrent Programming, Distributed Computing Concepts, Relational Data Modeling, API Design & Scalability.`,
+    keywords: [
+      'education', 'degree', 'b.e.', 'btech', 'college', 'university',
+      'thapar', 'tiet', 'patiala', 'computer engineering', 'coursework',
+      'courses', 'subjects', 'graduation', '2027', 'academics',
     ],
   },
 
@@ -116,6 +142,7 @@ Instead of a standard CRUD app, Floq is built like real infrastructure. It handl
   {
     id: 'project-floq-concurrency',
     category: 'project',
+    partOf: 'project-floq-overview',
     title: 'Floq — Concurrency & Distributed Locks',
     content: `Floq is a real-time ride-matching engine. This document details its concurrency and distributed locking architecture.
 
@@ -132,6 +159,7 @@ To prevent race conditions during the matching cycle (where two cron instances m
   {
     id: 'project-floq-matching-algorithm',
     category: 'project',
+    partOf: 'project-floq-overview',
     title: 'Floq — Backtracking Matching Algorithm & Route Optimization',
     content: `Floq is a real-time ride-matching engine. This document details its core matching algorithm.
 
@@ -148,6 +176,7 @@ The engine also enforces a strict \`MAX_USER_DETOUR\` ratio of 30%. It calculate
   {
     id: 'project-floq-realtime-sockets',
     category: 'project',
+    partOf: 'project-floq-overview',
     title: 'Floq — Real-Time WebSockets & Cache-Aside',
     content: `Floq is a real-time ride-matching engine. This document details its WebSocket architecture.
 
@@ -163,6 +192,7 @@ Crucially, it uses a Redis cache-aside pattern: the server caches the driver's l
   {
     id: 'project-floq-rate-limiting',
     category: 'project',
+    partOf: 'project-floq-overview',
     title: 'Floq — Redis Rate Limiting Middleware',
     content: `Floq is a real-time ride-matching engine. This document details its API rate limiting implementation.
 
@@ -182,6 +212,7 @@ If Redis is unreachable (e.g. cold start), the middleware is designed to "fail o
   {
     id: 'project-floq-testing-performance',
     category: 'project',
+    partOf: 'project-floq-overview',
     title: 'Floq — Testing & Performance Benchmarks',
     content: `Floq is a real-time ride-matching engine. This document details its testing and performance optimizations.
 
@@ -204,13 +235,76 @@ For testing, Floq has a comprehensive suite of 108 integration tests with a 100%
 Technical details:
 - Designed a Consistency-Based Trust Estimation (CBTE) pipeline to fix a circular-dependency failure from v2.0, where confidence scoring had been trained on the LLM's own ~15,000 pseudo-labels and learned to trust its own hallucinations
 - Built a 3-tier trust verification system: exact evidence-span substring matching, NLI entailment checking via cross-encoder/nli-deberta-v3-base, and synonym-based stability re-prompting — low-trust grades get deferred to human review instead of guessing
-- Architected a model-agnostic grading pipeline via LiteLLM (Gemini 3.1 Flash-Lite), decomposed into independent stages: CERA (concept extraction) -> CGR (concept grading) -> CBTE (trust scoring) -> Aggregator
+- Architected a model-agnostic grading pipeline via LiteLLM (Gemini 3.1 Flash-Lite), decomposed into independent stages: CERA (concept extraction) -> CGR (concept grading) -> CBTE (trust scoring) -> SHRR (selective human review) -> Aggregator
 - Achieved deterministic, reproducible scoring with a tuned trust threshold (tau = 0.5) and full pytest coverage across the grading pipeline`,
     keywords: [
       'scales', 'grading', 'automated', 'short-answer', 'fastapi',
       'litellm', 'huggingface', 'transformers', 'pytest', 'cbte',
       'trust estimation', 'nli', 'entailment', 'deberta', 'llm',
       'hallucination', 'ai', 'ml', 'machine learning',
+    ],
+  },
+
+  {
+    id: 'project-scales-cbte',
+    category: 'project',
+    partOf: 'project-scales',
+    title: 'SCALES v3.0 — Consistency-Based Trust Estimation (CBTE) & 3-Tier Verification',
+    content: `CBTE (scales/modules/cbte.py) is SCALES v3.0's core safety engine, replacing LLM self-confidence with a 3-tier external verification cascade:
+
+Tier 1 — Zero-Cost Deterministic String & Keyword Verification:
+- Verbatim Evidence Span Checking (verify_evidence): Enforces a hard veto (trust = 0.0, immediate DEFER) if the LLM's cited student evidence span is not an exact verbatim substring of the student's raw answer (eliminating hallucinated quotes).
+- Fuzzy Keyword Grounding (fuzzy_keyword_match): Matches expected keywords and acceptable variants against student text (tier1_keyword_threshold = 0.3).
+- Fast-Accepts: Confirmed ABSENT verdicts with low keyword presence are fast-accepted at trust = 0.90; high-keyword verified non-ABSENT answers are fast-accepted at trust = 0.85.
+
+Tier 2 — DeBERTa NLI Cross-Encoder Entailment:
+- Evaluates escalated judgments using cross-encoder/nli-deberta-v3-base.
+- Constructs bare knowledge-point hypotheses (preventing neutral-label collapse caused by meta-prompting prefixes) and computes directional entailment/contradiction probabilities.
+- If NLI score >= tier2_nli_threshold (0.70), judgment is accepted at Tier 2.
+
+Tier 3 — Multi-Signal Weighted Aggregation & Deferral:
+- Computes composite trust: trust = (0.4 * nli_score) + (0.3 * stability_score) + (0.3 * keyword_score).
+- Compares against tuned threshold tau = 0.50. If trust < tau, marks the judgment as TrustDecision.DEFER for human teacher review.
+
+Cohort Absent Audit (TC-012):
+- Post-batch statistical audit across the whole student cohort. If >= 70% of students (min cohort >= 4) are auto-accepted ABSENT for a concept, the concept is flagged as mis-specified/unearnable and all associated judgments are escalated to DEFER for teacher review.`,
+    keywords: [
+      'scales', 'cbte', 'trust estimation', 'trust', 'verification',
+      'nli', 'deberta', 'cross-encoder', 'entailment', 'evidence span',
+      'hallucination', 'keyword grounding', 'deferral', 'defer',
+      'human review', 'threshold', 'cohort audit', 'tier',
+    ],
+  },
+
+  {
+    id: 'project-scales-pipeline-modules',
+    category: 'project',
+    partOf: 'project-scales',
+    title: 'SCALES v3.0 — CERA, CGR, SHRR, Aggregator & State Persistence',
+    content: `Detailed breakdown of SCALES v3.0's modular pipeline components:
+
+1. CERA (Concept Extraction from Reference Answer):
+- Parses questions, reference answers, and rubrics into discrete CQATuple instances.
+- Extracts discrete mark allocations, evidence_facets, evidence_role (synonym_set, all_facets, min_count_set), expected_keywords, acceptable_variants, and partial_credit_rule.
+- Strict regex validation prevents prose AND-chain contamination and fake partial credit strings.
+
+2. CGR (Concept-Level Grading & Reasoning):
+- Grades a student answer against one CQA at a time to prevent cross-concept bias.
+- Enforces strict discrete mark clamping: marks_awarded is clamped to allowed fractional steps (0.0, 0.5, 1.0 * max_marks) using _clamp_marks.
+- Outputs structured Verdict (FULL, PARTIAL, INCORRECT, ABSENT), verbatim evidence spans, reasoning, and counter-arguments.
+
+3. SHRR (Selective Human Review Resolution):
+- Constructs an interactive queue of deferred items for teacher review.
+- Records TeacherCorrection actions: AGREE, UPGRADE, DOWNGRADE, OVERRIDE, validating marks against allowed discrete rubric intervals.
+
+4. Aggregator & ExamStore:
+- Aggregator performs pure deterministic arithmetic summation of auto-accepted and teacher-corrected concept marks, bounding overall question trust to min(concept_trust_scores).
+- ExamStore provides resilient JSON state persistence, enabling full grading batches to pause, resume, and generate pre-grade calibration reports.`,
+    keywords: [
+      'scales', 'cera', 'cgr', 'shrr', 'aggregator', 'examstore',
+      'pipeline', 'modules', 'concept extraction', 'rubric', 'cqatuple',
+      'grading', 'marks', 'partial credit', 'teacher review',
+      'persistence', 'pydantic', 'verdict',
     ],
   },
 

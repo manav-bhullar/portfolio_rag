@@ -21,7 +21,7 @@ export const compareWithRole = tool({
   }),
   execute: async ({ roleTitle }) => {
     // Retrieve context about Manav's skills and projects
-    const retrievalResults = await retrieve(`skills experience projects technologies for ${roleTitle}`);
+    const retrievalResults = await retrieve(`skills experience projects technologies for ${roleTitle}`, { mode: 'broad', applyFloor: false });
     const context = formatContext(retrievalResults);
 
     const candidateKeys = getKeysHealthyFirst().slice(0, 3);
