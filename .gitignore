@@ -39,5 +39,18 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
-\n# AI Agent Folders\n.agents/\n.claude/\n.gemini/
-\n# Temporary Scratch Files\nhello.cpp\nhello.cpp.bak\nfix.js
+
+# AI Agent Folders
+.agents/
+.claude/
+.gemini/
+.Jules/
+.jules/
+
+# Cache files
+.rag-cache.json
+
+# Temporary/scratch files
+hello.cpp
+hello.cpp.bak
+fix.js
