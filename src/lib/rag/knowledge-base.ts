@@ -372,22 +372,86 @@ Technical details:
     category: 'project',
     title: "AI Portfolio RAG — This Portfolio's Own Chatbot",
     url: 'https://github.com/manav-bhullar/portfolio_rag',
-    content: `This portfolio site is itself a real RAG (Retrieval-Augmented Generation) project, not a static bio with a chat widget bolted on. Tech stack: Next.js 15, Vercel AI SDK, Google Gemini API, Pinecone (vector database).
+    content: `Most portfolios are a page you scroll. Manav wanted one you could interrogate: ask it anything about his work and get an answer grounded in his real projects, with sources. So this site is itself a RAG (Retrieval-Augmented Generation) system, built with Next.js 15 on Vercel's Edge runtime, the Vercel AI SDK, Google Gemini, and Pinecone as the vector database.
 
-Technical details:
-- A knowledge base of focused documents — background, projects, experience, skills, and personal context — is embedded with Gemini's gemini-embedding-2 model and stored in Pinecone.
-- Retrieval is hybrid: Pinecone vector similarity (75% weight) combined with local keyword/title matching (25% weight), re-ranked and merged, with the top documents injected as context per query.
-- Multi-turn conversations get their query rewritten into a standalone search query before retrieval — e.g. "how long did it take?" becomes "how long did the Floq project take?" — so follow-up questions still retrieve the right documents instead of nothing.
-- The system prompt requires inline citations: every claim pulled from retrieved context is tagged \`[citation: source_id]\`, so answers trace back to a specific document rather than just sounding plausible.
-- Runs on a custom multi-key rotation layer across 9 Gemini API keys (the same trick proven on PIP-RAG) to scale free-tier throughput, with a sliding-window rate limiter (Upstash Redis in production, in-memory fallback locally) protecting against abuse.
-- Deployed on Vercel's Edge runtime, region-pinned near Pinecone's us-east-1 to cut retrieval latency.
+Here is what happens when you ask a question. A small router model (gemini-3.5-flash-lite) first decides whether it needs a search at all: "hi" and "what's the weather?" don't. The question is then embedded with gemini-embedding-2, matched against a hand-written knowledge base in Pinecone, re-ranked with 75% meaning similarity and 25% exact keyword and title matching, and filtered by a relevance threshold measured on a test set. Only then does gemini-3.6-flash write the answer, citing every claim as [citation: source_id]. Open "Under the hood" below any answer to watch it happen.
 
-Ask this chatbot how it works, and the answer you get is a live demonstration of the thing being described.`,
+The first version worked, and was quietly wrong in three ways Manav only found by reading real answers: the database held documents that no longer existed in the code, every question received about twenty documents whether they were relevant or not, and the smarter routing he added briefly made answers fail on the free-tier quota. Each became a story of its own: the ghost documents, twenty documents for every question, and the quota crash.
+
+The ending is measured, not claimed. On a 46-question test set, retrieval went from finding 87.4% of the right documents at 70.0% precision to 95.8% at 89.9%, with every routing decision correct. Around it: rotation across a pool of Gemini API keys, an Upstash Redis rate limiter, and an Edge deployment pinned near Pinecone's us-east-1.
+
+Ask this chatbot how it works, and the answer is a live demonstration of the thing being described.`,
     keywords: [
-      'ai portfolio rag', 'this chatbot', 'how does this work', 'this website',
-      'this portfolio', 'rag', 'retrieval', 'pinecone', 'embeddings', 'gemini',
-      'vector search', 'architecture', 'meta', 'how were you built',
-      'citations', 'key rotation', 'rate limiting', 'edge', 'vercel', 'next.js',
+      'ai portfolio rag', 'this chatbot', 'how does this work',
+      'this website', 'this portfolio', 'rag', 'retrieval', 'pinecone',
+      'embeddings', 'gemini', 'vector search', 'architecture', 'meta',
+      'how were you built', 'citations', 'key rotation', 'rate limiting',
+      'redis', 'upstash', 'edge', 'vercel', 'next.js', 'story',
+    ],
+  },
+
+  {
+    id: 'project-ai-portfolio-rag-ghost-documents',
+    category: 'project',
+    partOf: 'project-ai-portfolio-rag',
+    title: "AI Portfolio RAG — The Ghost Documents (Keeping the Index in Sync)",
+    url: 'https://github.com/manav-bhullar/portfolio_rag',
+    content: `One day this chatbot answered a question about Floq by citing "Dynamic Greedy Trip Expansion & Pareto Fare Invariance", a document that existed nowhere in the code: not on any branch, not in the commit history.
+
+Manav wrote a read-only audit that listed every record in Pinecone and compared it with the knowledge base in the repository: 37 records in the database, 29 in the code. Eight ghost documents were being retrieved and quoted to visitors, and no code review could have seen them. The cause was simple: ingestion only ever added and updated records. It never deleted anything. The audit exposed two quieter bugs as well: the keyword lists written for every document had never been uploaded, so the "hybrid" search was really title-only, and queries ignored the namespace that ingestion wrote to.
+
+He reviewed each ghost by hand. Three were accurate and came home into the repository (two SCALES deep-dives and his education record); five were outdated or wrong and were removed.
+
+The fix was a principle, not a patch: the repository is the single source of truth. Every build now syncs instead of appending. Each chunk's ID contains a fingerprint of its content, so unchanged text is never re-embedded, changed text gets a new ID, and anything in Pinecone that isn't in the code is pruned, after a dry run shows exactly what would go. As a bonus, ingestion became incremental, which matters if the knowledge base grows to tens of megabytes.
+
+The lesson: a stale record in a vector database is a hallucination source that code review can't see.`,
+    keywords: [
+      'ghost documents', 'stale records', 'orphan', 'index sync', 'pruning',
+      'prune', 'ingestion', 'incremental', 'source of truth', 'pinecone',
+      'audit', 'keywords bug', 'namespace', 'debugging', 'story',
+      'this chatbot',
+    ],
+  },
+
+  {
+    id: 'project-ai-portfolio-rag-relevance',
+    category: 'project',
+    partOf: 'project-ai-portfolio-rag',
+    title: "AI Portfolio RAG — Twenty Documents for Every Question (Measuring Relevance)",
+    url: 'https://github.com/manav-bhullar/portfolio_rag',
+    content: `Look under the hood of an early answer about Floq and you'd find twenty retrieved documents: the six about Floq, plus SCALES, Olist, NYC Taxi and "Why hire Manav". The rule was "the top 6, plus anything scoring at least 0.3", sensible on paper. But Gemini embeddings give even unrelated text a similarity of about 0.45, so nothing was ever filtered out. Every question, even "what's the weather?", received the whole pile.
+
+Manav's first instinct was to pick a better number. Instead he built a test set: 46 questions, each listing the documents it should retrieve, covering specific questions, broad ones, follow-ups, off-topic questions and small talk. Measuring revealed a clean gap: off-topic questions never scored above 0.536, and the weakest genuinely relevant match scored 0.605. The threshold became 0.57, chosen by data rather than intuition.
+
+That answers "is anything relevant at all?". A second rule answers "which documents belong together?": keep what scores within 0.1 of the best match, between 2 and 6 documents. Some questions weren't similarity problems at all. "Tell me everything about Floq" now pulls Floq's whole family of six documents, and "what projects have you built?" fetches one overview per project, going from 2 of 7 projects found to 7 of 7. His own name turned out to be noise too: it appears in every document, so it pushed "About Manav" into nearly every answer until the search learned to ignore it.
+
+The first measured version found 87.4% of the right documents at 70.0% precision; the tuned version found 98.6% at 91.4%.
+
+The lesson: "top-k" is a guess, and a measured threshold is a decision.`,
+    keywords: [
+      'relevance', 'threshold', 'top-k', 'retrieval quality', 'evaluation',
+      'test set', 'golden set', 'recall', 'precision', 'calibration',
+      'hybrid search', 'parent-child', 'measured', 'story', 'this chatbot',
+    ],
+  },
+
+  {
+    id: 'project-ai-portfolio-rag-routing',
+    category: 'project',
+    partOf: 'project-ai-portfolio-rag',
+    title: "AI Portfolio RAG — The Quota Crash (Routing Every Question)",
+    url: 'https://github.com/manav-bhullar/portfolio_rag',
+    content: `Not every message deserves a search. "Hi" doesn't, "what's the weather in Delhi?" doesn't, and "compare Floq and SCALES" deserves two. So Manav added a router: a small AI call that reads each message and decides whether to skip the search, search once, split a comparison into one search per project, list a whole category, or rewrite a follow-up like "how did you test it?" into "how was Floq tested?". On the test set it routed all 46 questions correctly.
+
+Then, testing the live preview, answers began failing with "quota exceeded". The router ran on the same model as the answers, and on the free tier that model allows only 20 requests per day per key, so every message was spending the scarcest resource twice. In the same session, "compare Floq and SCALES" produced a Floq deep-dive card and no comparison, because the answer model reached for a single-project tool that ends its turn.
+
+The turning point was a trade-off made on purpose: the router moved to a cheaper model with its own quota (gemini-3.5-flash-lite), and the deep-dive tool was limited to one project. The test set caught the cost immediately. The cheaper model shortened questions too much ("What does CERA do in SCALES?" became "CERA in SCALES"), and recall fell from 98.6% to 90.3%. The fix: keep questions that already make sense as they are, and search the visitor's original wording alongside the rewrite. Recall came back to 95.8%. If the router is ever slow or out of quota, simple rules take over and still find 94.4% of the right documents.
+
+The lesson: a helper model must never spend the main model's budget, and every model swap gets re-measured.`,
+    keywords: [
+      'router', 'routing', 'query rewriting', 'follow-up', 'quota',
+      'rate limit', 'free tier', 'gemini-3.5-flash-lite', 'trade-off',
+      'comparison', 'fallback', 'regression', 'story', 'this chatbot',
     ],
   },
 
