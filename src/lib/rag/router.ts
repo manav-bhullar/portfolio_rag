@@ -93,7 +93,7 @@ Classify the LATEST user message:
 When in doubt between off_topic and anything else, choose lookup. Questions addressed to "you" are about Manav.
 
 searchQueries:
-- Rewrite into standalone queries using the conversation (e.g. "how long did it take?" after discussing Floq -> "How long did the Floq project take?").
+- If the latest message already makes sense on its own, use it unchanged (you may drop a greeting). Rewrite ONLY when it depends on the conversation (e.g. "how long did it take?" after discussing Floq -> "How long did the Floq project take?"). Never shorten a question into bare keywords.
 - Never add Manav's name: every document is about him, so the name only adds noise. Keep the user's own key terms.
 - lookup: exactly 1 query.
 - broad comparison: one query per item being compared (max ${MAX_SUB_QUERIES}).
@@ -213,16 +213,28 @@ export async function planRetrieval(query: string, history: HistoryMessage[] = [
   return heuristicPlan(query);
 }
 
+export interface ExecuteOptions {
+  /** The user's own wording, searched alongside the router's rewrite. */
+  originalQuery?: string;
+  /** With history, the original may depend on context ("test it?"), so it isn't searched. */
+  hasHistory?: boolean;
+}
+
 /**
  * Runs the retrieval a plan calls for. A category is a hint, not a
  * constraint: if listing it yields nothing, fall back to a broad search
  * rather than lose recall to a wrong classification.
  */
-export async function executePlan(plan: RetrievalPlan): Promise<RetrievalResult[]> {
+export async function executePlan(plan: RetrievalPlan, options: ExecuteOptions = {}): Promise<RetrievalResult[]> {
   if (plan.intent === 'chitchat' || plan.intent === 'off_topic') return [];
 
+  // For a standalone message, search the user's wording too: a lossy rewrite
+  // ("What does CERA do in SCALES?" -> "CERA in SCALES") then can't cost recall.
+  const phrasings = (rewritten: string) =>
+    options.originalQuery && !options.hasHistory ? [rewritten, options.originalQuery] : [rewritten];
+
   if (plan.intent === 'lookup') {
-    return retrieve(plan.searchQueries[0], { mode: 'focused' });
+    return retrieve(phrasings(plan.searchQueries[0]), { mode: 'focused' });
   }
 
   if (plan.searchQueries.length > 1) {
@@ -233,5 +245,5 @@ export async function executePlan(plan: RetrievalPlan): Promise<RetrievalResult[
     const overviews = await retrieveOverviews(plan.searchQueries[0], plan.category);
     if (overviews.length > 0) return overviews;
   }
-  return retrieve(plan.searchQueries[0], { mode: 'broad' });
+  return retrieve(phrasings(plan.searchQueries[0]), { mode: 'broad' });
 }

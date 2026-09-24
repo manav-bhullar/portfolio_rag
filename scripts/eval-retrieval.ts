@@ -137,7 +137,7 @@ async function main() {
     } else {
       const plan = await cachedPlan(c.query, c.history ?? []);
       intent = `${plan.intent}${plan.source === 'fallback' ? '(fallback)' : ''} ${JSON.stringify(plan.searchQueries)}${plan.category ? ` [${plan.category}]` : ''}`;
-      results = await executePlan(plan);
+      results = await executePlan(plan, { originalQuery: c.query, hasHistory: (c.history?.length ?? 0) > 0 });
       const retrieved = plan.intent === 'lookup' || plan.intent === 'broad';
       if (retrieved === c.retrieve) routingCorrect++;
       else failures.push(`${c.id}: routing expected retrieve=${c.retrieve}, got ${plan.intent}`);

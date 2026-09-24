@@ -168,7 +168,10 @@ export async function POST(req: Request) {
           const plan = await planRetrieval(userQuery, messages.slice(0, -1));
           console.log(`[RAG] Plan: ${plan.intent} (${plan.source}) queries=${JSON.stringify(plan.searchQueries)}${plan.category ? ` category=${plan.category}` : ''}`);
 
-          const retrievalResults = await executePlan(plan);
+          const retrievalResults = await executePlan(plan, {
+            originalQuery: userQuery,
+            hasHistory: messages.length > 1,
+          });
           ragContext = retrievalResults.length > 0 ? formatContext(retrievalResults) : '';
 
           if (retrievalResults.length === 0 && (plan.intent === 'lookup' || plan.intent === 'broad')) {
