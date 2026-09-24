@@ -87,9 +87,9 @@ export function buildRouterPrompt(query: string, history: HistoryMessage[]): str
 
 Classify the LATEST user message:
 - "chitchat": ONLY a greeting, thanks or pleasantry with no question in it.
-- "off_topic": clearly unrelated to Manav, his work, skills, background, this portfolio/chatbot, or hiring him (e.g. weather, news, general coding help, math).
+- "off_topic": clearly unrelated to Manav, his work, skills, background, this portfolio/chatbot, or hiring him (e.g. weather, news, general coding help, math). Questions about this chatbot or website itself (how it works, how it was built, its bugs, errors, limits or design decisions) are NOT off_topic: this chatbot is one of Manav's projects.
 - "lookup": a specific question about Manav or this portfolio.
-- "broad": a question needing many documents: listing or summarizing a whole area ("what projects have you built?", "overview of your experience"), or comparing several things ("compare Floq and SCALES").
+- "broad": a question needing many documents: listing or summarizing a whole area ("what projects have you built?", "overview of your experience"), comparing several things ("compare Floq and SCALES"), or asking for everything about ONE topic ("tell me everything about Floq", "the whole story of how this chatbot was built", "walk me through Floq in detail").
 When in doubt between off_topic and anything else, choose lookup. Questions addressed to "you" are about Manav.
 
 searchQueries:
@@ -110,7 +110,7 @@ const COMPARE_PATTERN = /\b(compare|comparison|versus|vs\.?|difference between|d
 const COMPARE_LEAD = /\b(compare|comparison of|comparison|differences? between)\b/gi;
 const COMPARE_SEPARATOR = /\b(?:vs\.?|versus|and|with|to)\b|,|\//i;
 const SMALL_TALK_PATTERN = /^(hi|hii+|hello|hey|yo|hola|namaste|thanks|thank you|thx|ok|okay|cool|great|nice|awesome|bye|good (morning|afternoon|evening|night))\b/i;
-const EVERYTHING_PATTERN = /\b(everything|all|more) about\b|\bdeep dive\b|\bin (depth|detail)\b/i;
+const EVERYTHING_PATTERN = /\b(everything|all|more) about\b|\bdeep dive\b|\bin (depth|detail)\b|\b(whole|full|entire) story\b|\bwalk me through\b/i;
 const LIST_TRIGGER = /\b(what|which|list|show|name)\b/i;
 const LIST_CATEGORIES: [RegExp, KnowledgeCategory][] = [
   [/\bprojects?\b/i, 'project'],
@@ -174,7 +174,10 @@ export function heuristicPlan(query: string): RetrievalPlan {
 /** Normalizes the model's output so downstream code can trust its shape. */
 function normalizePlan(raw: z.infer<typeof PlanSchema>, query: string): RetrievalPlan {
   const queries = raw.searchQueries.map((q) => q.trim()).filter(Boolean).slice(0, MAX_SUB_QUERIES);
-  const category = raw.category === 'any' ? null : raw.category;
+  // Guardrail: "everything about X" / "the whole story of X" asks for one
+  // topic's family, never a category listing. The router model sometimes tags
+  // these with a category anyway, which would return every project's overview.
+  const category = raw.category === 'any' || EVERYTHING_PATTERN.test(query) ? null : raw.category;
 
   if (raw.intent === 'chitchat' || raw.intent === 'off_topic') {
     return { intent: raw.intent, searchQueries: [], category: null, source: 'llm' };
