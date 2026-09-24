@@ -22,16 +22,15 @@ import { generateObject } from 'ai';
 import { z } from 'zod';
 import { createGoogleGenerativeAI } from '@ai-sdk/google';
 import { getKeysHealthyFirst, reportKeyFailure, isRateLimitError } from '@/lib/gemini-keys';
+import { ROUTER_MODEL } from '@/lib/models';
 import { retrieve, retrieveMany, retrieveOverviews, type RetrievalResult, type KnowledgeCategory } from './retriever';
 
-// Router model: gemini-3.5-flash-lite, chosen for its separate and larger
-// free-tier quota. gemini-3.6-flash is faster with thinking disabled (~3 s)
-// but allows only 20 requests/day per key, and it is also the answer model,
-// so routing with it spent the answer's quota twice per message.
-// It rejects thinkingBudget 0, so it runs with default thinking: measured
-// 1.0–1.6 s per call on 24 Sept 2026, but 13–30 s during a Google
-// "high demand" spike on 23 Sept, hence the generous deadline below.
-export const ROUTER_MODEL = 'gemini-3.5-flash-lite';
+// Router model (src/lib/models.ts): gemini-3.5-flash-lite, chosen for its own,
+// larger free-tier quota; routing with the answer model spent the answer's
+// 20 requests/day per key twice per message. It rejects thinkingBudget 0, so
+// it runs with default thinking: 1.0–1.6 s per call normally (24 Sept 2026),
+// 13–30 s during a Google "high demand" spike, hence the generous deadline.
+export { ROUTER_MODEL };
 const MAX_SUB_QUERIES = 4;
 // The router sits in front of every chat message, so it must never stall the
 // response: each attempt is capped, the SDK's own retries are disabled (we

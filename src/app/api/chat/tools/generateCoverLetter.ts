@@ -2,6 +2,7 @@ import { tool, generateText } from 'ai';
 import { z } from 'zod';
 import { createGoogleGenerativeAI } from '@ai-sdk/google';
 import { getKeysHealthyFirst, reportKeyFailure, isRateLimitError } from '@/lib/gemini-keys';
+import { ANSWER_MODEL } from '@/lib/models';
 import { retrieve, formatContext } from '@/lib/rag/retriever';
 
 export const generateCoverLetter = tool({
@@ -21,7 +22,7 @@ export const generateCoverLetter = tool({
       try {
         const google = createGoogleGenerativeAI({ apiKey });
         const { text } = await generateText({
-          model: google('gemini-3.6-flash'),
+          model: google(ANSWER_MODEL),
           prompt: `Write a cover letter as Manav Bhullar, addressed to the hiring team for the role described below. Use ONLY real facts from the context documents — never invent projects, metrics, or experience not present there. Keep it confident and specific (cite real numbers/projects where relevant), 250-350 words, no placeholder brackets like "[Company Name]" — write it so it can be sent as-is with only a company name swapped in if needed. Plain text only, no markdown formatting, sign off as "Manav Bhullar".
 
 ## Job Description

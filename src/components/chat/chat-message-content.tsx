@@ -13,6 +13,7 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import UnderTheHood, { type RetrievalDiagnostics } from './under-the-hood';
 import { cn } from '@/lib/utils';
+import { CITATION_PATTERN, parseCitationIds } from '@/lib/citations';
 
 export type ChatMessageContentProps = {
   message: Message;
@@ -117,9 +118,15 @@ export default function ChatMessageContent({
         }
       }
 
-      // Convert citations [citation: source_id] to something we can render
-      // We can just use a span with a specific class for now
-      processedText = processedText.replace(/\[citation:\s*([^\]]+)\]/g, ' `[$1]` ');
+      // Convert citations [citation: source_id] into pill markers. Tolerate the
+      // "[citation: a, citation: b]" form, and drop ids that weren't retrieved
+      // for this answer: a pill must always point at a real source. (Messages
+      // without diagnostics, e.g. from before retrieval diagnostics existed,
+      // keep every id.)
+      processedText = processedText.replace(CITATION_PATTERN, (_marker, inner: string) => {
+        const ids = parseCitationIds(inner).filter((id) => !diagnostics || sourceTitleById.has(id));
+        return ids.length > 0 ? ` \`[${ids.join(', ')}]\` ` : '';
+      });
 
       // Split content by code block markers
       const contentParts = processedText.split('```');

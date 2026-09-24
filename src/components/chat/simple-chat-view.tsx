@@ -13,6 +13,7 @@ import MessageLoading from '@/components/ui/chat/message-loading';
 import { messageEntranceMotion } from '@/lib/motion';
 import ChatMessageContent from './chat-message-content';
 import ToolRenderer, { ToolInvocationItem } from './tool-renderer';
+import ProjectExplorer from './project-explorer';
 import { BookmarkIcon, BookmarkCheck } from 'lucide-react';
 import { useBookmarks } from '@/hooks/use-bookmarks';
 
@@ -73,6 +74,12 @@ export function SimplifiedChatView({
       part.toolInvocation?.state !== 'result'
   );
 
+  // Server-decided "Project Deep Dive" card (src/lib/rag/deep-dive.ts)
+  const deepDive = (message.annotations as unknown[] | undefined)?.find(
+    (a): a is { type: 'project-deep-dive'; content: string } =>
+      typeof a === 'object' && a !== null && (a as { type?: string }).type === 'project-deep-dive'
+  );
+
   const hasTextContent = message.content.trim().length > 0;
   const hasTools = currentTool.length > 0;
   const isToolInProgress = !!activeToolInvocationPart;
@@ -104,6 +111,13 @@ export function SimplifiedChatView({
       {/* Single container for both tool and text content — sized to its
           own content since the thread's outer container owns scrolling */}
       <div className="flex w-full flex-col">
+        {/* Project deep dive chosen by retrieval - displayed at the top, like a tool card */}
+        {deepDive && !hasTools && (
+          <div className="mb-4 w-full">
+            <ProjectExplorer content={deepDive.content} />
+          </div>
+        )}
+
         {/* Tool invocation result - displayed at the top */}
         {hasTools && (
           <div className="mb-4 w-full">

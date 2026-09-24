@@ -34,6 +34,7 @@ export interface RetrievalResult {
   score: number;          // combined hybrid score (0-1) of the document's best chunk
   vectorScore: number;    // cosine similarity of the document's best chunk
   keywordScore: number;   // keyword match of the document's best chunk
+  family: string;         // parent–child family (the overview's id; its own id for an overview)
 }
 
 export type RetrievalMode = 'focused' | 'broad';
@@ -325,6 +326,7 @@ function assembleWithinBudget(groups: DocumentGroup[], tokenBudget: number): Ret
         score: g.best.score,
         vectorScore: g.best.vectorScore,
         keywordScore: g.best.keywordScore,
+        family: g.best.family,
       };
     });
 }
@@ -400,6 +402,22 @@ async function expandFamily(q: EmbeddedQuery, groups: DocumentGroup[]): Promise<
 }
 
 /**
+ * Parent-document retrieval for comparisons: a compared item is represented by
+ * its overview, not only by whichever sub-topic happened to match best
+ * ("Compare Floq and SCALES" matched Floq's testing document but not its
+ * overview). Puts the top family's overview first if it wasn't selected.
+ */
+async function withFamilyOverview(q: EmbeddedQuery, groups: DocumentGroup[]): Promise<DocumentGroup[]> {
+  if (groups.length === 0) return groups;
+  const family = groups[0].best.family;
+  if (groups.some((g) => g.parentId === family)) return groups;
+  const [overview] = groupByDocument(
+    await queryChunks(q, 1, { family: { $eq: family }, isOverview: { $eq: true } })
+  );
+  return overview ? [overview, ...groups] : groups;
+}
+
+/**
  * List questions ("what projects have you built?"): every overview document
  * in a category, ranked by the query. No floor — the user asked for all of
  * them — but still bounded by the token budget. Scales because only overviews
@@ -437,7 +455,11 @@ export async function retrieveMany(queries: string[], options: RetrieveOptions =
   const startTime = Date.now();
 
   const perQuery = await Promise.all(
-    unique.map(async (q) => selectDocuments(await fetchCandidates(q, category), mode, applyFloor))
+    unique.map(async (q) => {
+      const embedded = await embedQuery(q);
+      const groups = selectDocuments(await queryChunks(embedded, PINECONE_FETCH_K, categoryFilter(category)), mode, applyFloor);
+      return withFamilyOverview(embedded, groups);
+    })
   );
 
   const merged: DocumentGroup[] = [];

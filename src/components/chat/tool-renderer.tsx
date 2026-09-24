@@ -46,6 +46,8 @@ export default function ToolRenderer({
               </div>
             );
 
+          // Legacy: exploreProject was removed as a tool (the deep-dive card is now
+          // chosen by retrieval). Kept so saved and shared conversations still render.
           case 'exploreProject':
             return (
               <div

@@ -4,7 +4,6 @@ import { checkRateLimit } from '@/lib/ratelimit';
 import { getHealthyKey, getKeysHealthyFirst, reportKeyFailure, isRateLimitError } from '@/lib/gemini-keys';
 import { SYSTEM_PROMPT } from './prompt';
 import { getProjects } from './tools/getProjects';
-import { exploreProject } from './tools/exploreProject';
 import { compareWithRole } from './tools/compareWithRole';
 import { getPresentation } from './tools/getPresentation';
 import { getResume } from './tools/getResume';
@@ -18,14 +17,16 @@ import { generateCoverLetter } from './tools/generateCoverLetter';
 import { submitContactRequest } from './tools/submitContactRequest';
 import { formatContext } from '@/lib/rag/retriever';
 import { planRetrieval, executePlan, type QueryIntent } from '@/lib/rag/router';
+import { buildProjectDeepDive, type ProjectDeepDive } from '@/lib/rag/deep-dive';
+import { ANSWER_MODEL } from '@/lib/models';
 import { Redis } from '@upstash/redis';
 
 export const runtime = 'edge';
 export const maxDuration = 60;
 export const preferredRegion = 'iad1'; // Deploy close to Pinecone (us-east-1) to reduce latency
 
-// IMPORTANT: always pin an explicit, currently-supported model version here,
-// never a rolling "-latest" alias. Google moves "-latest" forward to whatever
+// Models are configured in src/lib/models.ts. IMPORTANT: always pin an
+// explicit, currently-supported model version, never a rolling "-latest" alias. Google moves "-latest" forward to whatever
 // its newest GA model is without warning, and the newest generation can ship
 // with a far stricter free-tier quota than older ones (gemini-3.8-flash's
 // free tier is 20 requests/DAY total — https://discuss.ai.google.dev/t/180609
@@ -139,6 +140,7 @@ export async function POST(req: Request) {
     const streamData = new StreamData();
     let ragContext = '';
     let noContextNote = '';
+    let deepDive: ProjectDeepDive | null = null;
     let retrievalDiagnostics: {
       intent: QueryIntent;
       routeSource: 'llm' | 'fallback';
@@ -173,6 +175,9 @@ export async function POST(req: Request) {
             hasHistory: messages.length > 1,
           });
           ragContext = retrievalResults.length > 0 ? formatContext(retrievalResults) : '';
+          // "Everything about one project": retrieval, not the model, decides
+          // the deep-dive card (src/lib/rag/deep-dive.ts).
+          deepDive = buildProjectDeepDive(plan, retrievalResults);
 
           if (retrievalResults.length === 0 && (plan.intent === 'lookup' || plan.intent === 'broad')) {
             noContextNote = "\n\n## Retrieved Context\nNo document in the knowledge base is relevant enough to this question. Do not guess or invent facts about Manav: say you don't have that information, and suggest a related topic you can help with.";
@@ -190,7 +195,7 @@ export async function POST(req: Request) {
               ...(r.document.url ? { url: r.document.url } : {}),
             })),
             retrievalLatencyMs: Date.now() - retrievalStart,
-            model: 'gemini-3.6-flash',
+            model: ANSWER_MODEL,
           };
         } catch (err) {
           console.error('[RAG] Retrieval error:', err);
@@ -205,6 +210,12 @@ export async function POST(req: Request) {
         ...retrievalDiagnostics,
       });
     }
+    if (deepDive) {
+      streamData.appendMessageAnnotation({ ...deepDive });
+    }
+    const deepDiveNote = deepDive
+      ? `\n\n## Project Deep Dive Card\nA "Project Deep Dive" card showing the full documents for "${deepDive.title}" is displayed above your reply. Write a concise narrative of the most important points with citations; don't repeat the documents, and don't call a tool for this project.`
+      : '';
 
     let toneInstruction = '';
     if (visitorType === 'recruiter') {
@@ -218,7 +229,7 @@ export async function POST(req: Request) {
     // ── Build a single merged system message ─────────────────
     // Gemini only supports one system message, so merge persona + tone + RAG context
     const systemContent = ragContext
-      ? `${SYSTEM_PROMPT.content}${toneInstruction}\n\n## Retrieved Context (use ALL of this information to answer the user's question — do NOT truncate or summarize):\n\n${ragContext}`
+      ? `${SYSTEM_PROMPT.content}${toneInstruction}${deepDiveNote}\n\n## Retrieved Context (use ALL of this information to answer the user's question — do NOT truncate or summarize):\n\n${ragContext}`
       : `${SYSTEM_PROMPT.content}${toneInstruction}${noContextNote}`;
 
     const augmentedMessages = [
@@ -228,7 +239,6 @@ export async function POST(req: Request) {
 
     const tools = {
       getProjects,
-      exploreProject,
       compareWithRole,
       getPresentation,
       getResume,
@@ -243,7 +253,7 @@ export async function POST(req: Request) {
     };
 
     const result = streamText({
-      model: google("gemini-3.6-flash"),
+      model: google(ANSWER_MODEL),
       messages: augmentedMessages,
       toolCallStreaming: true,
       tools,
@@ -251,6 +261,13 @@ export async function POST(req: Request) {
       // replaying the model's own function-call message back to Gemini.
       maxSteps: 1,
       onFinish: () => {
+        streamData.close();
+      },
+      // A failed answer (e.g. Google overloaded after every retry) never
+      // reaches onFinish. Without this the error is sent but the response
+      // stays open until the platform's 60 s limit.
+      onError: ({ error }) => {
+        console.error('[Chat] Answer generation failed:', error);
         streamData.close();
       },
     });

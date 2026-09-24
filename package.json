@@ -6,6 +6,9 @@
     "dev": "next dev",
     "build": "npx tsx scripts/ingest.ts --prune && next build",
     "ingest:dry-run": "npx tsx scripts/ingest.ts --dry-run",
+    "eval": "npx tsx scripts/eval-retrieval.ts && npx tsx scripts/eval-conversations.ts",
+    "eval:retrieval": "npx tsx scripts/eval-retrieval.ts",
+    "eval:conversations": "npx tsx scripts/eval-conversations.ts",
     "start": "next start",
     "lint": "next lint",
     "test": "npx tsx tests/run-all.ts"

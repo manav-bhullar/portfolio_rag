@@ -56,3 +56,4 @@ hello.cpp.bak
 fix.js
 orphans.json
 tests/rag-eval/.plan-cache.json
+tests/rag-eval/.last-conversations.json

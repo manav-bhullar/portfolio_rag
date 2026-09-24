@@ -2,6 +2,7 @@ import { tool, generateObject } from 'ai';
 import { z } from 'zod';
 import { createGoogleGenerativeAI } from '@ai-sdk/google';
 import { getKeysHealthyFirst, reportKeyFailure, isRateLimitError } from '@/lib/gemini-keys';
+import { ANSWER_MODEL } from '@/lib/models';
 import { retrieve, formatContext } from '@/lib/rag/retriever';
 
 const HeatmapSchema = z.object({
@@ -31,7 +32,7 @@ export const compareWithRole = tool({
       try {
         const google = createGoogleGenerativeAI({ apiKey });
         const { object } = await generateObject({
-          model: google('gemini-3.6-flash'),
+          model: google(ANSWER_MODEL),
           schema: HeatmapSchema,
           prompt: `You are generating a skill heatmap comparing Manav Bhullar's real background to the typical requirements of a "${roleTitle}". 
           

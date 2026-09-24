@@ -14,6 +14,9 @@
  * re-evaluated without spending the (small, shared) Gemini free-tier quota.
  * Any change to the router prompt invalidates the affected entries.
  *
+ * Pass/fail (exit code 1 below these; used by `npm run eval`):
+ *   routing 100%, recall ≥ 94%, precision ≥ 85%, every deep-dive decision correct.
+ *
  * Metrics:
  *   routing   did the router retrieve exactly when the case says it should
  *   recall    share of expected documents retrieved (answerable cases)
@@ -37,7 +40,11 @@ interface GoldenCase {
   retrieve: boolean;
   expected?: string[];
   acceptable?: string[];
+  deepDive?: string | false;
 }
+
+const MIN_RECALL = 0.94;
+const MIN_PRECISION = 0.85;
 
 const args = process.argv.slice(2);
 const CALIBRATE = args.includes('--calibrate');
@@ -56,6 +63,7 @@ async function main() {
   // Imported after dotenv so modules see the environment
   const { fetchCandidates, retrieve, MIN_VECTOR_SCORE, estimateTokens } = await import('../src/lib/rag/retriever');
   const { planRetrieval, executePlan, buildRouterPrompt, heuristicPlan, ROUTER_MODEL } = await import('../src/lib/rag/router');
+  const { buildProjectDeepDive } = await import('../src/lib/rag/deep-dive');
   type Plan = Awaited<ReturnType<typeof planRetrieval>>;
   let planCache: Record<string, Plan> = {};
   try {
@@ -123,6 +131,7 @@ async function main() {
   let precisionSum = 0, precisionN = 0;
   let rejectOk = 0, rejectN = 0;
   let docsSum = 0, tokensSum = 0, retrievedCases = 0;
+  let deepDiveOk = 0, deepDiveN = 0;
   const failures: string[] = [];
 
   for (const c of cases) {
@@ -138,6 +147,12 @@ async function main() {
       const plan = await cachedPlan(c.query, c.history ?? []);
       intent = `${plan.intent}${plan.source === 'fallback' ? '(fallback)' : ''} ${JSON.stringify(plan.searchQueries)}${plan.category ? ` [${plan.category}]` : ''}`;
       results = await executePlan(plan, { originalQuery: c.query, hasHistory: (c.history?.length ?? 0) > 0 });
+      if (c.deepDive !== undefined) {
+        deepDiveN++;
+        const card = buildProjectDeepDive(plan, results)?.familyId ?? false;
+        if (card === c.deepDive) deepDiveOk++;
+        else failures.push(`${c.id}: deep-dive card expected ${c.deepDive || 'none'}, got ${card || 'none'}`);
+      }
       const retrieved = plan.intent === 'lookup' || plan.intent === 'broad';
       if (retrieved === c.retrieve) routingCorrect++;
       else failures.push(`${c.id}: routing expected retrieve=${c.retrieve}, got ${plan.intent}`);
@@ -187,11 +202,25 @@ async function main() {
   console.log(`Mean precision:        ${pct(precisionSum, precisionN)}`);
   console.log(`Unanswerable rejected: ${pct(rejectOk, rejectN)} (${rejectOk}/${rejectN})`);
   console.log(`Avg docs / context:    ${(docsSum / Math.max(1, retrievedCases)).toFixed(1)} docs, ~${Math.round(tokensSum / Math.max(1, retrievedCases))} tokens (cases that retrieved)`);
+  if (deepDiveN) console.log(`Deep-dive decisions:   ${deepDiveOk}/${deepDiveN}`);
   console.log(`MIN_VECTOR_SCORE:      ${MIN_VECTOR_SCORE}`);
   if (failures.length > 0) {
     console.log('\nIssues:');
     for (const f of failures) console.log(`  - ${f}`);
   }
+
+  // Release gate: only the full default run is judged.
+  if (NO_ROUTER || FALLBACK_ROUTER || onlyCases) return;
+  const recall = recallN ? recallSum / recallN : 1;
+  const precision = precisionN ? precisionSum / precisionN : 1;
+  const problems = [
+    routingCorrect < cases.length && `routing ${routingCorrect}/${cases.length}`,
+    recall < MIN_RECALL && `recall ${pct(recallSum, recallN)} < ${MIN_RECALL * 100}%`,
+    precision < MIN_PRECISION && `precision ${pct(precisionSum, precisionN)} < ${MIN_PRECISION * 100}%`,
+    deepDiveOk < deepDiveN && `deep-dive decisions ${deepDiveOk}/${deepDiveN}`,
+  ].filter(Boolean);
+  console.log(problems.length ? `\nRESULT: FAIL (${problems.join('; ')})` : '\nRESULT: PASS');
+  if (problems.length) process.exitCode = 1;
 }
 
 main().catch((err) => {
