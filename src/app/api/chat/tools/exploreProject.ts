@@ -6,7 +6,7 @@ const PROJECTS = KNOWLEDGE_BASE.filter((doc) => doc.category === 'project');
 
 export const exploreProject = tool({
   description:
-    "Fetch everything the knowledge base has about one of Manav's projects (e.g., Floq, SCALES, PIP-RAG, Olist, NYC Taxi): its overview plus every sub-topic document. Use this when the user asks for details, the tech stack, challenges, or everything about a single project.",
+    "Deep dive into exactly ONE of Manav's projects (e.g., Floq, SCALES, PIP-RAG, Olist, NYC Taxi): renders a card with its overview plus every sub-topic document. Use only when the whole question is about a single project. Never use it for comparisons ('Floq vs SCALES'), lists, or questions about several projects: calling a tool ends your turn, so answer those in text from the retrieved context instead.",
   parameters: z.object({
     projectKeyword: z.string().describe("A keyword to search for the project (e.g. 'floq', 'scales', 'pip', 'rag', 'olist', 'taxi')"),
   }),

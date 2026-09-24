@@ -24,19 +24,25 @@ import { createGoogleGenerativeAI } from '@ai-sdk/google';
 import { getKeysHealthyFirst, reportKeyFailure, isRateLimitError } from '@/lib/gemini-keys';
 import { retrieve, retrieveMany, retrieveOverviews, type RetrievalResult, type KnowledgeCategory } from './retriever';
 
-// Measured from the server (Sept 2026): gemini-3.5-flash-lite rejects a zero
-// thinking budget and took 13–30 s per call with default thinking;
-// gemini-3.6-flash with thinking disabled answers in ~2.5–3.5 s.
-export const ROUTER_MODEL = 'gemini-3.6-flash';
+// Router model: gemini-3.5-flash-lite, chosen for its separate and larger
+// free-tier quota. gemini-3.6-flash is faster with thinking disabled (~3 s)
+// but allows only 20 requests/day per key, and it is also the answer model,
+// so routing with it spent the answer's quota twice per message.
+// It rejects thinkingBudget 0, so it runs with default thinking: measured
+// 1.0–1.6 s per call on 24 Sept 2026, but 13–30 s during a Google
+// "high demand" spike on 23 Sept, hence the generous deadline below.
+export const ROUTER_MODEL = 'gemini-3.5-flash-lite';
 const MAX_SUB_QUERIES = 4;
 // The router sits in front of every chat message, so it must never stall the
 // response: each attempt is capped, the SDK's own retries are disabled (we
 // rotate keys instead), and on failure we fall back to a plain lookup.
-// Whole routing step, across all key attempts.
-const ROUTER_DEADLINE_MS = 6000;
+// Whole routing step, across all key attempts. The chat route runs on the
+// Edge runtime, which must start its response within 25 s, and routing plus
+// retrieval happen before the response starts, so routing gets at most 20 s.
+const ROUTER_DEADLINE_MS = 20_000;
 // One attempt. Exhausted keys fail with a 429 in ~0.6 s, so walking past them
 // is cheap; only a slow key uses up the attempt budget.
-const ATTEMPT_TIMEOUT_MS = 4000;
+const ATTEMPT_TIMEOUT_MS = 18_000;
 // Don't start an attempt with less than this left: it can't finish in time.
 const MIN_ATTEMPT_MS = 1000;
 
@@ -195,8 +201,6 @@ export async function planRetrieval(query: string, history: HistoryMessage[] = [
         temperature: 0,
         maxRetries: 0,
         abortSignal: AbortSignal.timeout(Math.min(ATTEMPT_TIMEOUT_MS, remaining)),
-        // Classification doesn't need reasoning tokens; thinking multiplies latency.
-        providerOptions: { google: { thinkingConfig: { thinkingBudget: 0 } } },
       });
       return normalizePlan(object, query);
     } catch (err) {
