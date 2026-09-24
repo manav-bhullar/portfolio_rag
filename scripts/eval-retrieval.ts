@@ -7,6 +7,7 @@
  *   npx tsx scripts/eval-retrieval.ts --calibrate   raw vector scores, to choose MIN_VECTOR_SCORE
  *   npx tsx scripts/eval-retrieval.ts --case=floq-what,compare
  *   npx tsx scripts/eval-retrieval.ts --fresh-plans   ignore cached router plans
+ *   npx tsx scripts/eval-retrieval.ts --fallback-router  rule-based plans only (router outage)
  *
  * Router plans are cached in tests/rag-eval/.plan-cache.json, keyed by a hash
  * of the exact router prompt and model, so retrieval-only changes can be
@@ -42,6 +43,7 @@ const args = process.argv.slice(2);
 const CALIBRATE = args.includes('--calibrate');
 const NO_ROUTER = args.includes('--no-router');
 const FRESH_PLANS = args.includes('--fresh-plans');
+const FALLBACK_ROUTER = args.includes('--fallback-router');
 const onlyCases = args.find((a) => a.startsWith('--case='))?.slice('--case='.length).split(',');
 const PLAN_CACHE_PATH = path.resolve(process.cwd(), 'tests/rag-eval/.plan-cache.json');
 
@@ -53,7 +55,7 @@ const pct = (n: number, d: number) => (d === 0 ? 'n/a' : `${((100 * n) / d).toFi
 async function main() {
   // Imported after dotenv so modules see the environment
   const { fetchCandidates, retrieve, MIN_VECTOR_SCORE, estimateTokens } = await import('../src/lib/rag/retriever');
-  const { planRetrieval, executePlan, buildRouterPrompt, ROUTER_MODEL } = await import('../src/lib/rag/router');
+  const { planRetrieval, executePlan, buildRouterPrompt, heuristicPlan, ROUTER_MODEL } = await import('../src/lib/rag/router');
   type Plan = Awaited<ReturnType<typeof planRetrieval>>;
   let planCache: Record<string, Plan> = {};
   try {
@@ -62,6 +64,7 @@ async function main() {
     planCache = {};
   }
   const cachedPlan = async (query: string, history: { role: string; content: string }[]): Promise<Plan> => {
+    if (FALLBACK_ROUTER) return heuristicPlan(query);
     const key = crypto.createHash('sha256').update(ROUTER_MODEL + '\n' + buildRouterPrompt(query, history)).digest('hex');
     if (!FRESH_PLANS && planCache[key]) return planCache[key];
     const plan = await planRetrieval(query, history);
@@ -134,7 +137,7 @@ async function main() {
     } else {
       const plan = await cachedPlan(c.query, c.history ?? []);
       intent = `${plan.intent}${plan.source === 'fallback' ? '(fallback)' : ''} ${JSON.stringify(plan.searchQueries)}${plan.category ? ` [${plan.category}]` : ''}`;
-      results = await executePlan(plan);
+      results = await executePlan(plan, { originalQuery: c.query, hasHistory: (c.history?.length ?? 0) > 0 });
       const retrieved = plan.intent === 'lookup' || plan.intent === 'broad';
       if (retrieved === c.retrieve) routingCorrect++;
       else failures.push(`${c.id}: routing expected retrieve=${c.retrieve}, got ${plan.intent}`);

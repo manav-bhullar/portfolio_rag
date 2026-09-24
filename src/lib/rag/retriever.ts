@@ -332,24 +332,52 @@ function assembleWithinBudget(groups: DocumentGroup[], tokenBudget: number): Ret
 // ── Public API ────────────────────────────────────────────────
 
 /**
- * Retrieve the relevant knowledge for one query. Returns [] when nothing
- * clears the relevance floor.
+ * Merge candidates found by several phrasings of the same question: each
+ * chunk keeps its best combined score and its best vector score.
  */
-export async function retrieve(query: string, options: RetrieveOptions = {}): Promise<RetrievalResult[]> {
+function fuseByMax(chunks: ScoredChunk[]): ScoredChunk[] {
+  const best = new Map<string, ScoredChunk>();
+  for (const c of chunks) {
+    const seen = best.get(c.chunkId);
+    if (!seen) {
+      best.set(c.chunkId, c);
+    } else {
+      const top = c.score > seen.score ? c : seen;
+      best.set(c.chunkId, { ...top, vectorScore: Math.max(c.vectorScore, seen.vectorScore) });
+    }
+  }
+  return [...best.values()].sort((a, b) => b.score - a.score);
+}
+
+/**
+ * Retrieve the relevant knowledge for one question. Returns [] when nothing
+ * clears the relevance floor.
+ *
+ * `query` may be several phrasings of the SAME question (e.g. the router's
+ * rewrite and the user's original wording). Each is searched and every chunk
+ * keeps its best score (multi-query retrieval with max fusion), so a poor
+ * rewrite can't hide a document the original wording would have found.
+ */
+export async function retrieve(query: string | string[], options: RetrieveOptions = {}): Promise<RetrievalResult[]> {
   const { mode = 'focused', category = null, applyFloor = true } = options;
   const tokenBudget = options.tokenBudget ?? (mode === 'broad' ? BROAD_TOKEN_BUDGET : FOCUSED_TOKEN_BUDGET);
+  const phrasings = [...new Set((Array.isArray(query) ? query : [query]).map((q) => q.trim()).filter(Boolean))];
+  if (phrasings.length === 0) return [];
   const startTime = Date.now();
 
-  const q = await embedQuery(query);
-  const candidates = await queryChunks(q, PINECONE_FETCH_K, categoryFilter(category));
+  const embedded = await Promise.all(phrasings.map(embedQuery));
+  const perPhrasing = await Promise.all(
+    embedded.map((q) => queryChunks(q, PINECONE_FETCH_K, categoryFilter(category)))
+  );
+  const candidates = fuseByMax(perPhrasing.flat());
   let groups = selectDocuments(candidates, mode, applyFloor);
   if (mode === 'broad' && applyFloor && groups.length > 0) {
-    groups = await expandFamily(q, groups);
+    groups = await expandFamily(embedded[0], groups);
   }
   const results = assembleWithinBudget(groups, tokenBudget);
 
   console.log(
-    `[RAG] ${mode} retrieval: ${results.length} documents (${candidates.length} candidates${category ? `, category=${category}` : ''}) for "${query.substring(0, 50)}" in ${Date.now() - startTime}ms`
+    `[RAG] ${mode} retrieval: ${results.length} documents (${candidates.length} candidates, ${phrasings.length} phrasing(s)${category ? `, category=${category}` : ''}) for "${phrasings[0].substring(0, 50)}" in ${Date.now() - startTime}ms`
   );
   return results;
 }

@@ -2,25 +2,37 @@ import { tool } from "ai";
 import { z } from "zod";
 import { KNOWLEDGE_BASE } from "@/lib/rag/knowledge-base";
 
+const PROJECTS = KNOWLEDGE_BASE.filter((doc) => doc.category === 'project');
+
 export const exploreProject = tool({
   description:
-    "Fetch in-depth details about a specific project by Manav (e.g., Floq, SCALES, PIP-RAG, Olist, NYC Taxi). Use this when the user asks for more details, tech stack, or challenges about a single project.",
+    "Deep dive into exactly ONE of Manav's projects (e.g., Floq, SCALES, PIP-RAG, Olist, NYC Taxi): renders a card with its overview plus every sub-topic document. Use only when the whole question is about a single project. Never use it for comparisons ('Floq vs SCALES'), lists, or questions about several projects: calling a tool ends your turn, so answer those in text from the retrieved context instead.",
   parameters: z.object({
     projectKeyword: z.string().describe("A keyword to search for the project (e.g. 'floq', 'scales', 'pip', 'rag', 'olist', 'taxi')"),
   }),
   execute: async ({ projectKeyword }) => {
-    const term = projectKeyword.toLowerCase();
-    const matches = KNOWLEDGE_BASE.filter(doc => 
-      doc.category === 'project' && 
-      (doc.title.toLowerCase().includes(term) || 
-       doc.keywords.some(k => k.toLowerCase().includes(term)))
+    const term = projectKeyword.toLowerCase().trim();
+    const matches = PROJECTS.filter(
+      (doc) =>
+        doc.title.toLowerCase().includes(term) ||
+        doc.keywords.some((k) => k.toLowerCase().includes(term))
     );
 
     if (matches.length === 0) {
-      return `No specific project found matching '${projectKeyword}'. Manav's main projects are Floq (task management), SCALES (supply chain ML), PIP-RAG (AI PDF search), Olist E-commerce Analytics, and NYC Taxi Analytics.`;
+      const overviews = PROJECTS.filter((doc) => !doc.partOf)
+        .map((doc) => `- ${doc.title}`)
+        .join('\n');
+      return `No project found matching '${projectKeyword}'. Manav's projects:\n\n${overviews}`;
     }
 
-    const project = matches[0];
-    return `Found project details for ${project.title}:\n\n${project.content}\n\nI should highlight the key technologies and interesting challenges from this data. I will also render a project deep-dive UI card.`;
+    // Prefer a title match, then return that project's whole family:
+    // the overview first, followed by its sub-topic documents.
+    const best = matches.find((doc) => doc.title.toLowerCase().includes(term)) ?? matches[0];
+    const rootId = best.partOf ?? best.id;
+    const family = PROJECTS.filter((doc) => doc.id === rootId || doc.partOf === rootId).sort(
+      (a, b) => Number(a.id !== rootId) - Number(b.id !== rootId)
+    );
+
+    return family.map((doc) => `### ${doc.title}\n\n${doc.content}`).join('\n\n');
   },
 });

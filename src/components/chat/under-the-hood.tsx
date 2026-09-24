@@ -7,6 +7,8 @@ export interface RetrievalDiagnostics {
   type: 'retrieval-diagnostics';
   /** Router decision; absent on messages from before the router existed. */
   intent?: 'chitchat' | 'off_topic' | 'lookup' | 'broad';
+  /** 'fallback' when the LLM router was unavailable and rules decided the route. */
+  routeSource?: 'llm' | 'fallback';
   rewrittenQuery: string | null;
   sources: { id: string; title: string; score: number; url?: string }[];
   retrievalLatencyMs: number;
@@ -40,7 +42,10 @@ export function UnderTheHood({ diagnostics }: { diagnostics: RetrievalDiagnostic
             <span>Model: <span className="font-medium text-foreground">{diagnostics.model}</span></span>
             <span>Retrieval: <span className="font-medium text-foreground">{diagnostics.retrievalLatencyMs}ms</span></span>
             {diagnostics.intent && (
-              <span>Route: <span className="font-medium text-foreground">{INTENT_LABELS[diagnostics.intent]}</span></span>
+              <span>
+                Route: <span className="font-medium text-foreground">{INTENT_LABELS[diagnostics.intent]}</span>
+                {diagnostics.routeSource === 'fallback' && <span> (rule-based fallback)</span>}
+              </span>
             )}
           </div>
 
