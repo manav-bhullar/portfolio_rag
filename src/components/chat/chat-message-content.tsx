@@ -46,7 +46,10 @@ const CodeBlock = ({ content }: { content: string }) => {
         <span className="text-xs">
           {language !== 'text' ? language : 'Code'}
         </span>
-        <CollapsibleTrigger className="hover:bg-secondary/80 rounded p-1">
+        <CollapsibleTrigger
+          aria-label={isOpen ? 'Collapse code block' : 'Expand code block'}
+          className="hover:bg-secondary/80 focus-visible:border-ring focus-visible:ring-ring/50 rounded p-1 focus-visible:ring-[3px] focus-visible:outline-none"
+        >
           {isOpen ? (
             <ChevronUp className="h-4 w-4" />
           ) : (
@@ -81,14 +84,18 @@ export default function ChatMessageContent({
 }: ChatMessageContentProps) {
   const diagnostics = (message.annotations as unknown[] | undefined)?.find(
     (a): a is RetrievalDiagnostics =>
-      typeof a === 'object' && a !== null && (a as { type?: string }).type === 'retrieval-diagnostics'
+      typeof a === 'object' &&
+      a !== null &&
+      (a as { type?: string }).type === 'retrieval-diagnostics'
   );
 
   const sourceTitleById = new Map<string, string>(
     diagnostics?.sources.map((s) => [s.id, s.title]) ?? []
   );
   const sourceUrlById = new Map<string, string>(
-    diagnostics?.sources.filter((s) => s.url).map((s) => [s.id, s.url as string]) ?? []
+    diagnostics?.sources
+      .filter((s) => s.url)
+      .map((s) => [s.id, s.url as string]) ?? []
   );
 
   // Follow-up chips should only appear on the last message and only once streaming is done
@@ -101,25 +108,35 @@ export default function ChatMessageContent({
 
       let processedText = part.text;
       let followUps: string[] = [];
-      
+
       // Extract follow-up questions — strip the block from rendered text regardless,
       // but only render chips when showFollowUps is true (last, non-loading message)
       const followUpMatch = processedText.match(/FOLLOW_UP_QUESTIONS:[\s\S]*/);
       if (followUpMatch) {
         const followUpBlock = followUpMatch[0];
         processedText = processedText.replace(followUpBlock, '').trim();
-        
+
         if (showFollowUps) {
           const items = followUpBlock.match(/- (.*)/g);
           if (items) {
-            followUps = items.map(i => i.replace(/^- \[?/, '').replace(/\]?$/, '').trim()).filter(Boolean);
+            followUps = items
+              .map((i) =>
+                i
+                  .replace(/^- \[?/, '')
+                  .replace(/\]?$/, '')
+                  .trim()
+              )
+              .filter(Boolean);
           }
         }
       }
 
       // Convert citations [citation: source_id] to something we can render
       // We can just use a span with a specific class for now
-      processedText = processedText.replace(/\[citation:\s*([^\]]+)\]/g, ' `[$1]` ');
+      processedText = processedText.replace(
+        /\[citation:\s*([^\]]+)\]/g,
+        ' `[$1]` '
+      );
 
       // Split content by code block markers
       const contentParts = processedText.split('```');
@@ -139,10 +156,14 @@ export default function ChatMessageContent({
                       </p>
                     ),
                     ul: ({ children }) => (
-                      <ul className="my-2 list-disc pl-5 sm:my-3 sm:pl-6">{children}</ul>
+                      <ul className="my-2 list-disc pl-5 sm:my-3 sm:pl-6">
+                        {children}
+                      </ul>
                     ),
                     ol: ({ children }) => (
-                      <ol className="my-2 list-decimal pl-5 sm:my-3 sm:pl-6">{children}</ol>
+                      <ol className="my-2 list-decimal pl-5 sm:my-3 sm:pl-6">
+                        {children}
+                      </ol>
                     ),
                     li: ({ children }) => <li className="my-1">{children}</li>,
                     code: ({
@@ -158,9 +179,19 @@ export default function ChatMessageContent({
                       // several comma-separated ids — render one pill per id so
                       // the row wraps cleanly on a narrow screen instead of one
                       // long monospace token.
-                      const isBlock = /language-/.test(className ?? '') || text.includes('\n');
-                      if (!isBlock && text.startsWith('[') && text.endsWith(']')) {
-                        const ids = text.slice(1, -1).split(',').map((s) => s.trim()).filter(Boolean);
+                      const isBlock =
+                        /language-/.test(className ?? '') ||
+                        text.includes('\n');
+                      if (
+                        !isBlock &&
+                        text.startsWith('[') &&
+                        text.endsWith(']')
+                      ) {
+                        const ids = text
+                          .slice(1, -1)
+                          .split(',')
+                          .map((s) => s.trim())
+                          .filter(Boolean);
                         return (
                           <>
                             {ids.map((sourceId) => {
@@ -176,7 +207,10 @@ export default function ChatMessageContent({
                                     href={sourceUrl}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className={cn(pillClassName, 'cursor-pointer underline decoration-dotted')}
+                                    className={cn(
+                                      pillClassName,
+                                      'cursor-pointer underline decoration-dotted'
+                                    )}
                                     title={`View source: ${sourceTitle ?? sourceId}`}
                                   >
                                     {sourceTitle ?? sourceId}
@@ -188,7 +222,11 @@ export default function ChatMessageContent({
                                 <span
                                   key={sourceId}
                                   className={cn(pillClassName, 'cursor-help')}
-                                  title={sourceTitle ? `Source: ${sourceTitle}` : `Source: ${sourceId}`}
+                                  title={
+                                    sourceTitle
+                                      ? `Source: ${sourceTitle}`
+                                      : `Source: ${sourceId}`
+                                  }
                                 >
                                   {sourceTitle ?? sourceId}
                                 </span>
@@ -199,7 +237,13 @@ export default function ChatMessageContent({
                       }
 
                       return (
-                        <code className={cn('rounded bg-secondary px-1 py-0.5 text-[0.9em]', className)} {...props}>
+                        <code
+                          className={cn(
+                            'bg-secondary rounded px-1 py-0.5 text-[0.9em]',
+                            className
+                          )}
+                          {...props}
+                        >
                           {children}
                         </code>
                       );
@@ -224,7 +268,7 @@ export default function ChatMessageContent({
               <CodeBlock key={`code-${i}`} content={content} />
             )
           )}
-          
+
           {/* Follow-up suggestion chips — M3 style, spring-animated, last message only */}
           <AnimatePresence>
             {followUps.length > 0 && (
@@ -233,10 +277,15 @@ export default function ChatMessageContent({
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: 8 }}
-                transition={{ type: 'spring', stiffness: 300, damping: 28, delay: 0.1 }}
-                className="mt-4 flex flex-col gap-2.5 border-t border-border/50 pt-4"
+                transition={{
+                  type: 'spring',
+                  stiffness: 300,
+                  damping: 28,
+                  delay: 0.1,
+                }}
+                className="border-border/50 mt-4 flex flex-col gap-2.5 border-t pt-4"
               >
-                <span className="text-[11px] font-bold tracking-[0.1em] text-muted-foreground uppercase">
+                <span className="text-muted-foreground text-[11px] font-bold tracking-[0.1em] uppercase">
                   Ask next
                 </span>
                 <div className="flex flex-wrap gap-2">
@@ -254,12 +303,14 @@ export default function ChatMessageContent({
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.96 }}
                       onClick={() => {
-                        window.dispatchEvent(new CustomEvent('chat:submit', { detail: q }));
+                        window.dispatchEvent(
+                          new CustomEvent('chat:submit', { detail: q })
+                        );
                       }}
-                      className="pressable group flex min-h-10 items-center gap-2 rounded-full border border-border bg-card px-4 py-2 text-left text-sm font-medium text-foreground transition-colors hover:border-[#3FB37F]/40 hover:bg-secondary"
+                      className="pressable group border-border bg-card text-foreground hover:bg-secondary flex min-h-10 items-center gap-2 rounded-full border px-4 py-2 text-left text-sm font-medium transition-colors hover:border-[#3FB37F]/40"
                     >
                       <span className="flex-1">{q}</span>
-                      <ChevronRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-[#3FB37F]" />
+                      <ChevronRight className="text-muted-foreground h-3.5 w-3.5 shrink-0 transition-transform group-hover:translate-x-0.5 group-hover:text-[#3FB37F]" />
                     </motion.button>
                   ))}
                 </div>
