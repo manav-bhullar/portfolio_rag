@@ -3,7 +3,7 @@ import { trackChatQuery } from '@/lib/analytics-tracker';
 import { useChat, type Message } from '@ai-sdk/react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useSearchParams } from 'next/navigation';
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
 import ChatBottombar from '@/components/chat/chat-bottombar';
@@ -60,11 +60,15 @@ export default function Chat() {
   const { hydrated, persistMemory, togglePersistMemory } = useChatPersistence(messages, setMessages);
   const { scrollContainerRef, isAtBottom, scrollToBottom } = useChatScroll(messages, isLoading);
 
-  const isToolInProgress = messages.some(
-    (m) => m.role === 'assistant' && m.parts?.some(
-      (part) => part.type === 'tool-invocation' && part.toolInvocation?.state !== 'result'
-    )
-  );
+  // Performance optimization: Memoize the check for in-progress tool calls
+  // to avoid O(N) array iterations over the chat history on every re-render (e.g. typing in the chat input)
+  const isToolInProgress = useMemo(() => {
+    return messages.some(
+      (m) => m.role === 'assistant' && m.parts?.some(
+        (part) => part.type === 'tool-invocation' && part.toolInvocation?.state !== 'result'
+      )
+    );
+  }, [messages]);
 
   const submitQuery = useCallback((query: string) => {
     if (!query.trim() || isToolInProgress) return;
