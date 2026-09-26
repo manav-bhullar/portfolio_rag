@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useId } from 'react';
 import { ChevronDown, ChevronUp, Cpu, ExternalLink } from 'lucide-react';
 
 export interface RetrievalDiagnostics {
@@ -24,12 +24,15 @@ const INTENT_LABELS: Record<NonNullable<RetrievalDiagnostics['intent']>, string>
 
 export function UnderTheHood({ diagnostics }: { diagnostics: RetrievalDiagnostics }) {
   const [open, setOpen] = useState(false);
+  const contentId = useId();
 
   return (
     <div className="mt-3 border-t pt-3">
       <button
         onClick={() => setOpen((v) => !v)}
-        className="flex items-center gap-1.5 text-xs font-semibold tracking-wide text-muted-foreground uppercase transition-colors hover:text-foreground"
+        aria-expanded={open}
+        aria-controls={open ? contentId : undefined}
+        className="flex items-center gap-1.5 rounded-sm text-xs font-semibold tracking-wide text-muted-foreground uppercase outline-none transition-colors hover:text-foreground focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
       >
         <Cpu className="h-3.5 w-3.5" />
         Under the hood
@@ -37,7 +40,7 @@ export function UnderTheHood({ diagnostics }: { diagnostics: RetrievalDiagnostic
       </button>
 
       {open && (
-        <div className="mt-2 space-y-2 rounded-lg bg-secondary/40 p-3 text-xs text-muted-foreground">
+        <div id={contentId} className="mt-2 space-y-2 rounded-lg bg-secondary/40 p-3 text-xs text-muted-foreground">
           <div className="flex flex-wrap gap-x-4 gap-y-1">
             <span>Model: <span className="font-medium text-foreground">{diagnostics.model}</span></span>
             <span>Retrieval: <span className="font-medium text-foreground">{diagnostics.retrievalLatencyMs}ms</span></span>
